@@ -14,7 +14,7 @@ orchestrator. **Domain note content is written by hand** — see "Not delegated"
 | T5 | Codex | Agent loop, model routing, caching, batch | ✅ see below |
 | T6 | Codex | Security layer + `.claude/` configuration and hooks | ✅ see below |
 | T7 | Codex | Eval harness | ✅ see below |
-| T8 | Codex | CI workflows + flashcard/cheatsheet generators | queued |
+| T8 | Codex | CI workflows + flashcard/cheatsheet generators | ✅ see below |
 | T9+ | **by hand** | Domain notes, drill items | ongoing, weekly |
 
 ## Not delegated
@@ -212,6 +212,43 @@ Origin attribution is visible in the traces: a `tool_dispatch` stage attributed 
 between two `model_call` stages attributed to `model`, which is the domain's named objective made
 concrete rather than described.
 
+### T8 — CI, tooling, and generators
+Gates re-run independently, all seven passing keyless: `ruff check`, `ruff format --check` (118 files),
+`pytest` (64), `check_links`, `check_blueprint_consistency`, `drills.engine validate`, `lab.evals run`.
+
+**The anti-drift gate works**, which was the substance of this task. Four separate mutations, each
+caught:
+
+| Mutation | Exit |
+|---|---|
+| Domain weight changed so the sum stops being 100 | 1 |
+| README weight table disagreeing with `BLUEPRINT.md` | 1 |
+| A `notes/` directory removed | 1 |
+| A drill item's sub-skill borrowed from another domain | 1 |
+| Restored | 0 |
+
+The repo's central claim — coverage weighted to the real outline — is now enforced in CI rather than
+asserted in prose.
+
+**Two process failures worth recording.**
+
+Codex reported the run as failed (exit 1) on an `apply_patch` error, but the work had already landed
+intact; the failure was a redundant final edit. The lesson is the one the delegation skill states
+plainly: read the working tree, not the status line. Every deliverable was present and every gate
+passed.
+
+Then a genuine orchestrator mistake. While drift-testing the consistency checker, the README was
+mutated and restored with `git checkout -- README.md`, which reverts to HEAD — destroying T8's
+uncommitted README rewrite. The probe was sound; the restore method was wrong for a file with pending
+changes, and the drill-item probe in the same test had been restored correctly by copying the file
+aside first.
+
+Recovery exposed a second, latent problem. Two re-dispatches to rewrite the README both failed,
+because `git checkout` had restored it with CRLF endings under `core.autocrlf` while every other file
+in the tree was LF, so the patch context could not match. That would have hit any contributor cloning
+on Windows. Fixed at the root with a `.gitattributes` normalising the repository to LF; the README was
+then rewritten directly rather than spending a third round-trip on a file the orchestrator broke.
+
 ## Needs your eyes
 
 - **`LICENSE` says "Copyright (c) 2026 ccdv-f-lab contributors".** A legal name was not guessed. Set it
@@ -227,6 +264,8 @@ concrete rather than described.
   score, the anchor, and readiness against this repo's stricter 85%/70% bar, leaving you to compare the
   estimate to the anchor yourself. Deliberate for now — the repo's bar is the one worth chasing — but
   say the word and it becomes one explicit line.
+- **Confirm the GitHub path.** The CI badge and clone URL in `README.md` use a placeholder of
+  `ahmedmoghazy/ccdv-f-lab`. Correct it before publishing or the badge will not resolve.
 - **`PyYAML` and `jsonschema` are the first runtime dependencies.** Both justified: readable
   one-item-per-file storage, and Draft 2020-12 validation. Worth knowing the surface is no longer
   standard-library only.

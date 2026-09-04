@@ -1,0 +1,4 @@
+# Normalise line endings so patch tooling and CI see the same bytes on every platform.
+* text=auto eol=lf
+*.png binary
+*.tsv text eol=lf
