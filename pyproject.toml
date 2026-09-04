@@ -6,6 +6,7 @@ requires-python = ">=3.11"
 dependencies = [
     "anthropic",
     "jsonschema>=4.23,<5",
+    "mcp>=1.0,<2",
     "PyYAML>=6.0,<7",
 ]
 

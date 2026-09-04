@@ -10,7 +10,7 @@ orchestrator. **Domain note content is written by hand** — see "Not delegated"
 | T1 | Codex | Scaffold: README, guide pages, `CONTRIBUTING.md`, tooling, note skeletons | ✅ `de393c2` |
 | T2 | Codex | Drill engine: schema, weighted mock generator, scorer | ✅ see below |
 | T3 | Codex | Lab core: package, config, keyless mock transport, ingest, output | ✅ see below |
-| T4 | Codex | Tools + MCP server (stdio + HTTP) | queued |
+| T4 | Codex | Tools + MCP server (stdio + HTTP) | ✅ see below |
 | T5 | Codex | Agent loop, model routing, caching, batch | queued |
 | T6 | Codex | Security layer + `.claude/` configuration and hooks | queued |
 | T7 | Codex | Eval harness | queued |
@@ -98,6 +98,32 @@ system prompt never tells the model the payload is JSON, so nothing makes the st
 the reader that matters. T3's brief deferred injection defenses to T6, so this is on-scope there, not a
 T3 defect. It is recorded here because prompt injection is a named exam objective and the official
 sample questions test exactly this, so the pattern the repo ships must be one a reader can safely copy.
+
+### T4 — tools and MCP server
+Gates re-run independently: `ruff` clean across 72 files, `pytest` 28 passed. All seven new tests run
+here with no skips, including the stdio round-trip (Codex reported needing sandbox elevation for that
+one; it runs unelevated outside the sandbox).
+
+All four tool definitions carry `strict: true` as a top-level field with `additionalProperties: false`
+and explicit `required` lists. Descriptions are written the way a model consumes them — when to use,
+parameter units and ranges, what is returned, what the tool does *not* do, and when to reach for
+something else.
+
+The dispatch contract was probed directly rather than read:
+
+| Probe | Result |
+|---|---|
+| Write tool, no approval | `is_error`, message naming the tool and how to approve — did not execute |
+| 3 parallel `tool_use` blocks | One user message, 3 results, `tool_use_id`s echoed |
+| `limit: 999` against the closed schema | `is_error` quoting the validation failure |
+| Unknown tool name | `is_error` listing the available tools |
+| Missing required field | `is_error` naming the missing property |
+
+No exception escaped the dispatch path in any case, and every error message is one the model can
+actually recover from rather than a bare stack trace.
+
+The MCP server registers all three primitives (resources, tools, prompts) and runs over both stdio and
+Streamable HTTP, with a decision table in its README covering when each transport is right.
 
 ## Needs your eyes
 
