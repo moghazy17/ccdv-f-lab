@@ -11,7 +11,7 @@ orchestrator. **Domain note content is written by hand** — see "Not delegated"
 | T2 | Codex | Drill engine: schema, weighted mock generator, scorer | ✅ see below |
 | T3 | Codex | Lab core: package, config, keyless mock transport, ingest, output | ✅ see below |
 | T4 | Codex | Tools + MCP server (stdio + HTTP) | ✅ see below |
-| T5 | Codex | Agent loop, model routing, caching, batch | queued |
+| T5 | Codex | Agent loop, model routing, caching, batch | ✅ see below |
 | T6 | Codex | Security layer + `.claude/` configuration and hooks | queued |
 | T7 | Codex | Eval harness | queued |
 | T8 | Codex | CI workflows + flashcard/cheatsheet generators | queued |
@@ -124,6 +124,25 @@ actually recover from rather than a bare stack trace.
 
 The MCP server registers all three primitives (resources, tools, prompts) and runs over both stdio and
 Streamable HTTP, with a decision table in its README covering when each transport is right.
+
+### T5 — agent loop and cost paths
+Gates re-run independently: `ruff` clean across 82 files, `pytest` 40 passed.
+
+The four requirements most likely to be wrong were probed directly rather than read:
+
+| Probe | Result |
+|---|---|
+| Transport that never stops asking for tools | Terminated at the ceiling — `outcome="max_turns"`, 3 turns |
+| Multi-turn subagent with a marked intermediate turn | Intermediate turn absent from the parent transcript; only the summary crossed |
+| Batch results delivered scrambled, covering all four result types | Matched by `custom_id`, not position; `succeeded`/`errored`/`canceled`/`expired` all handled |
+| Compaction over an oversized transcript | 5722 → 1601 estimated tokens, 8 → 3 messages, recent turns preserved |
+
+The subagent probe needed two attempts. The first used a subagent that returned `end_turn`
+immediately, so its only turn was simultaneously intermediate and final — the marker reaching the
+parent was the legitimate summary, not a leak. Re-probed with a subagent that takes an intermediate
+turn before summarising, and the isolation holds: the intermediate turn never reaches the parent.
+
+Pruning records what it truncated in a `records` field rather than dropping content silently.
 
 ## Needs your eyes
 
