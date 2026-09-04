@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Keyless teaching labs for the CCDV-F community study kit."
 requires-python = ">=3.11"
 dependencies = [
+    "anthropic",
     "jsonschema>=4.23,<5",
     "PyYAML>=6.0,<7",
 ]
@@ -13,7 +14,7 @@ testpaths = ["tests"]
 pythonpath = ["."]
 
 [tool.setuptools.packages.find]
-include = ["drills*"]
+include = ["drills*", "lab*"]
 
 [tool.ruff]
 line-length = 100
