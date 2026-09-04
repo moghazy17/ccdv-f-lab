@@ -31,7 +31,7 @@ the official exam guide.
 | # | Domain | Weight | ~Items |
 |---|---|---:|---:|
 | 1 | Agents and Workflows | 14.7% | ~8 |
-| 2 | **Applications and Integration** | **33.1%** | **~18** |
+| 2 | **Applications and Integration** | **33.1%** | **~17** |
 | 3 | Claude Code | 3.1% | ~2 |
 | 4 | Eval, Testing, and Debugging | 2.6% | ~1 |
 | 5 | **Model Selection and Optimization** | **16.8%** | **~9** |
@@ -114,15 +114,18 @@ accordingly, not by how interesting a domain sounds.
 
 ## Weighted mock composition
 
-A representative 53-item mock draws items in these proportions (`drills/engine` enforces ±1 per domain):
+A representative 53-item mock draws items in these proportions. Counts use **largest-remainder
+apportionment**, so they sum to exactly 53 — which is why Applications and Integration gets 17 rather
+than the 17.5 its weight implies. `drills/engine` computes this from the weights above at runtime
+rather than reading this table, and the tests assert the two agree.
 
 | Domain | Weight | Items |
 |---|---:|---:|
-| Applications and Integration | 33.1% | 18 |
+| Applications and Integration | 33.1% | 17 |
 | Model Selection and Optimization | 16.8% | 9 |
 | Agents and Workflows | 14.7% | 8 |
 | Prompt and Context Engineering | 11.0% | 6 |
-| Tools and MCPs | 10.6% | 5 |
+| Tools and MCPs | 10.6% | 6 |
 | Security and Safety | 8.1% | 4 |
 | Claude Code | 3.1% | 2 |
 | Eval, Testing, and Debugging | 2.6% | 1 |

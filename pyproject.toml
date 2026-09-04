@@ -3,10 +3,17 @@ name = "ccdv_f_lab"
 version = "0.1.0"
 description = "Keyless teaching labs for the CCDV-F community study kit."
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "jsonschema>=4.23,<5",
+    "PyYAML>=6.0,<7",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.setuptools.packages.find]
+include = ["drills*"]
 
 [tool.ruff]
 line-length = 100

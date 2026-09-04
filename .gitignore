@@ -26,3 +26,6 @@ drills/mocks/attempts/
 Thumbs.db
 .idea/
 .vscode/
+
+# Generated mocks are reproducible from their seed
+drills/mocks/*.yaml

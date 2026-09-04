@@ -1,0 +1,32 @@
+id: format-demonstration-workflow-selection
+format_demonstration: true
+domain: Agents and Workflows
+sub_skill: Agent Architecture
+difficulty: application
+select: 2
+stem: >-
+  Format demonstration: A support team must route a fixed intake form through predictable checks and
+  obtain a manager's approval before a ticket is created. Which two choices best fit that requirement?
+options:
+  - id: a
+    text: Model the steps as a deterministic workflow with explicit routing rules.
+    correct: true
+    rationale: The required path is known in advance, so explicit workflow steps make it inspectable.
+  - id: b
+    text: Require a recorded manager approval before the ticket-creation action can run.
+    correct: true
+    rationale: The approval is a defined control that belongs in the execution path.
+  - id: c
+    text: Raise the model tier so it can infer the approval policy without an explicit control.
+    correct: false
+    rationale: Extra model capability does not replace a required approval gate.
+    trap_type: bigger-model
+  - id: d
+    text: Ask the model politely to avoid ticket creation until a manager has approved it.
+    correct: false
+    rationale: A request in instructions is not an enforceable approval control.
+    trap_type: unenforceable-politeness
+sources:
+  - title: Claude Certified Developer – Foundations Exam Guide
+    url: https://everpath-course-content.s3-accelerate.amazonaws.com/instructor/6nizmqk8tpzpfjvt6qmmav7rh/public/1783542875/Claude+Certified+Developer+%E2%80%93+Foundations+Exam+Guide.pdf
+    verified_on: "2026-09-04"

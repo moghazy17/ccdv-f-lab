@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CCDV-F original practice item",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "domain",
+    "sub_skill",
+    "difficulty",
+    "select",
+    "stem",
+    "options",
+    "sources"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "description": "Stable, bank-wide unique slug."
+    },
+    "format_demonstration": {
+      "const": true,
+      "description": "Marks the single format-only example item; omit from authored study items."
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "Agents and Workflows",
+        "Applications and Integration",
+        "Claude Code",
+        "Eval, Testing, and Debugging",
+        "Model Selection and Optimization",
+        "Prompt and Context Engineering",
+        "Security and Safety",
+        "Tools and MCPs"
+      ],
+      "description": "Exact domain name from BLUEPRINT.md; runtime validation also reads the blueprint."
+    },
+    "sub_skill": {
+      "type": "string",
+      "enum": [
+        "Agent Construction with Claude",
+        "Agent Patterns and Frameworks",
+        "Agent Architecture",
+        "Claude Application Design",
+        "Software Engineering Foundations",
+        "Claude API Mechanics",
+        "Configuration Management",
+        "Understanding Requirements",
+        "Systems Life Cycle",
+        "Claude Code Operation",
+        "Debugging and Error Handling",
+        "Technical Fundamentals",
+        "LLM Fundamentals",
+        "Cost and Token Management",
+        "Model Selection and Tradeoffs",
+        "Prompt Engineering",
+        "Context Engineering",
+        "Output Handling",
+        "AI Application Security",
+        "Guardrails and Safe Deployment",
+        "Identity, Secrets, and Key Management",
+        "Claude Hooks",
+        "Tool Implementation",
+        "Agentic Customization",
+        "MCP Server Development"
+      ],
+      "description": "Exact sub-skill name from BLUEPRINT.md; it must belong to the selected domain."
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": ["recall", "application", "analysis"]
+    },
+    "select": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of correct options to select."
+    },
+    "stem": {
+      "type": "string",
+      "minLength": 1
+    },
+    "options": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "text", "correct", "rationale"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "correct": {
+            "type": "boolean"
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Required explanation of why this option is right or wrong."
+          },
+          "trap_type": {
+            "$ref": "#/$defs/trap_type"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {"correct": {"const": false}},
+              "required": ["correct"]
+            },
+            "then": {"required": ["trap_type"]}
+          },
+          {
+            "if": {
+              "properties": {"correct": {"const": true}},
+              "required": ["correct"]
+            },
+            "then": {"not": {"required": ["trap_type"]}}
+          }
+        ]
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Dated references that back the item.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title", "url", "verified_on"],
+        "properties": {
+          "title": {"type": "string", "minLength": 1},
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https?://",
+            "description": "HTTP or HTTPS URL for the backing reference."
+          },
+          "verified_on": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "description": "Date this source was checked, in YYYY-MM-DD form."
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "trap_type": {
+      "oneOf": [
+        {
+          "const": "irrelevant-knob",
+          "description": "Adjusts a parameter unrelated to the stated problem."
+        },
+        {
+          "const": "unenforceable-politeness",
+          "description": "Relies on asking nicely rather than an enforceable control."
+        },
+        {
+          "const": "cost-theater",
+          "description": "A superficial cost tweak that misses the actual cost driver."
+        },
+        {
+          "const": "wrong-layer",
+          "description": "Fixes at the prompt layer what is an architecture or infrastructure problem, or the reverse."
+        },
+        {
+          "const": "false-capability",
+          "description": "Asserts a capability the product does not have."
+        },
+        {
+          "const": "bigger-model",
+          "description": "Offers more model capability as a substitute for design or controls."
+        },
+        {
+          "const": "overkill",
+          "description": "Technically works but is disproportionate to the requirement."
+        },
+        {
+          "const": "right-idea-wrong-mechanism",
+          "description": "Correct goal, wrong API, tool, or abstraction."
+        }
+      ]
+    }
+  }
+}

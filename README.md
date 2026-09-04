@@ -16,7 +16,7 @@ source of truth for this kit. The underlying exam source and its verification da
 | # | Domain | Weight | Approximate items |
 |---|---|---:|---:|
 | 1 | Agents and Workflows | 14.7% | ~8 |
-| 2 | Applications and Integration | 33.1% | ~18 |
+| 2 | Applications and Integration | 33.1% | ~17 |
 | 3 | Claude Code | 3.1% | ~2 |
 | 4 | Eval, Testing, and Debugging | 2.6% | ~1 |
 | 5 | Model Selection and Optimization | 16.8% | ~9 |

@@ -1,0 +1,29 @@
+id: fake-practice-item
+domain: Agents and Workflows
+sub_skill: Agent Architecture
+difficulty: application
+select: 2
+stem: Fake fixture content only. Select the two labelled fake choices.
+options:
+  - id: a
+    text: Fake correct choice A.
+    correct: true
+    rationale: This is deliberately fake fixture rationale A.
+  - id: b
+    text: Fake correct choice B.
+    correct: true
+    rationale: This is deliberately fake fixture rationale B.
+  - id: c
+    text: Fake incorrect choice C.
+    correct: false
+    rationale: This is deliberately fake fixture rationale C.
+    trap_type: irrelevant-knob
+  - id: d
+    text: Fake incorrect choice D.
+    correct: false
+    rationale: This is deliberately fake fixture rationale D.
+    trap_type: overkill
+sources:
+  - title: Fake fixture source
+    url: https://example.invalid/fake-fixture
+    verified_on: "2026-01-01"
