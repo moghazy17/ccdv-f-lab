@@ -1,6 +1,6 @@
 # CCDV-F community study kit
 
-[![CI](https://github.com/ahmedmoghazy/ccdv-f-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/ahmedmoghazy/ccdv-f-lab/actions/workflows/ci.yml)
+[![CI](https://github.com/moghazy17/ccdv-f-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/moghazy17/ccdv-f-lab/actions/workflows/ci.yml)
 
 This is an unofficial community study kit for Claude Certified Developer - Foundations
 (CCDV-F), and is not affiliated with, endorsed by, or produced by Anthropic.
@@ -41,7 +41,7 @@ Everything runs without an API key. The lab defaults to a mock transport, so the
 drills, and evals — works offline and in CI with no credentials.
 
 ```bash
-git clone https://github.com/ahmedmoghazy/ccdv-f-lab.git
+git clone https://github.com/moghazy17/ccdv-f-lab.git
 cd ccdv-f-lab
 pip install -e .
 
