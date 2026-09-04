@@ -13,7 +13,7 @@ orchestrator. **Domain note content is written by hand** — see "Not delegated"
 | T4 | Codex | Tools + MCP server (stdio + HTTP) | ✅ see below |
 | T5 | Codex | Agent loop, model routing, caching, batch | ✅ see below |
 | T6 | Codex | Security layer + `.claude/` configuration and hooks | ✅ see below |
-| T7 | Codex | Eval harness | queued |
+| T7 | Codex | Eval harness | ✅ see below |
 | T8 | Codex | CI workflows + flashcard/cheatsheet generators | queued |
 | T9+ | **by hand** | Domain notes, drill items | ongoing, weekly |
 
@@ -179,6 +179,38 @@ Scope note: Codex also touched `lab/loop.py` and `lab/tools/dispatcher.py`, beyo
 named. Reviewed and kept — 18 lines total, and enforcing least privilege requires a check at the
 dispatch point. It is placed before the approval check, which is the correct ordering, and defaults to
 the untrusted policy so the safe path is the default.
+
+### T7 — eval harness
+Gates re-run independently: `ruff` clean across 100 files, `pytest` 58 passed.
+
+**Returned to the implementer once before accepting.** The first version had two defects that would
+have made it useless as the regression gate T8 wires into CI:
+
+1. *The golden set could never pass.* It reported `16 cases; passed 15; failed 1` and exited **0**. The
+   permanent failure was a deliberate `wrong_classification` fixture proving the grader catches a
+   valid-but-incorrect model response — right intent, wrong encoding. "15 passed, 1 failed" is
+   indistinguishable from "15 passed, 1 regressed", and exiting 0 on failure meant CI would not notice
+   either way.
+2. *The origin summary read as 13 failures when there was 1.* "Failure counts by origin: integration 9,
+   model 4" counted failure modes **exercised**, most by cases that pass precisely because they handle
+   that mode correctly. This repo's readers are certification candidates; "9 integration failures"
+   invites exactly the wrong conclusion.
+
+Both fixed on the same Codex session. The fixture now passes by *detecting* the mismatch, the report
+separates "failed cases by origin" from "failure modes exercised by origin", and `run` gates the build
+while `report` and `trace` are documented inspection commands.
+
+The exit-code contract was verified by breaking a golden case rather than trusting the claim:
+
+| State | `run` exit | Report |
+|---|---|---|
+| Clean golden set | 0 | 16 passed, 0 failed |
+| One case mutated to a wrong category | **1** | Failed cases by origin: model 1; modes exercised: model 5 |
+| Restored | 0 | 16 passed |
+
+Origin attribution is visible in the traces: a `tool_dispatch` stage attributed to `integration` sits
+between two `model_call` stages attributed to `model`, which is the domain's named objective made
+concrete rather than described.
 
 ## Needs your eyes
 
