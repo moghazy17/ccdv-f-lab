@@ -7,6 +7,7 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
+from lab.security import TicketTrustLevel, ToolExposurePolicy
 from lab.tools import TOOL_DEFINITIONS, TriageFixture, dispatch_tool_uses
 
 
@@ -101,16 +102,19 @@ def test_write_tool_requires_approval_and_executes_after_approval() -> None:
         ],
     }
 
-    missing = dispatch_tool_uses(request, fixture=fixture)
+    trusted_policy = ToolExposurePolicy.for_ticket(TicketTrustLevel.TRUSTED)
+    missing = dispatch_tool_uses(request, fixture=fixture, tool_policy=trusted_policy)
     denied = dispatch_tool_uses(
         request,
         approval_decisions={"toolu-followup": False},
         fixture=fixture,
+        tool_policy=trusted_policy,
     )
     approved = dispatch_tool_uses(
         request,
         approval_decisions={"toolu-followup": True},
         fixture=fixture,
+        tool_policy=trusted_policy,
     )
 
     assert missing["content"][0]["is_error"] is True

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from lab.ingest import MAX_TICKET_CHARACTERS, Ticket, assemble_triage_request, normalize_ticket_text
@@ -27,5 +29,7 @@ def test_instruction_like_ticket_text_stays_in_the_user_data_position() -> None:
     assert injection_like_text not in system_text
     assert injection_like_text in user_text
     assert request.messages[0].role == "user"
-    assert "<untrusted_ticket_data>" in user_text
-    assert "</untrusted_ticket_data>" in user_text
+    assert re.search(r'<untrusted_ticket_data nonce="[^"]+">', user_text)
+    assert re.search(r'</untrusted_ticket_data nonce="[^"]+">', user_text)
+    assert "JSON object" in system_text
+    assert "submitted_text field" in system_text

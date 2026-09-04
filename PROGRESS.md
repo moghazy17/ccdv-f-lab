@@ -12,7 +12,7 @@ orchestrator. **Domain note content is written by hand** — see "Not delegated"
 | T3 | Codex | Lab core: package, config, keyless mock transport, ingest, output | ✅ see below |
 | T4 | Codex | Tools + MCP server (stdio + HTTP) | ✅ see below |
 | T5 | Codex | Agent loop, model routing, caching, batch | ✅ see below |
-| T6 | Codex | Security layer + `.claude/` configuration and hooks | queued |
+| T6 | Codex | Security layer + `.claude/` configuration and hooks | ✅ see below |
 | T7 | Codex | Eval harness | queued |
 | T8 | Codex | CI workflows + flashcard/cheatsheet generators | queued |
 | T9+ | **by hand** | Domain notes, drill items | ongoing, weekly |
@@ -143,6 +143,42 @@ parent was the legitimate summary, not a leak. Re-probed with a subagent that ta
 turn before summarising, and the isolation holds: the intermediate turn never reaches the parent.
 
 Pruning records what it truncated in a `records` field rather than dropping content silently.
+
+### T6 — security and Claude Code configuration
+Gates re-run independently: `ruff` clean across 93 files, `pytest` 50 passed.
+
+**The T3 delimiter escape is fixed, and the fix holds under attack.** The boundary is now bound to a
+43-character per-request nonce, delimiter-like tokens in ticket text are escaped (`<` becomes
+`<`) and the escape is counted in the payload, and the system prompt now states that the region
+is a JSON object with the ticket in one field. Probed three ways: the raw closing tag can no longer
+appear in the payload body; five requests produced five distinct nonces; and replaying a previously
+observed nonce inside ticket text does not match the live one. The boundary is unforgeable rather
+than merely harder to guess.
+
+**Least privilege and approval are genuinely independent controls**, which was the point of asking for
+both:
+
+| Case | Blocked by |
+|---|---|
+| Untrusted ticket + approval **granted** | Least privilege — capability boundary, before approval is considered |
+| Trusted + approval denied | Approval |
+| Trusted + no decision | Approval |
+| Trusted + approval granted | Neither — reaches the handler |
+
+Approvals key on `tool_use_id`, not tool name, which is the safer design: approving one invocation
+rather than every later call to that tool in the turn.
+
+**The hook is executable and actually denies**, verified by piping tool-use payloads to it directly:
+a write to `BLUEPRINT.md` and `rm -rf /` both return `permissionDecision: deny` with exit 2, while an
+ordinary write and `pytest -q` exit 0.
+
+Secret redaction covers plain text, exception messages, and nested trace records including header
+values.
+
+Scope note: Codex also touched `lab/loop.py` and `lab/tools/dispatcher.py`, beyond the files the brief
+named. Reviewed and kept — 18 lines total, and enforcing least privilege requires a check at the
+dispatch point. It is placed before the approval check, which is the correct ordering, and defaults to
+the untrusted policy so the safe path is the default.
 
 ## Needs your eyes
 

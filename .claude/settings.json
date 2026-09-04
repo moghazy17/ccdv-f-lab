@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ruff check .)",
+      "Bash(ruff format --check .)",
+      "Bash(pytest -q)",
+      "Bash(python -c:*)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/prevent_destructive_actions.py",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python .claude/hooks/prevent_destructive_actions.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

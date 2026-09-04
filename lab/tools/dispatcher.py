@@ -12,6 +12,7 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
+from lab.security import UNTRUSTED_TOOL_POLICY, ToolExposurePolicy
 from lab.tools.fixtures import TriageFixture, lookup_customer_record, search_knowledge_base
 
 ToolDefinition = dict[str, Any]
@@ -122,6 +123,7 @@ def dispatch_tool_uses(
     *,
     approval_decisions: ApprovalDecisions | None = None,
     fixture: TriageFixture | None = None,
+    tool_policy: ToolExposurePolicy = UNTRUSTED_TOOL_POLICY,
 ) -> dict[str, Any]:
     """Execute every tool-use block and return all corresponding results in one user message.
 
@@ -146,7 +148,7 @@ def dispatch_tool_uses(
         )
 
     results = [
-        _dispatch_one(block, decisions, resolved_fixture)
+        _dispatch_one(block, decisions, resolved_fixture, tool_policy)
         for block in content
         if isinstance(block, Mapping) and block.get("type") == "tool_use"
     ]
@@ -157,6 +159,7 @@ def _dispatch_one(
     tool_use: Mapping[str, Any],
     approval_decisions: ApprovalDecisions,
     fixture: TriageFixture,
+    tool_policy: ToolExposurePolicy,
 ) -> dict[str, Any]:
     """Return one result for one tool use, converting every dispatch-path failure into an error."""
     tool_use_id = str(tool_use.get("id", "missing-tool-use-id"))
@@ -171,6 +174,15 @@ def _dispatch_one(
             return _tool_result(
                 tool_use_id,
                 f"Tool {name!r} is not available. Choose one of: {_available_tool_names()}.",
+                is_error=True,
+            )
+        if not tool_policy.permits(name):
+            return _tool_result(
+                tool_use_id,
+                (
+                    f"Tool {name!r} is not exposed to a {tool_policy.trust_level.value} ticket. "
+                    "Least-privilege policy denies this capability before approval is considered."
+                ),
                 is_error=True,
             )
 

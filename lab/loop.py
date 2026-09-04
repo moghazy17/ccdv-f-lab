@@ -12,6 +12,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from typing import Any, Literal
 
+from lab.security import UNTRUSTED_TOOL_POLICY, ToolExposurePolicy
 from lab.tools import TriageFixture, dispatch_tool_uses
 from lab.transport import (
     ContentBlock,
@@ -60,6 +61,7 @@ def run_agent_loop(
     max_turns: int = 5,
     approval_decisions: Mapping[str, bool] | None = None,
     fixture: TriageFixture | None = None,
+    tool_policy: ToolExposurePolicy = UNTRUSTED_TOOL_POLICY,
     deep_research_query: str | None = None,
     subagent_transport: Transport | None = None,
     subagent_max_turns: int = 3,
@@ -69,6 +71,8 @@ def run_agent_loop(
     The default transport is ``MockTransport``, so this entry point has no API-key or network
     requirement. A tool-use response is recorded as an assistant turn and is followed by exactly
     one user message containing every result returned from ``dispatch_tool_uses``.
+    ``tool_policy`` defaults to the untrusted read-only capability set; human approval cannot add a
+    capability the policy does not expose.
 
     When ``deep_research_query`` is supplied, its work is run in a separate request and transcript.
     The parent receives only the final summary as a user message; no intermediate subagent turn is
@@ -115,6 +119,7 @@ def run_agent_loop(
                 assistant_message,
                 approval_decisions=approval_decisions,
                 fixture=fixture,
+                tool_policy=tool_policy,
             )
             transcript.append(tool_result_message)
             messages.append(_message_from_mapping(tool_result_message))
