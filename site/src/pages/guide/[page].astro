@@ -80,7 +80,11 @@ if (pageSlug === "eligibility") {
 }
 ---
 
-<BaseLayout title={pageTitle} description={pageDescription}>
+<BaseLayout
+  title={pageTitle}
+  description={pageDescription}
+  searchRecord={{ type: "guide" }}
+>
   <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href={href("")}>&larr; CCDV-F home</a>
   </nav>

@@ -32,6 +32,8 @@
   .breadcrumb,
   .no-print,
   button,
+  .search-trigger,
+  .search-dialog,
   [data-search],
   dialog {
     display: none !important;

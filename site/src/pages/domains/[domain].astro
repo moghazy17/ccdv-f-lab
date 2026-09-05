@@ -26,6 +26,12 @@ const base = import.meta.env.BASE_URL;
 <BaseLayout
   title={`${domain.name} | CCDV-F community study kit`}
   description={`Study material status and published blueprint coverage for ${domain.name}.`}
+  searchRecord={{
+    type: "note",
+    domain: domain.slug,
+    weight: domain.weight,
+    status: content.status
+  }}
 >
   <header class="domain-module__header">
     <p class="domain-module__number">Domain {domain.number}</p>

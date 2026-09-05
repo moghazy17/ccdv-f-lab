@@ -643,63 +643,63 @@ is absent.
 
 > Write these tests first and confirm that they fail for the missing behavior before implementation.
 
-- [ ] T175 [P] [US6] Use `site/tests/e2e/us6-search.spec.ts` to write the complete keyboard search
+- [X] T175 [P] [US6] Use `site/tests/e2e/us6-search.spec.ts` to write the complete keyboard search
   journey
 
-- [ ] T176 [P] [US6] Use `site/tests/e2e/us6-search-exclusion.spec.ts` to prove format-demonstration
+- [X] T176 [P] [US6] Use `site/tests/e2e/us6-search-exclusion.spec.ts` to prove format-demonstration
   content never enters search
 
-- [ ] T177 [P] [US6] Use `site/tests/e2e/us6-search-runtime.spec.ts` to test lazy loading, Unicode,
+- [X] T177 [P] [US6] Use `site/tests/e2e/us6-search-runtime.spec.ts` to test lazy loading, Unicode,
   metadata, and same-origin search
 
 ### Implementation for US6
 
-- [ ] T178 [P] [US6] Use `site/src/lib/search.ts` to define typed Pagefind records and validated
+- [X] T178 [P] [US6] Use `site/src/lib/search.ts` to define typed Pagefind records and validated
   metadata
 
-- [ ] T179 [US6] Use `site/src/components/SearchDialog.astro` to implement the accessible on-demand
+- [X] T179 [US6] Use `site/src/components/SearchDialog.astro` to implement the accessible on-demand
   Pagefind dialog
   - Support Cmd/Ctrl+K, trapped result navigation, Enter activation, Escape dismissal with focus
     restoration, named result pages, and a plain no-match message.
 
-- [ ] T180 [US6] Use `site/src/layouts/BaseLayout.astro` to emit typed Pagefind metadata and
+- [X] T180 [US6] Use `site/src/layouts/BaseLayout.astro` to emit typed Pagefind metadata and
   pre-index exclusions
   - Populate `note`, `guide`, `plan`, `cheatsheet`, and `blueprint` records with domain, weight, and
     status where applicable; exclude `format_demonstration` before indexing.
 
-- [ ] T181 [US6] Use `site/src/layouts/BaseLayout.astro` to expose search globally without
+- [X] T181 [US6] Use `site/src/layouts/BaseLayout.astro` to expose search globally without
   first-paint loading
 
 ### User story 6 - Find any concept in seconds (Priority: P6) gates
 
-- [ ] T182 [US6] Run `ruff check .` from repository root `./`
+- [X] T182 [US6] Run `ruff check .` from repository root `./`
 
-- [ ] T183 [US6] Run `ruff format --check .` from repository root `./`
+- [X] T183 [US6] Run `ruff format --check .` from repository root `./`
 
-- [ ] T184 [US6] Run `pytest -q` from repository root `./`
+- [X] T184 [US6] Run `pytest -q` from repository root `./`
 
-- [ ] T185 [US6] Run `python tools/check_blueprint_consistency.py` from repository root `./`
+- [X] T185 [US6] Run `python tools/check_blueprint_consistency.py` from repository root `./`
   - Confirm every displayed weight and item count is derived from `BLUEPRINT.md`.
 
-- [ ] T186 [US6] Run `python tools/check_content_single_source.py` from repository root `./`
+- [X] T186 [US6] Run `python tools/check_content_single_source.py` from repository root `./`
   - Confirm no study markdown was copied from `notes/`, `cheatsheets/`, `guide/`, `study-plans/`, or
     `drills/bank/` into `site/`.
 
-- [ ] T187 [US6] Run `npm run build` from `site/`
+- [X] T187 [US6] Run `npm run build` from `site/`
 
-- [ ] T188 [US6] Run `python -m drills.engine validate` from repository root `./`
+- [X] T188 [US6] Run `python -m drills.engine validate` from repository root `./`
 
-- [ ] T189 [US6] Run `python -m lab.evals run` from repository root `./`
+- [X] T189 [US6] Run `python -m lab.evals run` from repository root `./`
 
-- [ ] T190 [US6] Run `npm run typecheck` from `site/`
+- [X] T190 [US6] Run `npm run typecheck` from `site/`
 
-- [ ] T191 [US6] Run `npm run lint` from `site/`
+- [X] T191 [US6] Run `npm run lint` from `site/`
 
-- [ ] T192 [US6] Run `python tools/check_links.py` from repository root `./`
+- [X] T192 [US6] Run `python tools/check_links.py` from repository root `./`
 
-- [ ] T193 [US6] Run `npm run test:unit` from `site/`
+- [X] T193 [US6] Run `npm run test:unit` from `site/`
 
-- [ ] T194 [US6] Run `npm run test:e2e` from `site/`
+- [X] T194 [US6] Run `npm run test:e2e` from `site/`
   - Confirm no journey requires or offers an account, installation, API key, analytics, tracking,
     cookies, or a third-party runtime request.
 

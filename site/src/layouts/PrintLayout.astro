@@ -1,15 +1,17 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
 import type { BlueprintDomain } from "../lib/blueprint";
+import type { SearchRecordOptions } from "../lib/search";
 import "../styles/print.css";
 
 interface Props {
   description?: string;
   domain?: BlueprintDomain;
+  searchRecord?: SearchRecordOptions;
   title?: string;
 }
 
-const { description, domain, title } = Astro.props;
+const { description, domain, searchRecord, title } = Astro.props;
 const pageTitle =
   title ??
   (domain
@@ -22,7 +24,7 @@ const pageDescription =
     : "Printable cheatsheet.");
 ---
 
-<BaseLayout title={pageTitle} description={pageDescription}>
+<BaseLayout title={pageTitle} description={pageDescription} searchRecord={searchRecord}>
   <div class="print-shell">
     {
       domain && (

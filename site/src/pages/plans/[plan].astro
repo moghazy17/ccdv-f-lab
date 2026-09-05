@@ -30,6 +30,7 @@ const href = (path: string) => `${base}${path}`;
 <BaseLayout
   title={`${plan.title} | CCDV-F community study kit`}
   description={`Hour allocation schedule and progress tracker for the ${plan.title}.`}
+  searchRecord={{ type: "plan" }}
 >
   <nav class="breadcrumb" aria-label="Breadcrumb">
     <a href={href("plans/")}>&larr; All study plans</a>
