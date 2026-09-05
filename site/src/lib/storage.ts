@@ -168,6 +168,15 @@ export class ProgressStorage {
     return this.write(next);
   }
 
+  replace(value: ProgressEnvelope): StorageResult {
+    // Wholesale replacement of stored envelope while validating and migrating safely.
+    const migrated = migrateProgress(value);
+    if (migrated.kind !== "ok" || migrated.value === undefined) {
+      return migrated;
+    }
+    return this.write(migrated.value);
+  }
+
   subscribe(listener: (result: StorageResult) => void): () => void {
     // Observe storage events so separate tabs re-render after another tab changes a mark.
     this.listeners.add(listener);

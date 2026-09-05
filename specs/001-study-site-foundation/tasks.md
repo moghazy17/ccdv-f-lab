@@ -720,52 +720,52 @@ browser-only notice.
 
 > Write these tests first and confirm that they fail for the missing behavior before implementation.
 
-- [ ] T195 [P] [US7] Use `site/tests/e2e/us7-transfer.spec.ts` to write the export, clear,
+- [X] T195 [P] [US7] Use `site/tests/e2e/us7-transfer.spec.ts` to write the export, clear,
   second-browser, and restore journey
 
-- [ ] T196 [P] [US7] Use `site/tests/e2e/us7-import-safety.spec.ts` to write replacement, malformed,
+- [X] T196 [P] [US7] Use `site/tests/e2e/us7-import-safety.spec.ts` to write replacement, malformed,
   incompatible, and axe checks
 
 ### Implementation for US7
 
-- [ ] T197 [US7] Use `site/src/lib/transfer.ts` to implement exact-envelope export and validated
+- [X] T197 [US7] Use `site/src/lib/transfer.ts` to implement exact-envelope export and validated
   replacement import
   - Name downloads `ccdv-f-progress-YYYY-MM-DD.json`; parse and migrate safely; reject newer or
     malformed data without writes; summarize both records and require confirmation.
 
-- [ ] T198 [US7] Use `site/src/pages/progress.astro` to implement transfer controls and browser-only
+- [X] T198 [US7] Use `site/src/pages/progress.astro` to implement transfer controls and browser-only
   loss warning
 
 ### User story 7 - Move progress to another device (Priority: P7) gates
 
-- [ ] T199 [US7] Run `ruff check .` from repository root `./`
+- [X] T199 [US7] Run `ruff check .` from repository root `./`
 
-- [ ] T200 [US7] Run `ruff format --check .` from repository root `./`
+- [X] T200 [US7] Run `ruff format --check .` from repository root `./`
 
-- [ ] T201 [US7] Run `pytest -q` from repository root `./`
+- [X] T201 [US7] Run `pytest -q` from repository root `./`
 
-- [ ] T202 [US7] Run `python tools/check_blueprint_consistency.py` from repository root `./`
+- [X] T202 [US7] Run `python tools/check_blueprint_consistency.py` from repository root `./`
   - Confirm every displayed weight and item count is derived from `BLUEPRINT.md`.
 
-- [ ] T203 [US7] Run `python tools/check_content_single_source.py` from repository root `./`
+- [X] T203 [US7] Run `python tools/check_content_single_source.py` from repository root `./`
   - Confirm no study markdown was copied from `notes/`, `cheatsheets/`, `guide/`, `study-plans/`, or
     `drills/bank/` into `site/`.
 
-- [ ] T204 [US7] Run `npm run build` from `site/`
+- [X] T204 [US7] Run `npm run build` from `site/`
 
-- [ ] T205 [US7] Run `python -m drills.engine validate` from repository root `./`
+- [X] T205 [US7] Run `python -m drills.engine validate` from repository root `./`
 
-- [ ] T206 [US7] Run `python -m lab.evals run` from repository root `./`
+- [X] T206 [US7] Run `python -m lab.evals run` from repository root `./`
 
-- [ ] T207 [US7] Run `npm run typecheck` from `site/`
+- [X] T207 [US7] Run `npm run typecheck` from `site/`
 
-- [ ] T208 [US7] Run `npm run lint` from `site/`
+- [X] T208 [US7] Run `npm run lint` from `site/`
 
-- [ ] T209 [US7] Run `python tools/check_links.py` from repository root `./`
+- [X] T209 [US7] Run `python tools/check_links.py` from repository root `./`
 
-- [ ] T210 [US7] Run `npm run test:unit` from `site/`
+- [X] T210 [US7] Run `npm run test:unit` from `site/`
 
-- [ ] T211 [US7] Run `npm run test:e2e` from `site/`
+- [X] T211 [US7] Run `npm run test:e2e` from `site/`
   - Confirm no journey requires or offers an account, installation, API key, analytics, tracking,
     cookies, or a third-party runtime request.
 

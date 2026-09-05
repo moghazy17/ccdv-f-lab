@@ -92,4 +92,19 @@ describe("progress storage", () => {
 
     expect(second.read().value?.namespaces.foundation.planMarks["3-weeks"]).toEqual([2, 5]);
   });
+
+  test("replaces progress envelope wholesale while rejecting newer versions", () => {
+    const storage = new MemoryStorage();
+    const accessor = createProgressStorage(storage, () => "2026-01-01T00:00:00.000Z");
+
+    const valid = emptyProgress("2026-01-01T00:00:00.000Z");
+    valid.namespaces.foundation.planMarks["3-weeks"] = [1, 2];
+    expect(accessor.replace(valid).kind).toBe("ok");
+    expect(accessor.read().value?.namespaces.foundation.planMarks["3-weeks"]).toEqual([1, 2]);
+
+    const newer = { ...valid, schemaVersion: 99 };
+    expect(accessor.replace(newer as unknown as typeof valid).kind).toBe("newer-version");
+    // Stored data still intact
+    expect(accessor.read().value?.namespaces.foundation.planMarks["3-weeks"]).toEqual([1, 2]);
+  });
 });
