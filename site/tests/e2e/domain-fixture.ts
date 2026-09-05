@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { rmSync } from "node:fs";
-import { mkdtemp, open, readFile, readdir, rm, stat, utimes } from "node:fs/promises";
+import { cp, mkdtemp, open, readFile, readdir, rm, stat, utimes } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import { basename, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -8,6 +8,11 @@ import { promisify } from "node:util";
 
 const executeFile = promisify(execFile);
 const STALE_LOCK_THRESHOLD_MS = 20_000;
+// Output directories legitimately outlive a lock: a spec keeps one alive for the whole test.
+// Playwright gives each spec file its own worker, so `trackedDirectories` cannot see another
+// worker's live fixtures — reclaiming them on the lock's timescale deletes directories still
+// in use. Only a directory left by a run that died long ago is safe to remove.
+const STALE_OUTPUT_THRESHOLD_MS = 600_000;
 const trackedDirectories = new Set<string>();
 let activeLockPath: string | null = null;
 let exitHooksRegistered = false;
@@ -50,32 +55,70 @@ export interface DomainFixtureSite {
   url: string;
 }
 
-export async function buildDomainFixture(
-  state: "authored" | "partial"
+export interface ContentFixtureOptions {
+  notesDir?: string;
+  cheatsheetsDir?: string;
+  guideDir?: string;
+  studyPlansDir?: string;
+  label?: string;
+  extraEnv?: Record<string, string>;
+}
+
+export async function buildCustomContentFixture(
+  options: ContentFixtureOptions
 ): Promise<DomainFixtureSite> {
   registerExitHooks();
-  const fixtureRoot = fileURLToPath(
-    new URL(`../fixtures/domain-content/${state}/`, import.meta.url)
-  );
   const siteRoot = fileURLToPath(new URL("../../", import.meta.url));
   await cleanOrphanedDirectories(siteRoot);
-  const outputDirectory = await mkdtemp(join(siteRoot, `.us2-${state}-`));
+  const label = options.label ?? "fixture";
+  const outputDirectory = await mkdtemp(join(siteRoot, `.us2-${label}-`));
   trackedDirectories.add(outputDirectory);
   const astroCli = fileURLToPath(
     new URL("../../node_modules/astro/bin/astro.mjs", import.meta.url)
   );
+
+  const env: Record<string, string> = {
+    ...(process.env as Record<string, string>),
+    BASE: "/",
+    SITE_OUTPUT_DIRECTORY: outputDirectory,
+    ...(options.extraEnv ?? {})
+  };
+
+  if (options.notesDir) {
+    env.SITE_NOTES_DIRECTORY_URL = pathToFileURL(
+      options.notesDir.endsWith("/") || options.notesDir.endsWith("\\")
+        ? options.notesDir
+        : `${options.notesDir}/`
+    ).href;
+  }
+  if (options.cheatsheetsDir) {
+    env.SITE_CHEATSHEETS_DIRECTORY_URL = pathToFileURL(
+      options.cheatsheetsDir.endsWith("/") || options.cheatsheetsDir.endsWith("\\")
+        ? options.cheatsheetsDir
+        : `${options.cheatsheetsDir}/`
+    ).href;
+  }
+  if (options.guideDir) {
+    env.SITE_GUIDE_DIRECTORY_URL = pathToFileURL(
+      options.guideDir.endsWith("/") || options.guideDir.endsWith("\\")
+        ? options.guideDir
+        : `${options.guideDir}/`
+    ).href;
+  }
+  if (options.studyPlansDir) {
+    env.SITE_STUDY_PLANS_DIRECTORY_URL = pathToFileURL(
+      options.studyPlansDir.endsWith("/") || options.studyPlansDir.endsWith("\\")
+        ? options.studyPlansDir
+        : `${options.studyPlansDir}/`
+    ).href;
+  }
 
   try {
     const releaseBuildLock = await acquireFixtureBuildLock(siteRoot);
     try {
       await executeFile(process.execPath, [astroCli, "build"], {
         cwd: siteRoot,
-        env: {
-          ...process.env,
-          BASE: "/",
-          SITE_NOTES_DIRECTORY_URL: pathToFileURL(`${fixtureRoot}/`).href,
-          SITE_OUTPUT_DIRECTORY: outputDirectory
-        }
+        env
       });
     } finally {
       await releaseBuildLock();
@@ -102,16 +145,49 @@ export async function buildDomainFixture(
   };
 }
 
+export async function buildDomainFixture(
+  state: "authored" | "partial"
+): Promise<DomainFixtureSite> {
+  const fixtureRoot = fileURLToPath(
+    new URL(`../fixtures/domain-content/${state}/`, import.meta.url)
+  );
+  return buildCustomContentFixture({
+    notesDir: fixtureRoot,
+    label: state
+  });
+}
+
+export async function createTemporaryContentCopy(
+  sourceDirectory: string,
+  label: string
+): Promise<{ path: string; cleanup: () => Promise<void> }> {
+  registerExitHooks();
+  const siteRoot = fileURLToPath(new URL("../../", import.meta.url));
+  const tempDir = await mkdtemp(join(siteRoot, `.us2-src-${label}-`));
+  trackedDirectories.add(tempDir);
+  await cp(sourceDirectory, tempDir, { recursive: true });
+  return {
+    path: tempDir,
+    cleanup: async () => {
+      trackedDirectories.delete(tempDir);
+      await rm(tempDir, { force: true, recursive: true });
+    }
+  };
+}
+
 async function cleanOrphanedDirectories(siteRoot: string): Promise<void> {
   try {
     const entries = await readdir(siteRoot, { withFileTypes: true });
     for (const entry of entries) {
-      if (entry.isDirectory() && entry.name.startsWith(".us2-")) {
+      if (
+        entry.isDirectory() &&
+        (entry.name.startsWith(".us2-") || entry.name.startsWith(".us2-src-"))
+      ) {
         const directoryPath = join(siteRoot, entry.name);
         if (!trackedDirectories.has(directoryPath)) {
           try {
             const entryStat = await stat(directoryPath);
-            if (Date.now() - entryStat.mtimeMs > STALE_LOCK_THRESHOLD_MS) {
+            if (Date.now() - entryStat.mtimeMs > STALE_OUTPUT_THRESHOLD_MS) {
               await rm(directoryPath, { force: true, recursive: true });
             }
           } catch {

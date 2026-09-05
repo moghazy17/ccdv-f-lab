@@ -1,0 +1,75 @@
+name: Deploy Pages
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python dependencies
+        run: python -m pip install ".[dev]"
+      - name: Verify blueprint consistency
+        run: python tools/check_blueprint_consistency.py
+      - name: Export fresh site blueprint data
+        run: python tools/export_site_data.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: site/package-lock.json
+      - name: Install site dependencies
+        working-directory: site
+        run: npm ci
+      - name: Type check
+        working-directory: site
+        run: npm run typecheck
+      - name: Lint site code
+        working-directory: site
+        run: npm run lint
+      - name: Build static site
+        working-directory: site
+        run: npm run build
+      - name: Run unit tests
+        working-directory: site
+        run: npm run test:unit
+      - name: Install Playwright Chromium
+        working-directory: site
+        run: npx playwright install --with-deps chromium
+      - name: Run end-to-end and accessibility tests
+        working-directory: site
+        run: npm run test:e2e
+      - name: Check single source against built output
+        run: python tools/check_content_single_source.py
+      - name: Check links against built output
+        run: python tools/check_links.py
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

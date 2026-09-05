@@ -421,6 +421,31 @@ th {
   color: var(--signal-ink);
 }
 
+pre {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: 1rem;
+  background: var(--panel);
+  border: 0.0625rem solid var(--rule);
+  border-radius: 0.25rem;
+}
+
+code {
+  word-break: break-word;
+}
+
+pre code {
+  word-break: normal;
+}
+
+img,
+svg,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
 .site-footer {
   border-top: 0.0625rem solid var(--rule);
   color: var(--muted);

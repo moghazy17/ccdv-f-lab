@@ -779,115 +779,115 @@ browser-only notice.
 **Purpose**: Prove cross-story outcomes, wire review and publication, and harden the complete static
 site.
 
-- [ ] T212 [P] Prove `notes/` edits propagate without presentation edits in
+- [X] T212 [P] Prove `notes/` edits propagate without presentation edits in
   `site/tests/e2e/source-notes.spec.ts`
   - Rebuild from an isolated source fixture after changing only one note and compare rendered
     output.
 
-- [ ] T213 [P] Prove `cheatsheets/` edits propagate without presentation edits in
+- [X] T213 [P] Prove `cheatsheets/` edits propagate without presentation edits in
   `site/tests/e2e/source-cheatsheets.spec.ts`
   - Rebuild from an isolated source fixture after changing only one cheatsheet and compare output.
 
-- [ ] T214 [P] Prove `guide/` edits propagate without presentation edits in
+- [X] T214 [P] Prove `guide/` edits propagate without presentation edits in
   `site/tests/e2e/source-guide.spec.ts`
   - Rebuild from an isolated source fixture after changing only one guide page and compare output.
 
-- [ ] T215 [P] Prove `study-plans/` edits propagate without presentation edits in
+- [X] T215 [P] Prove `study-plans/` edits propagate without presentation edits in
   `site/tests/e2e/source-plans.spec.ts`
   - Rebuild from an isolated source fixture after changing only one study plan and compare output.
 
-- [ ] T216 [P] Use `site/tests/e2e/complete-journey.spec.ts` to prove the account-free cross-story
+- [X] T216 [P] Use `site/tests/e2e/complete-journey.spec.ts` to prove the account-free cross-story
   journey
   - Cover orienting, choosing a plan, marking progress, printing, exporting, and importing into a
     second browser entirely by keyboard and without installation or a key.
 
-- [ ] T217 [P] Run axe against every page type in `site/tests/e2e/accessibility.spec.ts`
+- [X] T217 [P] Run axe against every page type in `site/tests/e2e/accessibility.spec.ts`
   - Include all content, scaffold, diagnostic, progress, search, index, and reserved page types;
     require no critical or serious findings.
 
-- [ ] T218 [P] Use `site/tests/e2e/performance.spec.ts` to prove LCP, theme stability, and deferred
+- [X] T218 [P] Use `site/tests/e2e/performance.spec.ts` to prove LCP, theme stability, and deferred
   search budgets
   - Use a mid-tier mobile profile and typical mobile connection; require study-page LCP under 2.5
     seconds, no theme layout shift, and no Pagefind index request before search opens.
 
-- [ ] T219 [P] Use `tests/test_publication_blueprint_drift.py` to prove blueprint drift blocks
+- [X] T219 [P] Use `tests/test_publication_blueprint_drift.py` to prove blueprint drift blocks
   publication
 
-- [ ] T220 [P] Use `tests/test_publication_duplicate_content.py` to prove duplicated study content
+- [X] T220 [P] Use `tests/test_publication_duplicate_content.py` to prove duplicated study content
   blocks publication
 
-- [ ] T221 [P] Use `tests/test_publication_missing_domain.py` to prove a missing domain directory
+- [X] T221 [P] Use `tests/test_publication_missing_domain.py` to prove a missing domain directory
   blocks publication
 
-- [ ] T222 [P] Use `tests/test_publication_broken_link.py` to prove a broken built-site link blocks
+- [X] T222 [P] Use `tests/test_publication_broken_link.py` to prove a broken built-site link blocks
   publication
 
-- [ ] T223 [P] Use `site/tests/e2e/all-scaffold-state.spec.ts` to verify all scaffold deliverables
+- [X] T223 [P] Use `site/tests/e2e/all-scaffold-state.spec.ts` to verify all scaffold deliverables
   and landing coverage
   - Assert eight complete domain pages, eight honest cheatsheets, indexed labeled scaffold pages,
     and prominent zero-of-eight authored coverage.
 
-- [ ] T224 [P] Use `site/tests/e2e/reserved-extension.spec.ts` to prove reserved places accept inert
+- [X] T224 [P] Use `site/tests/e2e/reserved-extension.spec.ts` to prove reserved places accept inert
   fixtures without route movement
   - Fill each of the nine reserved address patterns and both domain layout regions in the test
     fixture, then assert all established addresses and navigation targets remain unchanged.
 
-- [ ] T225 [P] Use `site/tests/e2e/routes.spec.ts` to verify every contracted route, base path, and
+- [X] T225 [P] Use `site/tests/e2e/routes.spec.ts` to verify every contracted route, base path, and
   trailing slash
 
-- [ ] T226 [P] Use `site/tests/e2e/unicode.spec.ts` to verify source Unicode in screen, search, and
+- [X] T226 [P] Use `site/tests/e2e/unicode.spec.ts` to verify source Unicode in screen, search, and
   print output
 
-- [ ] T227 [P] Use `site/tests/e2e/privacy.spec.ts` to audit credentials, cookies, tracking, and
+- [X] T227 [P] Use `site/tests/e2e/privacy.spec.ts` to audit credentials, cookies, tracking, and
   runtime requests
 
-- [ ] T228 Use `.github/workflows/ci.yml` to add the isolated Node 22 site gate and rendered PR
+- [X] T228 Use `.github/workflows/ci.yml` to add the isolated Node 22 site gate and rendered PR
   artifacts
   - Keep the Python 3.11/3.12 job unchanged. In the site job, run `npm ci`, install the pinned
     Playwright browser, run all five site gates, then run
     `python tools/check_content_single_source.py` and `python tools/check_links.py` against the
     built output. Upload the site, report, and page-type screenshots for proposed changes.
 
-- [ ] T229 Deploy only after every gate passes in `.github/workflows/pages.yml`
+- [X] T229 Deploy only after every gate passes in `.github/workflows/pages.yml`
   - Build generated content and the configured-base static site on default-branch changes, use
     least-privilege Pages permissions, and leave the published artifact untouched on failure.
 
-- [ ] T230 Audit linked official material and dated factual claims in `SOURCES.md`
+- [X] T230 Audit linked official material and dated factual claims in `SOURCES.md`
 
-- [ ] T231 Document keyless site commands, generated data, and publication behavior in `README.md`
+- [X] T231 Document keyless site commands, generated data, and publication behavior in `README.md`
 
-- [ ] T232 Resolve performance and responsive-layout regressions in `site/src/styles/global.css`
+- [X] T232 Resolve performance and responsive-layout regressions in `site/src/styles/global.css`
 
 ### Polish and cross-cutting concerns gates
 
-- [ ] T233 Run `ruff check .` from repository root `./`
+- [X] T233 Run `ruff check .` from repository root `./`
 
-- [ ] T234 Run `ruff format --check .` from repository root `./`
+- [X] T234 Run `ruff format --check .` from repository root `./`
 
-- [ ] T235 Run `pytest -q` from repository root `./`
+- [X] T235 Run `pytest -q` from repository root `./`
 
-- [ ] T236 Run `python tools/check_blueprint_consistency.py` from repository root `./`
+- [X] T236 Run `python tools/check_blueprint_consistency.py` from repository root `./`
   - Confirm every displayed weight and item count is derived from `BLUEPRINT.md`.
 
-- [ ] T237 Run `python tools/check_content_single_source.py` from repository root `./`
+- [X] T237 Run `python tools/check_content_single_source.py` from repository root `./`
   - Confirm no study markdown was copied from `notes/`, `cheatsheets/`, `guide/`, `study-plans/`, or
     `drills/bank/` into `site/`.
 
-- [ ] T238 Run `npm run build` from `site/`
+- [X] T238 Run `npm run build` from `site/`
 
-- [ ] T239 Run `python -m drills.engine validate` from repository root `./`
+- [X] T239 Run `python -m drills.engine validate` from repository root `./`
 
-- [ ] T240 Run `python -m lab.evals run` from repository root `./`
+- [X] T240 Run `python -m lab.evals run` from repository root `./`
 
-- [ ] T241 Run `npm run typecheck` from `site/`
+- [X] T241 Run `npm run typecheck` from `site/`
 
-- [ ] T242 Run `npm run lint` from `site/`
+- [X] T242 Run `npm run lint` from `site/`
 
-- [ ] T243 Run `python tools/check_links.py` from repository root `./`
+- [X] T243 Run `python tools/check_links.py` from repository root `./`
 
-- [ ] T244 Run `npm run test:unit` from `site/`
+- [X] T244 Run `npm run test:unit` from `site/`
 
-- [ ] T245 Run `npm run test:e2e` from `site/`
+- [X] T245 Run `npm run test:e2e` from `site/`
   - Confirm no journey requires or offers an account, installation, API key, analytics, tracking,
     cookies, or a third-party runtime request.
 

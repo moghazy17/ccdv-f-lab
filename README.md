@@ -55,6 +55,39 @@ python -m lab.evals run                     # the reference app's eval suite
 To exercise the reference application against the real Claude API, set `ANTHROPIC_API_KEY` and select
 the live transport — see [lab/README.md](lab/README.md), which also documents the cost of a full run.
 
+### Static study site
+
+The static website under `site/` renders the repository's Markdown in place with no API key,
+no account, and no third-party runtime requests.
+
+```bash
+# Generate derived exam data (standard library only)
+python tools/export_site_data.py
+
+# Install site dependencies and run local dev preview
+cd site
+npm ci
+npm run dev
+
+# Site verification gates
+npm run typecheck
+npm run lint
+npm run build
+npm run test:unit
+npm run test:e2e
+```
+
+### Generated data and publication behavior
+
+- **Generated data**: `site/src/data/blueprint.json` is generated directly from `BLUEPRINT.md` and
+  `notes/` using `python tools/export_site_data.py`. The build rejects stale or missing exports.
+  Never hand-edit this file.
+- **Publication**: Pushes to `main` trigger `.github/workflows/pages.yml` to build and deploy to
+  GitHub Pages. Publication executes only after all Python and static site gates pass; a failure
+  blocks deployment and leaves the previously published site untouched. The base path defaults to
+  `/ccdv-f-lab/` and is configurable via the `BASE` environment variable.
+
+
 ## How to use this repo to study
 
 Work through it in this order.
