@@ -8,7 +8,25 @@ override enterprise or user policy.
 Follow [AGENTS.md](AGENTS.md) for the repository's content, security, test, and commit rules. Read
 [BLUEPRINT.md](BLUEPRINT.md) before changing study material. Keep lab tests keyless, use Python
 3.11+ standard-library-first code, and run `ruff check .`, `ruff format --check .`, and `pytest -q`
-after changes. Do not run `git add` or `git commit`.
+after changes.
+
+Claude Opus 5, acting as the orchestrator in Claude Code, may run `git add` and `git commit`, and
+only after the full gate set passes. The permission is scoped to that model in that role: every
+delegated implementer — Codex, Antigravity, or any other CLI — leaves its work uncommitted in the
+working tree for the orchestrator to review, re-gate, and commit. This paragraph overrides the commit
+rule in [AGENTS.md](AGENTS.md), which still states the older blanket prohibition.
 
 Use `/verify-triage` to run the triage verification sequence. Use the `triage-security` skill when
 reviewing the untrusted-input boundary, secret handling, or tool permissions.
+
+<!-- SPECKIT START -->
+The active feature is `001-study-site-foundation`. For the technologies in use, the project
+structure, and the shell commands that verify a change, read
+[the implementation plan](specs/001-study-site-foundation/plan.md) and
+[its quickstart](specs/001-study-site-foundation/quickstart.md).
+
+The site is an Astro 7 and TypeScript project in `site/`, rendering this repository's existing
+markdown in place — copying study text into `site/` fails the build. Exam figures come from
+`site/src/data/blueprint.json`, generated from `BLUEPRINT.md` by `tools/export_site_data.py`; never
+edit that file or type a weight by hand.
+<!-- SPECKIT END -->

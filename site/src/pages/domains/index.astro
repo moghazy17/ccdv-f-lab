@@ -1,0 +1,30 @@
+---
+import DomainWeightBar from "../../components/DomainWeightBar.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { domains } from "../../lib/blueprint";
+
+const domainsByWeight = [...domains].sort((left, right) => right.weight - left.weight);
+const domainUrl = (slug: string) => `${import.meta.env.BASE_URL}domains/${slug}/`;
+---
+
+<BaseLayout
+  title="Domain navigation | CCDV-F community study kit"
+  description="Navigate CCDV-F domains in descending order of published exam weight."
+>
+  <h1>Domains by exam weight</h1>
+  <p class="page-introduction">
+    Start with the domains that make up the largest share of the exam. Each link opens its module
+    page, where you can see its study-material status and any authored notes.
+  </p>
+
+  <ol class="domain-navigation" aria-label="Domains ordered by exam weight">
+    {domainsByWeight.map((domain) => (
+      <li class="domain-navigation__item">
+        <h2>
+          <a href={domainUrl(domain.slug)}>{domain.name}</a>
+        </h2>
+        <DomainWeightBar domain={domain} />
+      </li>
+    ))}
+  </ol>
+</BaseLayout>

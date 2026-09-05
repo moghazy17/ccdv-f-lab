@@ -1,0 +1,10 @@
+---
+import ReservedPage from "../../../../components/ReservedPage.astro";
+import { domains } from "../../../../lib/blueprint";
+
+export function getStaticPaths() {
+  return domains.map((domain) => ({ params: { domain: domain.slug } }));
+}
+---
+
+<ReservedPage title="Domain quiz" capability="this domain self-check quiz" />

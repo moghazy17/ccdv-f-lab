@@ -35,6 +35,34 @@ def test_link_checker_reports_a_broken_relative_link_with_its_line(tmp_path: Pat
     assert "missing.md" in errors[0]
 
 
+def test_link_checker_checks_built_routes_and_heading_fragments(tmp_path: Path) -> None:
+    """Built links must use the configured base, a trailing slash, and a real emitted fragment."""
+    dist = tmp_path / "site" / "dist"
+    (dist / "topic").mkdir(parents=True)
+    (dist / "index.html").write_text(
+        '<a href="/ccdv-f-lab/topic/#details">Topic</a>', encoding="utf-8"
+    )
+    (dist / "topic" / "index.html").write_text('<h1 id="details">Details</h1>', encoding="utf-8")
+
+    errors, external_links = check_links(tmp_path)
+
+    assert errors == []
+    assert external_links == 0
+
+
+def test_link_checker_rejects_a_broken_built_fragment(tmp_path: Path) -> None:
+    """A built deep link to a removed heading fails the same local-link gate."""
+    dist = tmp_path / "site" / "dist"
+    dist.mkdir(parents=True)
+    (dist / "index.html").write_text('<a href="#missing">Missing</a>', encoding="utf-8")
+
+    errors, _ = check_links(tmp_path)
+
+    assert [error.replace("\\", "/") for error in errors] == [
+        "site/dist/index.html: broken built fragment '#missing'"
+    ]
+
+
 def test_blueprint_consistency_gate_passes_for_the_repository() -> None:
     """The checked-in blueprint and every dependent tree currently agree."""
     assert consistency_main([]) == 0

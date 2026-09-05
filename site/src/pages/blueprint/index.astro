@@ -1,0 +1,37 @@
+---
+import DomainWeightBar from "../../components/DomainWeightBar.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { domains } from "../../lib/blueprint";
+
+const domainsByWeight = [...domains].sort((left, right) => right.weight - left.weight);
+---
+
+<BaseLayout
+  title="Blueprint explorer | CCDV-F community study kit"
+  description="Compare CCDV-F domains and sub-skills by their published exam weight."
+>
+  <h1>Blueprint explorer</h1>
+  <p class="page-introduction">
+    Compare the published exam weight of every CCDV-F domain. Bar width is proportional to the
+    domain's share of the exam.
+  </p>
+
+  <ol class="blueprint-domains" aria-label="CCDV-F domains by exam weight">
+    {domainsByWeight.map((domain) => (
+      <li id={`domain-${domain.slug}`} class="blueprint-domain">
+        <p class="blueprint-domain__number">Domain {domain.number}</p>
+        <h2>{domain.name}</h2>
+        <DomainWeightBar domain={domain} />
+        <h3>Sub-skills</h3>
+        <ul class="sub-skill-list">
+          {domain.subSkills.map((subSkill) => (
+            <li>
+              <strong>{subSkill.name}</strong>
+              <span>{subSkill.weight}% · About {subSkill.approximateItems} items</span>
+            </li>
+          ))}
+        </ul>
+      </li>
+    ))}
+  </ol>
+</BaseLayout>

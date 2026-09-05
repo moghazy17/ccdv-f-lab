@@ -1,0 +1,17 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+interface Props {
+  capability: string;
+  title: string;
+}
+
+const { capability, title } = Astro.props;
+---
+
+<BaseLayout title={title} showThemeToggle={false}>
+  <section class="reserved-page" aria-labelledby="reserved-title">
+    <h1 id="reserved-title">{title}</h1>
+    <p>This address is reserved for {capability}. It contains no interactive capability.</p>
+  </section>
+</BaseLayout>

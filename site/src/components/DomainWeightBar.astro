@@ -1,0 +1,24 @@
+---
+import type { BlueprintDomain } from "../lib/blueprint";
+
+interface Props {
+  domain: BlueprintDomain;
+}
+
+const { domain } = Astro.props;
+const itemLabel = `${domain.approximateItems} ${domain.approximateItems === 1 ? "item" : "items"}`;
+---
+
+<div class="domain-weight-bar">
+  <div class="domain-weight-bar__labels">
+    <span>{domain.weight}% of the exam</span>
+    <span>About {itemLabel}</span>
+  </div>
+  <div class="domain-weight-bar__track" aria-hidden="true">
+    <span
+      class="domain-weight-bar__fill"
+      data-domain-weight-bar={domain.slug}
+      style={`--domain-weight: ${domain.weight}%`}
+    ></span>
+  </div>
+</div>

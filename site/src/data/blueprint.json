@@ -1,0 +1,245 @@
+{
+  "sourceDigest": "072190cc9c53b731f32ff6efffe77d7a88059badf1946671fde24cbafe801f08",
+  "generatedFrom": "BLUEPRINT.md",
+  "examFacts": {
+    "items": 53,
+    "timeLimitMinutes": 120,
+    "passingScore": 720,
+    "feeUsd": 125,
+    "validityMonths": 12,
+    "scaleMin": 100,
+    "scaleMax": 1000
+  },
+  "domains": [
+    {
+      "number": 1,
+      "slug": "01-agents-and-workflows",
+      "name": "Agents and Workflows",
+      "weight": 14.7,
+      "approximateItems": 8,
+      "mockItems": 8,
+      "subSkills": [
+        {
+          "name": "Agent Construction with Claude",
+          "weight": 5.3,
+          "approximateItems": 2.8,
+          "measured": "Claude Agent SDK; custom agent loops and harnesses; managed agent deployment models (self-hosted vs. Anthropic-hosted); hooks for deterministic actions"
+        },
+        {
+          "name": "Agent Patterns and Frameworks",
+          "weight": 4.9,
+          "approximateItems": 2.6,
+          "measured": "Tool-use loops, sub-agents, memory, context-window management; agentic abstraction frameworks (Strands, LangGraph, PydanticAI) for multi-step tasks"
+        },
+        {
+          "name": "Agent Architecture",
+          "weight": 4.5,
+          "approximateItems": 2.4,
+          "measured": "Decision criteria for workflow vs. agent; manager/supervisor hierarchies; the role of subagents in task execution"
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "slug": "02-applications-and-integration",
+      "name": "Applications and Integration",
+      "weight": 33.1,
+      "approximateItems": 17,
+      "mockItems": 17,
+      "subSkills": [
+        {
+          "name": "Claude Application Design",
+          "weight": 8.6,
+          "approximateItems": 4.6,
+          "measured": "How Claude interprets instructions across interfaces (Claude Code, Desktop, claude.ai, API, SDKs); content boundaries; schema design; session hygiene; plugin management"
+        },
+        {
+          "name": "Software Engineering Foundations",
+          "weight": 7.4,
+          "approximateItems": 3.9,
+          "measured": "REST APIs, JSON, asynchronous programming, version control, SDLC integration, code review, small- and large-scale refactoring"
+        },
+        {
+          "name": "Claude API Mechanics",
+          "weight": 6.8,
+          "approximateItems": 3.6,
+          "measured": "Messages, tools, streaming, vision, thinking, caching; invoking Claude via third-party vendors; Messages API data access patterns; Batch API and realtime-vs-batch tradeoffs"
+        },
+        {
+          "name": "Configuration Management",
+          "weight": 4.1,
+          "approximateItems": 2.2,
+          "measured": "CLAUDE.md files, settings.json, model version pinning, prompt versioning, plugin dependencies"
+        },
+        {
+          "name": "Understanding Requirements",
+          "weight": 3.4,
+          "approximateItems": 1.8,
+          "measured": "Deriving functional and infrastructure requirements from business requirements and solution architecture"
+        },
+        {
+          "name": "Systems Life Cycle",
+          "weight": 2.8,
+          "approximateItems": 1.5,
+          "measured": "Life-cycle concepts and frameworks for developing, implementing, operating, and maintaining IT systems"
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "slug": "03-claude-code",
+      "name": "Claude Code",
+      "weight": 3.1,
+      "approximateItems": 2,
+      "mockItems": 2,
+      "subSkills": [
+        {
+          "name": "Claude Code Operation",
+          "weight": 3.1,
+          "approximateItems": 1.6,
+          "measured": "Core components (Rules, Skills, Commands, Agents, Agent Memory); features (session management, built-in and custom slash commands, headless mode, streaming mode, auto-mode); the CLAUDE.md hierarchy; repository initialization; settings.json"
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "slug": "04-eval-testing-and-debugging",
+      "name": "Eval, Testing, and Debugging",
+      "weight": 2.6,
+      "approximateItems": 1,
+      "mockItems": 1,
+      "subSkills": [
+        {
+          "name": "Debugging and Error Handling",
+          "weight": 2.6,
+          "approximateItems": 1.4,
+          "measured": "Error type identification; recovery strategy selection; trace analysis to identify failure modes; isolating problem origin between the integration layer and model output"
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "slug": "05-model-selection-and-optimization",
+      "name": "Model Selection and Optimization",
+      "weight": 16.8,
+      "approximateItems": 9,
+      "mockItems": 9,
+      "subSkills": [
+        {
+          "name": "Technical Fundamentals",
+          "weight": 6.1,
+          "approximateItems": 3.2,
+          "measured": "Foundational engineering practice for AI apps — integrating with SDKs that wrap REST APIs, websockets"
+        },
+        {
+          "name": "LLM Fundamentals",
+          "weight": 5.2,
+          "approximateItems": 2.8,
+          "measured": "Tokens, context windows, sampling, non-determinism, next-token generation; model options (fast mode, extended thinking, adaptive thinking, effort levels); zero-/single-/multi-shot prompting"
+        },
+        {
+          "name": "Cost and Token Management",
+          "weight": 2.8,
+          "approximateItems": 1.5,
+          "measured": "Token budgeting, usage tracking, cost modeling; prompt caching and cache check-pointing"
+        },
+        {
+          "name": "Model Selection and Tradeoffs",
+          "weight": 2.7,
+          "approximateItems": 1.4,
+          "measured": "Opus vs. Sonnet vs. Haiku use cases; adaptive thinking support; quality/latency/cost tradeoffs; breaking behavior changes across model releases"
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "slug": "06-prompt-and-context-engineering",
+      "name": "Prompt and Context Engineering",
+      "weight": 11.0,
+      "approximateItems": 6,
+      "mockItems": 6,
+      "subSkills": [
+        {
+          "name": "Prompt Engineering",
+          "weight": 4.6,
+          "approximateItems": 2.4,
+          "measured": "Instruction clarity; few-shot examples; system vs. user placement; output constraints; prompt placement across components; iterative refinement; input sanitization"
+        },
+        {
+          "name": "Context Engineering",
+          "weight": 3.8,
+          "approximateItems": 2.0,
+          "measured": "Context window management; preventing context drift and bloat (tool-output pruning, compaction); context isolation via subagents or multi-step agentic workflows"
+        },
+        {
+          "name": "Output Handling",
+          "weight": 2.6,
+          "approximateItems": 1.4,
+          "measured": "Structured output patterns; response validation; defensive parsing; skepticism toward confident output"
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "slug": "07-security-and-safety",
+      "name": "Security and Safety",
+      "weight": 8.1,
+      "approximateItems": 4,
+      "mockItems": 4,
+      "subSkills": [
+        {
+          "name": "AI Application Security",
+          "weight": 3.2,
+          "approximateItems": 1.7,
+          "measured": "Prompt injection awareness and mitigation; jailbreak defense; untrusted input handling; data leakage prevention; PII handling; authentication, authorization, confidentiality, privacy, integrity"
+        },
+        {
+          "name": "Guardrails and Safe Deployment",
+          "weight": 2.3,
+          "approximateItems": 1.2,
+          "measured": "Content policy; guardrail layering; secure-by-design principles (privacy, IAM, least privilege)"
+        },
+        {
+          "name": "Identity, Secrets, and Key Management",
+          "weight": 1.6,
+          "approximateItems": 0.8,
+          "measured": "Secrets, credentials, and API keys across dev and prod; identity validation; access approval and level verification; authorized access monitoring"
+        },
+        {
+          "name": "Claude Hooks",
+          "weight": 1.0,
+          "approximateItems": 0.5,
+          "measured": "Hooks as guardrails and safety controls to prevent destructive actions"
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "slug": "08-tools-and-mcps",
+      "name": "Tools and MCPs",
+      "weight": 10.6,
+      "approximateItems": 6,
+      "mockItems": 6,
+      "subSkills": [
+        {
+          "name": "Tool Implementation",
+          "weight": 4.4,
+          "approximateItems": 2.3,
+          "measured": "Tool use and function calling; configuration for external systems; writing tool descriptions; error handling; usage patterns (agentic harness dispatch, client- vs. server-side tools, approval patterns); tool set construction"
+        },
+        {
+          "name": "Agentic Customization",
+          "weight": 4.1,
+          "approximateItems": 2.2,
+          "measured": "Tradeoffs among built-in Tools, custom Tools, Skills, and MCPs — selecting the right one per use case"
+        },
+        {
+          "name": "MCP Server Development",
+          "weight": 2.1,
+          "approximateItems": 1.1,
+          "measured": "Server authoring, deployment, and integration; MCP resources, tools, and prompts; communication patterns (stdio, sockets, client vs. server)"
+        }
+      ]
+    }
+  ]
+}

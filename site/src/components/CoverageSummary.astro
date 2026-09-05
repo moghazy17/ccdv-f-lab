@@ -1,0 +1,32 @@
+---
+import { getCollection } from "astro:content";
+
+import { domains } from "../lib/blueprint";
+import { domainContentStatus } from "../lib/content-status";
+
+interface NoteEntry {
+  body?: string;
+  id: string;
+}
+
+const noteEntries = (await getCollection("notes")) as NoteEntry[];
+const authoredDomainCount = domains.filter((domain) => {
+  const domainMarkdown = noteEntries
+    .filter((entry) => entry.id.startsWith(`${domain.slug}/`))
+    .map((entry) => entry.body ?? "");
+
+  return domainContentStatus(domainMarkdown) === "authored";
+}).length;
+
+const coverageLabel = `${authoredDomainCount} of ${domains.length} domains have authored notes`;
+const coverageDetail =
+  authoredDomainCount === 0
+    ? "The blueprint is available to help you prioritize study time while the domain notes are written."
+    : "Domains with scaffolded notes are labelled clearly, so coverage is never implied where it is absent.";
+---
+
+<aside class="coverage-summary" data-testid="coverage-summary" aria-labelledby="coverage-summary-title">
+  <h2 id="coverage-summary-title">Study-material coverage</h2>
+  <p class="coverage-summary__count">{coverageLabel}.</p>
+  <p>{coverageDetail}</p>
+</aside>
