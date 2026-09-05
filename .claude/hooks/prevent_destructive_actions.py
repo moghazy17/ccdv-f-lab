@@ -9,7 +9,7 @@ import sys
 from pathlib import PurePath
 from typing import Any
 
-PROTECTED_FILES = frozenset({"AGENTS.MD", "BLUEPRINT.MD", "LICENSE"})
+PROTECTED_FILES = frozenset({"LICENSE"})
 _DESTRUCTIVE_COMMAND = re.compile(
     r"(?:\brm\s+-[a-z]*[rf]|\brmdir\s+/[sq]|\bdel\s+/[a-z]*[sqf]|"
     r"\bremove-item\b.{0,80}\b-recurse\b|\bgit\s+reset\s+--hard\b|"

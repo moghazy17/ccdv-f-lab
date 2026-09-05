@@ -21,7 +21,8 @@ def test_exporter_matches_the_complete_published_blueprint() -> None:
     blueprint_path = ROOT / "BLUEPRINT.md"
     data = export_blueprint_data(blueprint_path, ROOT / "notes")
 
-    assert data["sourceDigest"] == hashlib.sha256(blueprint_path.read_bytes()).hexdigest()
+    normalized = blueprint_path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    assert data["sourceDigest"] == hashlib.sha256(normalized.encode("utf-8")).hexdigest()
     assert data["generatedFrom"] == "BLUEPRINT.md"
     assert len(data["domains"]) == 8
     assert sum(len(domain["subSkills"]) for domain in data["domains"]) == 25
@@ -64,3 +65,21 @@ def test_site_blueprint_gate_rejects_stale_derived_data(tmp_path: Path) -> None:
 
     with pytest.raises(ConsistencyError, match="stale"):
         check_site_blueprint_data(ROOT / "BLUEPRINT.md", ROOT / "notes", artifact)
+
+
+def test_source_digest_ignores_line_endings(tmp_path: Path) -> None:
+    """A CRLF working copy and an LF checkout hold the same blueprint and must agree.
+
+    Hashing raw bytes made the digest depend on the checkout's line endings, so data generated on
+    Windows read as stale on a Linux runner and blocked the build.
+    """
+    source = (ROOT / "BLUEPRINT.md").read_text(encoding="utf-8").replace("\r\n", "\n")
+    lf_path = tmp_path / "lf.md"
+    crlf_path = tmp_path / "crlf.md"
+    lf_path.write_bytes(source.encode("utf-8"))
+    crlf_path.write_bytes(source.replace("\n", "\r\n").encode("utf-8"))
+
+    lf = export_blueprint_data(lf_path, ROOT / "notes")
+    crlf = export_blueprint_data(crlf_path, ROOT / "notes")
+
+    assert lf["sourceDigest"] == crlf["sourceDigest"]

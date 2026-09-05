@@ -30,7 +30,9 @@ def export_blueprint_data(blueprint_path: Path, notes_path: Path) -> dict[str, o
     _validate_domains(domains, notes_path, exam_facts["items"])
 
     return {
-        "sourceDigest": hashlib.sha256(source).hexdigest(),
+        # Hash the newline-normalized text, not the raw bytes. A CRLF checkout on Windows and an
+        # LF one on a Linux runner hold the same blueprint, and a byte hash would call them stale.
+        "sourceDigest": hashlib.sha256(text.replace("\r\n", "\n").encode("utf-8")).hexdigest(),
         "generatedFrom": "BLUEPRINT.md",
         "examFacts": exam_facts,
         "domains": domains,

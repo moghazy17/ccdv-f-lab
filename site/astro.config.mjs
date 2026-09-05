@@ -18,7 +18,10 @@ function assertCurrentBlueprintData() {
     throw new Error("Generated blueprint data is missing. Run python tools/export_site_data.py.");
   }
   const data = JSON.parse(readFileSync(blueprintDataPath, "utf8"));
-  const sourceDigest = createHash("sha256").update(readFileSync(blueprintPath)).digest("hex");
+  // Must match tools/export_site_data.py: hash the newline-normalized text, so a CRLF working
+  // copy and an LF checkout agree on the digest.
+  const blueprintText = readFileSync(blueprintPath, "utf8").replace(/\r\n/g, "\n");
+  const sourceDigest = createHash("sha256").update(blueprintText, "utf8").digest("hex");
   if (data.sourceDigest !== sourceDigest) {
     throw new Error("Generated blueprint data is stale. Run python tools/export_site_data.py.");
   }
