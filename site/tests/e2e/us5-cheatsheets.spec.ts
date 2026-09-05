@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { statusForDomain } from "./domain-status";
+
 type AxePage = ConstructorParameters<typeof AxeBuilder>[0]["page"];
 
 interface SubSkill {
@@ -31,7 +33,11 @@ const blueprint = JSON.parse(
 ) as BlueprintData;
 
 test.describe("US5 - Scaffold cheatsheets and axe checks", () => {
-  for (const domain of blueprint.domains) {
+  const scaffolded = blueprint.domains.filter(
+    (domain) => statusForDomain(domain.slug) === "scaffold"
+  );
+
+  for (const domain of scaffolded) {
     test(`scaffold cheatsheet for ${domain.name} is honest, derived, and accessible`, async ({ page }) => {
       await page.goto(`./cheatsheets/${domain.slug}/`);
 

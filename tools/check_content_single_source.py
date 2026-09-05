@@ -16,7 +16,14 @@ PROTECTED_ROOTS = (
     Path("drills/bank"),
 )
 SITE_TEXT_EXTENSIONS = {".astro", ".css", ".html", ".js", ".json", ".md", ".mjs", ".ts", ".txt"}
-IGNORED_SITE_DIRECTORIES = {".git", "dist", "node_modules", "playwright-report", "test-results"}
+IGNORED_SITE_DIRECTORIES = {
+    ".astro",  # Astro's generated content cache holds copies of the sources it loaded.
+    ".git",
+    "dist",
+    "node_modules",
+    "playwright-report",
+    "test-results",
+}
 MINIMUM_PROSE_LENGTH = 40
 _WHITESPACE = re.compile(r"\s+")
 _MARKDOWN_SYNTAX = re.compile(r"[*_`~]+")

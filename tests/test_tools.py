@@ -77,8 +77,42 @@ def test_blueprint_consistency_gate_rejects_a_mutated_domain_weight(tmp_path: Pa
     assert consistency_main(["--blueprint", str(altered)]) == 1
 
 
-def test_generators_handle_the_note_skeletons_and_create_expected_layout(tmp_path: Path) -> None:
-    """Empty scaffolds generate an importable empty deck and one structural sheet per domain."""
+def _write_scaffold_notes(notes_path: Path) -> None:
+    """Create a notes tree whose every heading carries only an authoring prompt."""
+    blueprint = load_blueprint()
+    for domain in blueprint.domains:
+        directory = notes_path / f"{domain.number:02d}-{slugify(domain.name)}"
+        directory.mkdir(parents=True)
+        sub_skills = "\n".join(f'  - name: "{name}"' for name in domain.sub_skills)
+        headings = "\n\n".join(
+            f"## {name}\n\nAuthoring prompt: Add original material." for name in domain.sub_skills
+        )
+        (directory / "README.md").write_text(
+            f'---\ndomain_name: "{domain.name}"\nsub_skills:\n{sub_skills}\n---\n\n'
+            f"# {domain.name}\n\n{headings}\n",
+            encoding="utf-8",
+        )
+
+
+def test_generators_turn_unauthored_scaffolds_into_an_empty_deck(tmp_path: Path) -> None:
+    """A tree of pure scaffolds yields an importable empty deck and no authored extracts."""
+    blueprint = load_blueprint()
+    notes = tmp_path / "notes"
+    _write_scaffold_notes(notes)
+    flashcards = tmp_path / "flashcards" / "ccdv-f.tsv"
+    cheatsheets = tmp_path / "cheatsheets"
+
+    counts = build_flashcards(notes, flashcards)
+    sheets = build_cheatsheets(notes, cheatsheets)
+
+    assert flashcards.read_text(encoding="utf-8") == ""
+    assert counts == {domain.name: 0 for domain in blueprint.domains}
+    for sheet in sheets:
+        assert "## Authored note extracts" not in sheet.read_text(encoding="utf-8")
+
+
+def test_generators_create_the_expected_layout_for_every_domain(tmp_path: Path) -> None:
+    """Against the repository's own notes, every domain still gets one structural sheet."""
     blueprint = load_blueprint()
     flashcards = tmp_path / "flashcards" / "ccdv-f.tsv"
     cheatsheets = tmp_path / "cheatsheets"
@@ -87,8 +121,7 @@ def test_generators_handle_the_note_skeletons_and_create_expected_layout(tmp_pat
     sheets = build_cheatsheets(ROOT / "notes", cheatsheets)
 
     assert flashcards.is_file()
-    assert flashcards.read_text(encoding="utf-8") == ""
-    assert counts == {domain.name: 0 for domain in blueprint.domains}
+    assert set(counts) == {domain.name for domain in blueprint.domains}
     assert sheets == tuple(
         cheatsheets / f"{domain.number:02d}-{slugify(domain.name)}.md"
         for domain in blueprint.domains
@@ -97,7 +130,6 @@ def test_generators_handle_the_note_skeletons_and_create_expected_layout(tmp_pat
         text = sheet.read_text(encoding="utf-8")
         assert f"# {domain.name} cheat sheet" in text
         assert f"| {domain.weight}% |" in text
-        assert "## Authored note extracts" not in text
 
 
 def test_flashcard_generator_preserves_exact_blueprint_labels(tmp_path: Path) -> None:

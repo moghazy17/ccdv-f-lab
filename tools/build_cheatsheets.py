@@ -90,7 +90,6 @@ def _sheet_markdown(
     extracts: list[str] = []
     for note in notes:
         relative_path = note.path.relative_to(notes_path.parent)
-        sheet_link = Path("..") / relative_path
         for section in note.sections:
             extracts.extend(
                 (
@@ -99,7 +98,7 @@ def _sheet_markdown(
                     "",
                     section.body,
                     "",
-                    f"Source note: [{relative_path}]({sheet_link.as_posix()})",
+                    f"Source note: `{relative_path.as_posix()}`",
                 )
             )
     if extracts:

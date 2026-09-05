@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 
+import { authoredDomainCount, statusForDomain } from "./domain-status";
+
 interface Domain {
   approximateItems: number;
   name: string;
@@ -19,14 +21,15 @@ const blueprint = JSON.parse(
 ) as BlueprintData;
 
 test.describe("All scaffold state and honest landing coverage (SC-009, FR-013, FR-017, FR-049)", () => {
-  test("landing page prominently displays 0 of 8 domains authored coverage", async ({ page }) => {
+  test("landing page reports the coverage the notes actually have", async ({ page }) => {
+    const authored = authoredDomainCount(blueprint.domains.map((domain) => domain.slug));
+
     await page.goto("./");
 
     const coverageSummary = page.getByTestId("coverage-summary");
     await expect(coverageSummary).toBeVisible();
-    await expect(coverageSummary).toContainText("0 of 8 domains have authored notes");
     await expect(coverageSummary).toContainText(
-      "The blueprint is available to help you prioritize study time while the domain notes are written."
+      `${authored} of ${blueprint.domains.length} domains have authored notes`
     );
   });
 
@@ -40,19 +43,26 @@ test.describe("All scaffold state and honest landing coverage (SC-009, FR-013, F
 
       await expect(page.getByRole("heading", { level: 1, name: domain.name })).toBeVisible();
 
-      // Verify scaffold notice is present and honest
+      // A scaffolded domain must say so; an authored one must not claim to be unwritten.
       const scaffoldNotice = page.locator(".scaffold-notice");
-      await expect(scaffoldNotice).toBeVisible();
-      await expect(scaffoldNotice).toContainText("Notes are not yet written");
-      await expect(scaffoldNotice).toContainText("This domain has no authored note sections");
+      if (statusForDomain(domain.slug) === "scaffold") {
+        await expect(scaffoldNotice).toBeVisible();
+        await expect(scaffoldNotice).toContainText("Notes are not yet written");
+        await expect(scaffoldNotice).toContainText("This domain has no authored note sections");
+      } else {
+        await expect(scaffoldNotice).toHaveCount(0);
+      }
 
       // Verify domain weight facts
       const examWeight = page.getByTestId("domain-exam-weight");
       await expect(examWeight).toContainText(`${domain.weight}%`);
 
-      // Verify all sub-skills are listed in the scaffold notice
+      // Every sub-skill must be named on the page either way: inside the scaffold notice while
+      // the notes are unwritten, and as authored material once they are.
+      const subSkillHome =
+        statusForDomain(domain.slug) === "scaffold" ? scaffoldNotice : page.locator("main");
       for (const subSkill of domain.subSkills) {
-        await expect(scaffoldNotice).toContainText(subSkill.name);
+        await expect(subSkillHome).toContainText(subSkill.name);
       }
     }
   });
@@ -65,11 +75,16 @@ test.describe("All scaffold state and honest landing coverage (SC-009, FR-013, F
 
       await expect(page.getByRole("heading", { level: 1 })).toContainText(domain.name);
 
-      // Verify scaffold notice declares it contains only blueprint allocation
+      // A sheet with no authored extracts must declare itself allocation-only; one with
+      // extracts must not, because that notice would then be untrue.
       const notice = page.getByTestId("cheatsheet-scaffold-notice");
-      await expect(notice).toBeVisible();
-      await expect(notice).toContainText("Blueprint allocation only");
-      await expect(notice).toContainText("no notes are authored for this domain yet");
+      if (statusForDomain(domain.slug) === "scaffold") {
+        await expect(notice).toBeVisible();
+        await expect(notice).toContainText("Blueprint allocation only");
+        await expect(notice).toContainText("no notes are authored for this domain yet");
+      } else {
+        await expect(notice).toHaveCount(0);
+      }
 
       // Verify tables of domain allocation and sub-skills are present
       await expect(page.locator("table").first()).toBeVisible();

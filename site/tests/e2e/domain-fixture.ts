@@ -13,6 +13,10 @@ const STALE_LOCK_THRESHOLD_MS = 20_000;
 // worker's live fixtures — reclaiming them on the lock's timescale deletes directories still
 // in use. Only a directory left by a run that died long ago is safe to remove.
 const STALE_OUTPUT_THRESHOLD_MS = 600_000;
+// The lock serializes every fixture build in the suite, so a waiter must outlast the whole
+// queue ahead of it rather than a single build. At 50ms per attempt this waits up to ten
+// minutes; a shorter wait fails whichever spec queued last instead of the one actually stuck.
+const LOCK_WAIT_ATTEMPTS = 12_000;
 const trackedDirectories = new Set<string>();
 let activeLockPath: string | null = null;
 let exitHooksRegistered = false;
@@ -203,7 +207,7 @@ async function cleanOrphanedDirectories(siteRoot: string): Promise<void> {
 
 async function acquireFixtureBuildLock(siteRoot: string): Promise<() => Promise<void>> {
   const lockPath = join(siteRoot, ".us2-fixture-build.lock");
-  for (let attempt = 0; attempt < 2400; attempt += 1) {
+  for (let attempt = 0; attempt < LOCK_WAIT_ATTEMPTS; attempt += 1) {
     try {
       const handle = await open(lockPath, "wx");
       activeLockPath = lockPath;

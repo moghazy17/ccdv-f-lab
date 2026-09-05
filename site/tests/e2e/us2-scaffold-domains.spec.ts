@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 
 import { expect, test } from "@playwright/test";
 
+import { statusForDomain } from "./domain-status";
+
 interface SubSkill {
   approximateItems: number;
   measured: string;
@@ -26,7 +28,12 @@ const blueprint = JSON.parse(
 ) as BlueprintData;
 
 test("every scaffolded domain page is useful, explicit, and complete", async ({ page }) => {
-  for (const domain of blueprint.domains) {
+  const scaffolded = blueprint.domains.filter(
+    (domain) => statusForDomain(domain.slug) === "scaffold"
+  );
+  expect(scaffolded.length).toBeGreaterThan(0);
+
+  for (const domain of scaffolded) {
     await page.goto(`./domains/${domain.slug}/`);
 
     await expect(page.getByRole("heading", { level: 1, name: domain.name })).toBeVisible();

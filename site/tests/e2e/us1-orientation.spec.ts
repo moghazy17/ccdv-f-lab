@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 
 import { expect, test } from "@playwright/test";
 
+import { authoredDomainCount } from "./domain-status";
+
 interface BlueprintFacts {
   items: number;
   timeLimitMinutes: number;
@@ -89,7 +91,9 @@ test("a candidate can orient to the exam with the keyboard", async ({ page }) =>
   await expect(page.getByTestId("exam-facts")).toContainText(
     `$${blueprint.examFacts.feeUsd} USD`
   );
-  await expect(page.getByTestId("coverage-summary")).toContainText("0 of 8 domains have authored notes");
+  await expect(page.getByTestId("coverage-summary")).toContainText(
+    `${authoredDomainCount(blueprint.domains.map((domain) => domain.slug))} of ${blueprint.domains.length} domains have authored notes`
+  );
   await expect(page.getByText(/This project offers static readiness guidance/i)).toBeVisible();
   await expect(
     page.getByText(/unofficial and not affiliated with, endorsed by, or produced by Anthropic/i)

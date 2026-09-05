@@ -10,7 +10,10 @@ test.describe("User Story 6: Format demonstration exclusion from search", () => 
   ];
 
   for (const term of uniqueExcludedDrillTerms) {
-    test(`searching for drill-unique term "${term}" yields no results`, async ({ page }) => {
+    test(`searching "${term}" never surfaces the excluded drill item`, async ({ page }) => {
+      // These terms come from the drill bank. As study notes are authored some of them also stem
+      // onto legitimate content, so the requirement is not "no results" — it is that no result is
+      // ever the excluded item. Asserting emptiness would fail as soon as a note is written.
       await page.goto("./");
 
       await page.keyboard.press("Control+k");
@@ -19,11 +22,22 @@ test.describe("User Story 6: Format demonstration exclusion from search", () => 
 
       await searchInput.fill(term);
 
-      const emptyMessage = page.getByTestId("search-empty");
-      await expect(emptyMessage).toBeVisible();
-
       const results = page.getByTestId("search-results").locator(".search-result-link");
-      await expect(results).toHaveCount(0);
+      const count = await results.count();
+
+      for (let i = 0; i < count; i++) {
+        const item = results.nth(i);
+        const text = await item.textContent();
+        expect(text).not.toContain("format demonstration");
+        expect(text).not.toContain("fixed intake form");
+        expect(text).not.toContain("unenforceable-politeness");
+
+        const itemType = await item.getAttribute("data-type");
+        if (itemType) {
+          expect(itemType).not.toBe("drill");
+        }
+        expect(await item.getAttribute("href")).not.toContain("/drills/");
+      }
     });
   }
 
