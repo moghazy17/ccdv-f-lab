@@ -4,6 +4,7 @@ import { describe, expect, test } from "vitest";
 
 import {
   allocationsOrderedByWeight,
+  extractPlanTotals,
   parseStudyPlanMarkdown,
   validateAllPlans,
   type StudyPlan
@@ -27,6 +28,13 @@ describe("plans parser and validator", () => {
     expect(plans[0].totalHours).toBe(14);
     expect(plans[1].totalHours).toBe(42);
     expect(plans[2].totalHours).toBe(84);
+
+    const totals = extractPlanTotals(plans);
+    expect(totals).toEqual({
+      "1-week": 14,
+      "3-weeks": 42,
+      "6-weeks": 84
+    });
   });
 
   test("orders allocations descending by weight", async () => {

@@ -505,51 +505,51 @@ site.
 
 > Write these tests first and confirm that they fail for the missing behavior before implementation.
 
-- [ ] T139 [P] [US4] Use `site/tests/e2e/us4-guide.spec.ts` to write the registration, exam-day, and
+- [X] T139 [P] [US4] Use `site/tests/e2e/us4-guide.spec.ts` to write the registration, exam-day, and
   retake journey
 
-- [ ] T140 [P] [US4] Use `site/tests/e2e/us4-crossmap.spec.ts` to write exact cross-map domain-name
+- [X] T140 [P] [US4] Use `site/tests/e2e/us4-crossmap.spec.ts` to write exact cross-map domain-name
   assertions
 
-- [ ] T141 [P] [US4] Use `site/tests/e2e/us4-accessibility.spec.ts` to write guide-page axe and
+- [X] T141 [P] [US4] Use `site/tests/e2e/us4-accessibility.spec.ts` to write guide-page axe and
   keyboard checks
 
 ### Implementation for US4
 
-- [ ] T142 [US4] Render the three source-backed guide routes in `site/src/pages/guide/[page].astro`
+- [X] T142 [US4] Render the three source-backed guide routes in `site/src/pages/guide/[page].astro`
   - Generate only `eligibility`, `exam-day`, and `course-crossmap`; preserve callouts and non-ASCII
     text; link official material rather than reproducing it.
 
 ### User story 4 - Register correctly and survive exam day (Priority: P4) gates
 
-- [ ] T143 [US4] Run `ruff check .` from repository root `./`
+- [X] T143 [US4] Run `ruff check .` from repository root `./`
 
-- [ ] T144 [US4] Run `ruff format --check .` from repository root `./`
+- [X] T144 [US4] Run `ruff format --check .` from repository root `./`
 
-- [ ] T145 [US4] Run `pytest -q` from repository root `./`
+- [X] T145 [US4] Run `pytest -q` from repository root `./`
 
-- [ ] T146 [US4] Run `python tools/check_blueprint_consistency.py` from repository root `./`
+- [X] T146 [US4] Run `python tools/check_blueprint_consistency.py` from repository root `./`
   - Confirm every displayed weight and item count is derived from `BLUEPRINT.md`.
 
-- [ ] T147 [US4] Run `python tools/check_content_single_source.py` from repository root `./`
+- [X] T147 [US4] Run `python tools/check_content_single_source.py` from repository root `./`
   - Confirm no study markdown was copied from `notes/`, `cheatsheets/`, `guide/`, `study-plans/`, or
     `drills/bank/` into `site/`.
 
-- [ ] T148 [US4] Run `npm run build` from `site/`
+- [X] T148 [US4] Run `npm run build` from `site/`
 
-- [ ] T149 [US4] Run `python -m drills.engine validate` from repository root `./`
+- [X] T149 [US4] Run `python -m drills.engine validate` from repository root `./`
 
-- [ ] T150 [US4] Run `python -m lab.evals run` from repository root `./`
+- [X] T150 [US4] Run `python -m lab.evals run` from repository root `./`
 
-- [ ] T151 [US4] Run `npm run typecheck` from `site/`
+- [X] T151 [US4] Run `npm run typecheck` from `site/`
 
-- [ ] T152 [US4] Run `npm run lint` from `site/`
+- [X] T152 [US4] Run `npm run lint` from `site/`
 
-- [ ] T153 [US4] Run `python tools/check_links.py` from repository root `./`
+- [X] T153 [US4] Run `python tools/check_links.py` from repository root `./`
 
-- [ ] T154 [US4] Run `npm run test:unit` from `site/`
+- [X] T154 [US4] Run `npm run test:unit` from `site/`
 
-- [ ] T155 [US4] Run `npm run test:e2e` from `site/`
+- [X] T155 [US4] Run `npm run test:e2e` from `site/`
   - Confirm no journey requires or offers an account, installation, API key, analytics, tracking,
     cookies, or a third-party runtime request.
 

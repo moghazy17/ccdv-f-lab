@@ -1,0 +1,182 @@
+---
+import { getCollection } from "astro:content";
+import { createMarkdownProcessor } from "@astrojs/markdown-remark";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+interface GuideEntry {
+  body?: string;
+  data: {
+    sources?: string[];
+    title?: string;
+    verified_on?: string;
+  };
+  id: string;
+}
+
+export async function getStaticPaths() {
+  const allowedPages = new Set(["eligibility", "exam-day", "course-crossmap"]);
+  const guideEntries = (await getCollection("guide")) as GuideEntry[];
+  const filtered = guideEntries.filter((entry: GuideEntry) => {
+    const slug = entry.id.replace(/\.md$/, "");
+    return allowedPages.has(slug);
+  });
+
+  return filtered.map((entry: GuideEntry) => {
+    const slug = entry.id.replace(/\.md$/, "");
+    return {
+      params: { page: slug },
+      props: {
+        entry,
+        pageSlug: slug
+      }
+    };
+  });
+}
+
+interface Props {
+  entry: GuideEntry;
+  pageSlug: "eligibility" | "exam-day" | "course-crossmap";
+}
+
+const { entry, pageSlug } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const href = (path: string) => `${base}${path}`;
+
+const pageDescriptions: Record<string, string> = {
+  eligibility: "Official registration requirements, Partner Network email prerequisite, and retake policies.",
+  "exam-day": "Exam-day rules, prohibited items, proctoring guidelines, pacing, and appeals procedure.",
+  "course-crossmap": "Mapping of official preparation course modules to the eight blueprint domains."
+};
+
+const pageTitle = `${entry.data.title ?? "Guide"} | CCDV-F community study kit`;
+const pageDescription = pageDescriptions[pageSlug] ?? "CCDV-F official guide notes and logistics.";
+
+const processor = await createMarkdownProcessor();
+const rawBody = entry.body ?? "";
+const rendered = await processor.render(rawBody);
+
+let contentHtml = rendered.code
+  .replaceAll(
+    "<table>",
+    '<div class="table-scroll" tabindex="0" aria-label="Table"><table>'
+  )
+  .replaceAll("</table>", "</table></div>")
+  .replaceAll(
+    'href="../SOURCES.md"',
+    'href="https://github.com/moghazy17/ccdv-f-lab/blob/main/SOURCES.md"'
+  )
+  .replaceAll('href="../BLUEPRINT.md"', `href="${href("blueprint/")}"`);
+
+if (pageSlug === "eligibility") {
+  contentHtml = contentHtml.replace(
+    "<blockquote>",
+    '<blockquote class="callout callout-warning" data-testid="partner-network-callout" role="note" aria-label="Partner Network email requirement">'
+  );
+  contentHtml = contentHtml.replace(
+    '<h2 id="retakes-and-credential-validity">',
+    '<div class="retakes-section" data-testid="retakes-section"><h2 id="retakes-and-credential-validity">'
+  );
+  contentHtml += "</div>";
+}
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href={href("")}>&larr; CCDV-F home</a>
+  </nav>
+
+  <nav class="guide-nav" aria-label="Guide sections">
+    <ul>
+      <li>
+        {pageSlug === "eligibility" ? (
+          <span aria-current="page">Eligibility and registration</span>
+        ) : (
+          <a href={href("guide/eligibility/")}>Eligibility and registration</a>
+        )}
+      </li>
+      <li>
+        {pageSlug === "exam-day" ? (
+          <span aria-current="page">Exam day</span>
+        ) : (
+          <a href={href("guide/exam-day/")}>Exam day</a>
+        )}
+      </li>
+      <li>
+        {pageSlug === "course-crossmap" ? (
+          <span aria-current="page">Course cross-map</span>
+        ) : (
+          <a href={href("guide/course-crossmap/")}>Course cross-map</a>
+        )}
+      </li>
+    </ul>
+  </nav>
+
+  <article class="guide-content" set:html={contentHtml} />
+</BaseLayout>
+
+<style>
+  .breadcrumb {
+    margin-bottom: 1.5rem;
+    font-size: 0.925rem;
+  }
+
+  .guide-nav {
+    margin-bottom: 2rem;
+    padding: 0.75rem 1rem;
+    background: var(--panel);
+    border: 0.0625rem solid var(--rule);
+    border-radius: 0.25rem;
+  }
+
+  .guide-nav ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.95rem;
+  }
+
+  .guide-nav a {
+    font-weight: 500;
+  }
+
+  .guide-nav [aria-current="page"] {
+    font-weight: 700;
+    color: var(--ink);
+    border-bottom: 0.15rem solid var(--signal);
+  }
+
+  :global(.guide-content blockquote),
+  :global(.guide-content .callout) {
+    margin: 1.75rem 0;
+    padding: clamp(1rem, 3vw, 1.5rem);
+    border: 0.0625rem solid var(--rule);
+    border-left: 0.45rem solid var(--focus);
+    background: var(--panel);
+    border-radius: 0.25rem;
+  }
+
+  :global(.guide-content .callout-warning) {
+    border-left-color: var(--focus);
+    border-left-width: 0.5rem;
+  }
+
+  :global(.guide-content .retakes-section) {
+    margin-top: 2.5rem;
+    padding: clamp(1rem, 3vw, 1.5rem);
+    border: 0.0625rem solid var(--rule);
+    border-left: 0.45rem solid var(--signal);
+    background: var(--panel);
+    border-radius: 0.25rem;
+  }
+
+  :global(.guide-content .retakes-section h2:first-child) {
+    margin-top: 0;
+  }
+
+  :global(.guide-content table) {
+    margin: 1.25rem 0;
+  }
+</style>

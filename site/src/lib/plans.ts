@@ -139,6 +139,14 @@ export function isPlanSlug(slug: string): slug is PlanSlug {
   return (REQUIRED_PLAN_SLUGS as readonly string[]).includes(slug);
 }
 
+export function extractPlanTotals(plans: readonly StudyPlan[]): Record<PlanSlug, number> {
+  const totals: Partial<Record<PlanSlug, number>> = {};
+  for (const plan of plans) {
+    totals[plan.slug] = Math.round(plan.totalHours);
+  }
+  return totals as Record<PlanSlug, number>;
+}
+
 interface RawTableRow {
   domain: string;
   weight: string;

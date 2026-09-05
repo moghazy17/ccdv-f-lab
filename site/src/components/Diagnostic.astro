@@ -1,8 +1,22 @@
 ---
+import { getCollection } from "astro:content";
 import { domains } from "../lib/blueprint";
+import { extractPlanTotals, loadStudyPlans } from "../lib/plans";
+
+const planEntries = await getCollection("studyPlans");
+const plans = loadStudyPlans(planEntries);
+const planTotals = extractPlanTotals(plans);
+const planTitles = Object.fromEntries(
+  plans.map((p) => [p.slug, `${p.title} (${Math.round(p.totalHours)} hours)`])
+);
 ---
 
-<div class="diagnostic-container" data-diagnostic-container>
+<div
+  class="diagnostic-container"
+  data-diagnostic-container
+  data-plan-totals={JSON.stringify(planTotals)}
+  data-plan-titles={JSON.stringify(planTitles)}
+>
   <div class="diagnostic-intro">
     <p data-testid="diagnostic-disclaimer" class="diagnostic-disclaimer">
       This diagnostic is a self-report time-budgeting tool. It asks about your available schedule and
@@ -114,11 +128,17 @@ import { domains } from "../lib/blueprint";
     const storage = createProgressStorage();
     const basePath = (document.querySelector("a.site-name") as HTMLAnchorElement)?.getAttribute("href") ?? "/";
 
-    const planNames: Record<PlanSlug, string> = {
-      "1-week": "1-week study plan (14 hours)",
-      "3-weeks": "3-week study plan (42 hours)",
-      "6-weeks": "6-week study plan (84 hours)"
-    };
+    const rawPlanTotals = container.getAttribute("data-plan-totals");
+    if (!rawPlanTotals) {
+      throw new Error("Missing data-plan-totals on diagnostic container");
+    }
+    const planTotals: Record<PlanSlug, number> = JSON.parse(rawPlanTotals);
+
+    const rawPlanTitles = container.getAttribute("data-plan-titles");
+    if (!rawPlanTitles) {
+      throw new Error("Missing data-plan-titles on diagnostic container");
+    }
+    const planNames: Record<PlanSlug, string> = JSON.parse(rawPlanTitles);
 
     function displayResult(result: DiagnosticResult, shouldFocus: boolean = false): void {
       if (!resultRegion || !planTitleEl || !reasonEl || !planLinkEl) {
@@ -163,11 +183,14 @@ import { domains } from "../lib/blueprint";
           experience[sel.name] = sel.value;
         });
 
-        const recommendation = recommend({
-          experience,
-          weeksAvailable: weeks,
-          hoursPerWeek: hours
-        });
+        const recommendation = recommend(
+          {
+            experience,
+            weeksAvailable: weeks,
+            hoursPerWeek: hours
+          },
+          planTotals
+        );
 
         storage.setDiagnostic(recommendation);
         displayResult(recommendation, true);

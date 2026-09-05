@@ -20,24 +20,22 @@ export interface DiagnosticResult {
   completedAt: string;
 }
 
-const PLAN_HOURS: Record<PlanSlug, number> = {
-  "1-week": 14,
-  "3-weeks": 42,
-  "6-weeks": 84
-};
-
 export function recommend(
   input: DiagnosticInput,
+  planTotals: Record<PlanSlug, number>,
   completedAt: string = new Date().toISOString()
 ): DiagnosticResult {
   const weeks = Math.max(1, Math.round(input.weeksAvailable || 1));
   const hoursPerWeek = Math.max(1, Number(input.hoursPerWeek) || 1);
   const budget = weeks * hoursPerWeek;
 
+  const threshold6 = planTotals["6-weeks"];
+  const threshold3 = planTotals["3-weeks"];
+
   let basePlan: PlanSlug = "1-week";
-  if (budget >= 84) {
+  if (budget >= threshold6) {
     basePlan = "6-weeks";
-  } else if (budget >= 42) {
+  } else if (budget >= threshold3) {
     basePlan = "3-weeks";
   } else {
     basePlan = "1-week";
@@ -60,6 +58,7 @@ export function recommend(
     budget,
     hoursPerWeek,
     isBiased,
+    planTotals,
     recommendedPlan,
     weeks
   });
@@ -114,24 +113,25 @@ interface ReasonParams {
   budget: number;
   hoursPerWeek: number;
   isBiased: boolean;
+  planTotals: Record<PlanSlug, number>;
   recommendedPlan: PlanSlug;
   weeks: number;
 }
 
 function buildReason(params: ReasonParams): string {
-  const { basePlan, budget, hoursPerWeek, isBiased, recommendedPlan, weeks } = params;
-  const planHours = PLAN_HOURS[recommendedPlan];
+  const { basePlan, budget, hoursPerWeek, isBiased, planTotals, recommendedPlan, weeks } = params;
+  const planHours = planTotals[recommendedPlan];
 
   if (isBiased && recommendedPlan !== basePlan) {
     return `Your time budget of ${weeks} ${weeks === 1 ? "week" : "weeks"} at ${hoursPerWeek} hours per week (${budget} hours total) matches the ${basePlan} plan. Because you reported no prior experience in the two heaviest domains (Applications and Integration, and Model Selection and Optimization), we recommend the ${recommendedPlan} (${planHours}-hour) plan to provide adequate preparation time.`;
   }
 
-  if (budget < 14) {
-    return `At ${weeks} ${weeks === 1 ? "week" : "weeks"} and ${hoursPerWeek} hours per week (${budget} hours total), your available time is under the standard plans. The 1-week plan (14 hours) is recommended as the closest starting point.`;
+  if (budget < planTotals["1-week"]) {
+    return `At ${weeks} ${weeks === 1 ? "week" : "weeks"} and ${hoursPerWeek} hours per week (${budget} hours total), your available time is under the standard plans. The 1-week plan (${planTotals["1-week"]} hours) is recommended as the closest starting point.`;
   }
 
   if (weeks === 3 && hoursPerWeek === 14) {
-    return "Three weeks at 14 hours matches the 42-hour plan most closely.";
+    return `Three weeks at 14 hours matches the ${planTotals["3-weeks"]}-hour plan most closely.`;
   }
 
   const weeksWord = weeks === 1 ? "1 week" : `${weeks} weeks`;

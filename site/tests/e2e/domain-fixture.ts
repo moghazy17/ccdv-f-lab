@@ -127,7 +127,7 @@ async function cleanOrphanedDirectories(siteRoot: string): Promise<void> {
 
 async function acquireFixtureBuildLock(siteRoot: string): Promise<() => Promise<void>> {
   const lockPath = join(siteRoot, ".us2-fixture-build.lock");
-  for (let attempt = 0; attempt < 600; attempt += 1) {
+  for (let attempt = 0; attempt < 2400; attempt += 1) {
     try {
       const handle = await open(lockPath, "wx");
       activeLockPath = lockPath;
