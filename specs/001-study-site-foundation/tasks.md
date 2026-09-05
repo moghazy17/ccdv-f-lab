@@ -570,58 +570,58 @@ source content.
 
 > Write these tests first and confirm that they fail for the missing behavior before implementation.
 
-- [ ] T156 [P] [US5] Use `site/tests/e2e/us5-print.spec.ts` to write dark-theme print and
+- [X] T156 [P] [US5] Use `site/tests/e2e/us5-print.spec.ts` to write dark-theme print and
   multipage-table checks
 
-- [ ] T157 [P] [US5] Use `site/tests/e2e/us5-cheatsheets.spec.ts` to write all-eight scaffold
+- [X] T157 [P] [US5] Use `site/tests/e2e/us5-cheatsheets.spec.ts` to write all-eight scaffold
   cheatsheet and axe checks
 
 ### Implementation for US5
 
-- [ ] T158 [P] [US5] Use `site/src/layouts/PrintLayout.astro` to create the attributed, control-free
+- [X] T158 [P] [US5] Use `site/src/layouts/PrintLayout.astro` to create the attributed, control-free
   print shell
 
-- [ ] T159 [P] [US5] Use `site/src/styles/print.css` to force legible light print and stable table
+- [X] T159 [P] [US5] Use `site/src/styles/print.css` to force legible light print and stable table
   pagination
 
-- [ ] T160 [US5] Use `site/src/pages/cheatsheets/index.astro` to implement the weight-descending
+- [X] T160 [US5] Use `site/src/pages/cheatsheets/index.astro` to implement the weight-descending
   cheatsheet index
 
-- [ ] T161 [US5] Use `site/src/pages/cheatsheets/[domain].astro` to implement all eight
+- [X] T161 [US5] Use `site/src/pages/cheatsheets/[domain].astro` to implement all eight
   source-backed cheatsheet routes
   - State when a sheet contains blueprint allocation only; show derived domain name and weight;
     include license and unofficial attribution.
 
 ### User story 5 - Take a printable cheatsheet into the last week (Priority: P5) gates
 
-- [ ] T162 [US5] Run `ruff check .` from repository root `./`
+- [X] T162 [US5] Run `ruff check .` from repository root `./`
 
-- [ ] T163 [US5] Run `ruff format --check .` from repository root `./`
+- [X] T163 [US5] Run `ruff format --check .` from repository root `./`
 
-- [ ] T164 [US5] Run `pytest -q` from repository root `./`
+- [X] T164 [US5] Run `pytest -q` from repository root `./`
 
-- [ ] T165 [US5] Run `python tools/check_blueprint_consistency.py` from repository root `./`
+- [X] T165 [US5] Run `python tools/check_blueprint_consistency.py` from repository root `./`
   - Confirm every displayed weight and item count is derived from `BLUEPRINT.md`.
 
-- [ ] T166 [US5] Run `python tools/check_content_single_source.py` from repository root `./`
+- [X] T166 [US5] Run `python tools/check_content_single_source.py` from repository root `./`
   - Confirm no study markdown was copied from `notes/`, `cheatsheets/`, `guide/`, `study-plans/`, or
     `drills/bank/` into `site/`.
 
-- [ ] T167 [US5] Run `npm run build` from `site/`
+- [X] T167 [US5] Run `npm run build` from `site/`
 
-- [ ] T168 [US5] Run `python -m drills.engine validate` from repository root `./`
+- [X] T168 [US5] Run `python -m drills.engine validate` from repository root `./`
 
-- [ ] T169 [US5] Run `python -m lab.evals run` from repository root `./`
+- [X] T169 [US5] Run `python -m lab.evals run` from repository root `./`
 
-- [ ] T170 [US5] Run `npm run typecheck` from `site/`
+- [X] T170 [US5] Run `npm run typecheck` from `site/`
 
-- [ ] T171 [US5] Run `npm run lint` from `site/`
+- [X] T171 [US5] Run `npm run lint` from `site/`
 
-- [ ] T172 [US5] Run `python tools/check_links.py` from repository root `./`
+- [X] T172 [US5] Run `python tools/check_links.py` from repository root `./`
 
-- [ ] T173 [US5] Run `npm run test:unit` from `site/`
+- [X] T173 [US5] Run `npm run test:unit` from `site/`
 
-- [ ] T174 [US5] Run `npm run test:e2e` from `site/`
+- [X] T174 [US5] Run `npm run test:e2e` from `site/`
   - Confirm no journey requires or offers an account, installation, API key, analytics, tracking,
     cookies, or a third-party runtime request.
 

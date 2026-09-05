@@ -1,0 +1,140 @@
+---
+import { getCollection } from "astro:content";
+import { createMarkdownProcessor } from "@astrojs/markdown-remark";
+import PrintLayout from "../../layouts/PrintLayout.astro";
+import { domains, domainBySlug } from "../../lib/blueprint";
+import { buildDomainContent } from "../../lib/domain-content";
+
+export function getStaticPaths() {
+  return domains.map((domain) => ({
+    params: { domain: domain.slug }
+  }));
+}
+
+const domain = domainBySlug(Astro.params.domain ?? "");
+if (domain === undefined) {
+  throw new Error("The requested domain is not present in the generated blueprint data.");
+}
+
+interface CheatsheetEntry {
+  body?: string;
+  data: Record<string, unknown>;
+  id: string;
+}
+
+const cheatsheetEntries = (await getCollection("cheatsheets")) as CheatsheetEntry[];
+const entry = cheatsheetEntries.find(
+  (item: CheatsheetEntry) => item.id.replace(/\.md$/, "") === domain.slug
+);
+if (!entry) {
+  throw new Error(`Cheatsheet entry not found for domain: ${domain.slug}`);
+}
+
+const noteEntries = await getCollection("notes");
+const content = buildDomainContent(domain, noteEntries);
+const isScaffold = content.status === "scaffold";
+
+const processor = await createMarkdownProcessor();
+const rawBody = entry.body ?? "";
+const rendered = await processor.render(rawBody);
+
+const contentHtml = rendered.code
+  .replaceAll(
+    "<table>",
+    '<div class="table-scroll" tabindex="0" aria-label="Table"><table>'
+  )
+  .replaceAll("</table>", "</table></div>");
+
+const base = import.meta.env.BASE_URL;
+const href = (path: string) => `${base}${path}`;
+---
+
+<PrintLayout domain={domain}>
+  <nav class="breadcrumb no-print" aria-label="Breadcrumb">
+    <a href={href("cheatsheets/")}>&larr; Cheatsheets</a>
+  </nav>
+
+  <div class="cheatsheet-actions no-print">
+    <button type="button" class="print-button" onclick="window.print()">
+      Print cheat sheet
+    </button>
+  </div>
+
+  {
+    isScaffold && (
+      <section
+        class="cheatsheet-scaffold-notice"
+        data-testid="cheatsheet-scaffold-notice"
+        aria-labelledby="scaffold-notice-title"
+      >
+        <h2 id="scaffold-notice-title">Blueprint allocation only</h2>
+        <p>
+          This cheat sheet contains blueprint allocation only because no notes are authored for
+          this domain yet. It does not summarize written study material.
+        </p>
+      </section>
+    )
+  }
+
+  <article class="cheatsheet-content" set:html={contentHtml} />
+</PrintLayout>
+
+<style>
+  .breadcrumb {
+    margin-bottom: 1rem;
+    font-size: 0.925rem;
+  }
+
+  .cheatsheet-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1.5rem;
+  }
+
+  .print-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--panel);
+    color: var(--ink);
+    border: 0.0625rem solid var(--rule);
+    border-radius: 0.25rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .print-button:hover {
+    background: var(--paper);
+    border-color: var(--ink);
+  }
+
+  .cheatsheet-scaffold-notice {
+    margin: 1.5rem 0 2rem;
+    padding: clamp(1rem, 3vw, 1.5rem);
+    border: 0.0625rem solid var(--rule);
+    border-left: 0.4rem solid var(--focus);
+    background: var(--panel);
+    border-radius: 0.25rem;
+  }
+
+  .cheatsheet-scaffold-notice h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.2rem;
+  }
+
+  .cheatsheet-scaffold-notice p {
+    margin: 0;
+    color: var(--muted);
+  }
+
+  :global(.cheatsheet-content h1) {
+    margin-top: 0;
+    font-size: clamp(2rem, 4vw, 2.75rem);
+  }
+
+  :global(.cheatsheet-content table) {
+    margin: 1.25rem 0;
+  }
+</style>

@@ -1,0 +1,120 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+import type { BlueprintDomain } from "../lib/blueprint";
+import "../styles/print.css";
+
+interface Props {
+  description?: string;
+  domain?: BlueprintDomain;
+  title?: string;
+}
+
+const { description, domain, title } = Astro.props;
+const pageTitle =
+  title ??
+  (domain
+    ? `${domain.name} cheat sheet | CCDV-F community study kit`
+    : "Cheatsheet | CCDV-F community study kit");
+const pageDescription =
+  description ??
+  (domain
+    ? `Printable cheat sheet and blueprint allocation for ${domain.name}.`
+    : "Printable cheatsheet.");
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <div class="print-shell">
+    {
+      domain && (
+        <header class="print-header" data-testid="print-header">
+          <div class="print-header__meta" data-testid="cheatsheet-meta">
+            <span class="print-header__number">Domain {domain.number}</span>
+            <span class="print-header__name">{domain.name}</span>
+            <span class="print-header__weight">
+              Exam weight: <strong>{domain.weight}%</strong>
+            </span>
+            <span class="print-header__items">
+              Approx. items: <strong>{domain.approximateItems}</strong>
+            </span>
+          </div>
+        </header>
+      )
+    }
+
+    <slot />
+
+    <footer class="print-attribution" data-testid="print-attribution">
+      <p>
+        CCDV-F community study kit is unofficial and not affiliated with, endorsed by, or produced
+        by Anthropic. Code is MIT; written study content is CC BY 4.0.
+      </p>
+      {
+        domain && (
+          <p class="print-attribution__provenance">
+            {domain.name} &bull; Domain {domain.number} &bull; {domain.weight}% exam weight
+          </p>
+        )
+      }
+    </footer>
+  </div>
+</BaseLayout>
+
+<style>
+  .print-shell {
+    width: 100%;
+  }
+
+  .print-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 0.0625rem solid var(--rule);
+  }
+
+  .print-header__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.5rem;
+    align-items: baseline;
+    font-size: 0.95rem;
+  }
+
+  .print-header__number {
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.85rem;
+  }
+
+  .print-header__name {
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 1.1rem;
+  }
+
+  .print-header__weight,
+  .print-header__items {
+    color: var(--muted);
+  }
+
+  .print-header__weight strong,
+  .print-header__items strong {
+    color: var(--ink);
+  }
+
+  .print-attribution {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 0.0625rem solid var(--rule);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  .print-attribution p {
+    margin: 0.25rem 0;
+  }
+
+  .print-attribution__provenance {
+    font-weight: 600;
+  }
+</style>

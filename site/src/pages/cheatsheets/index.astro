@@ -1,0 +1,117 @@
+---
+import DomainWeightBar from "../../components/DomainWeightBar.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { domains } from "../../lib/blueprint";
+
+const base = import.meta.env.BASE_URL;
+const href = (path: string) => `${base}${path}`;
+
+const domainsByWeight = [...domains].sort((left, right) => right.weight - left.weight);
+---
+
+<BaseLayout
+  title="Cheatsheets by exam weight | CCDV-F community study kit"
+  description="Printable cheat sheets for all eight CCDV-F domains, ordered by published exam weight."
+>
+  <nav class="breadcrumb no-print" aria-label="Breadcrumb">
+    <a href={href("")}>&larr; CCDV-F home</a>
+  </nav>
+
+  <h1>Cheatsheets by exam weight</h1>
+  <p class="page-introduction">
+    Quick-reference printable cheat sheets for final review. Each sheet is designed to print cleanly
+    with site navigation hidden, intact table rows, and repeated table headers across pages.
+  </p>
+
+  <section class="cheatsheet-notice" aria-labelledby="scaffold-notice-title">
+    <h2 id="scaffold-notice-title">Current content status</h2>
+    <p>
+      Because study notes are currently in scaffold state across all eight domains, these cheat sheets
+      contain blueprint allocations and sub-skill lists only. Authored note extracts will appear
+      automatically as domain notes are written.
+    </p>
+  </section>
+
+  <ol class="cheatsheet-list" aria-label="Cheatsheets ordered by exam weight">
+    {
+      domainsByWeight.map((domain) => (
+        <li class="cheatsheet-item" data-testid="cheatsheet-item">
+          <h2>
+            <a href={href(`cheatsheets/${domain.slug}/`)}>{domain.name}</a>
+          </h2>
+          <p class="cheatsheet-meta-summary">
+            Domain {domain.number} &bull; {domain.weight}% of the exam &bull; About{" "}
+            {domain.approximateItems} {domain.approximateItems === 1 ? "item" : "items"}
+          </p>
+          <DomainWeightBar domain={domain} />
+          <p class="cheatsheet-action">
+            <a href={href(`cheatsheets/${domain.slug}/`)} class="action-link">
+              View printable cheat sheet &rarr;
+            </a>
+          </p>
+        </li>
+      ))
+    }
+  </ol>
+</BaseLayout>
+
+<style>
+  .breadcrumb {
+    margin-bottom: 1.5rem;
+    font-size: 0.925rem;
+  }
+
+  .cheatsheet-notice {
+    margin: 1.75rem 0 2.5rem;
+    padding: clamp(1rem, 3vw, 1.5rem);
+    border: 0.0625rem solid var(--rule);
+    border-left: 0.4rem solid var(--signal);
+    background: var(--panel);
+    border-radius: 0.25rem;
+  }
+
+  .cheatsheet-notice h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.2rem;
+  }
+
+  .cheatsheet-notice p {
+    margin: 0;
+    color: var(--muted);
+  }
+
+  .cheatsheet-list {
+    display: grid;
+    gap: 1.25rem;
+    margin: 1.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .cheatsheet-item {
+    padding: clamp(1.25rem, 3vw, 1.75rem);
+    border: 0.0625rem solid var(--rule);
+    background: var(--panel);
+    border-radius: 0.25rem;
+  }
+
+  .cheatsheet-item h2 {
+    margin: 0;
+    font-size: 1.35rem;
+  }
+
+  .cheatsheet-meta-summary {
+    margin: 0.35rem 0 1rem;
+    color: var(--muted);
+    font-size: 0.925rem;
+  }
+
+  .cheatsheet-action {
+    margin: 1rem 0 0;
+  }
+
+  .action-link {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+</style>
