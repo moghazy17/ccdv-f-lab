@@ -156,6 +156,18 @@ export class ProgressStorage {
     return this.write(next);
   }
 
+  setDiagnostic(diagnostic: unknown): StorageResult {
+    // Persist diagnostic response while preserving all unrelated namespaces.
+    const current = this.read();
+    if (current.kind !== "ok" || current.value === undefined) {
+      return current;
+    }
+    const next = cloneEnvelope(current.value);
+    next.updatedAt = this.now();
+    next.namespaces.foundation.diagnostic = diagnostic;
+    return this.write(next);
+  }
+
   subscribe(listener: (result: StorageResult) => void): () => void {
     // Observe storage events so separate tabs re-render after another tab changes a mark.
     this.listeners.add(listener);

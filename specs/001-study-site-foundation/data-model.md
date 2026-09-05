@@ -96,8 +96,8 @@ All learner data lives in one versioned envelope in `localStorage`, described fu
 | `diagnostic` | Diagnostic response \| null | See below |
 
 **Relationships**: `planMarks` keys reference plan slugs; values reference domain numbers. Both are
-validated against the derived data on read, so a record naming a plan or domain that no longer exists
-is reported rather than silently dropped.
+validated against the derived data on read, so a record naming a plan or domain that no longer
+exists is reported rather than silently dropped.
 
 ### Diagnostic response
 
@@ -107,7 +107,7 @@ what depends on it (FR-030a).
 | Field | Type | Notes |
 |---|---|---|
 | `source` | `self-report` | The only value in this feature; 002 adds `assessed` |
-| `experience` | { [subjectArea]: `none` \| `some` \| `strong` } | Self-reported |
+| `experience` | { [domain slug]: `none` \| `some` \| `strong` } | Self-reported; keys are blueprint domain slugs |
 | `weeksAvailable` | integer | Drives the recommendation |
 | `hoursPerWeek` | decimal | Drives the recommendation |
 | `recommendedPlan` | plan slug | The output |
@@ -119,15 +119,16 @@ the stated rule in `recommend.ts`, not free text.
 
 **Recommendation rule**: choose the plan whose `totalHours` is the closest fit at or below
 `weeksAvailable × hoursPerWeek`, falling back to `1-week` when the budget is smaller than any plan,
-and biasing one plan longer when experience is `none` across the two heaviest domains. The rule is
-pure and unit-tested, with no reference to storage or the DOM, so 002 can supply an `assessed`
-response to the same function.
+and biasing one plan longer when experience is `none` across the two heaviest domains — which are
+derived by sorting the blueprint weights, never named in code. The rule is pure and unit-tested,
+with no reference to storage or the DOM, so 002 can supply an `assessed` response to the same
+function.
 
 ## Invariants that cross both kinds
 
 1. No learner data is ever read at build time; no derived data is ever written at runtime.
-2. Every exam number rendered originates in `blueprint.json`; components receive it as typed data and
-   never contain a literal.
+2. Every exam number rendered originates in `blueprint.json`; components receive it as typed data
+   and never contain a literal.
 3. A domain's `status` is computed, never stored, so it cannot go stale against the notes.
 4. The practice item flagged `format_demonstration` is excluded before any record reaches the search
    index (FR-009).

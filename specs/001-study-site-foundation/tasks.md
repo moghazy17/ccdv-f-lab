@@ -413,78 +413,78 @@ explained recommendation.
 
 > Write these tests first and confirm that they fail for the missing behavior before implementation.
 
-- [ ] T114 [P] [US3] Write pure recommendation-rule cases in `site/tests/unit/recommend.test.ts`
+- [X] T114 [P] [US3] Write pure recommendation-rule cases in `site/tests/unit/recommend.test.ts`
 
-- [ ] T115 [P] [US3] Use `site/tests/e2e/us3-plans.spec.ts` to write the direct-plan and
+- [X] T115 [P] [US3] Use `site/tests/e2e/us3-plans.spec.ts` to write the direct-plan and
   persisted-progress journey
 
-- [ ] T116 [P] [US3] Use `site/tests/e2e/us3-storage.spec.ts` to write unavailable, quota, cleared,
+- [X] T116 [P] [US3] Use `site/tests/e2e/us3-storage.spec.ts` to write unavailable, quota, cleared,
   and cross-tab journeys
 
-- [ ] T117 [P] [US3] Use `site/tests/e2e/us3-diagnostic.spec.ts` to write keyboard, screen-reader,
+- [X] T117 [P] [US3] Use `site/tests/e2e/us3-diagnostic.spec.ts` to write keyboard, screen-reader,
   and axe diagnostic checks
 
 ### Implementation for US3
 
-- [ ] T118 [P] [US3] Use `site/src/lib/progress.ts` to implement plan marks, completion totals,
+- [X] T118 [P] [US3] Use `site/src/lib/progress.ts` to implement plan marks, completion totals,
   theme, and diagnostic state
 
-- [ ] T119 [P] [US3] Use `site/src/lib/recommend.ts` to implement the pure self-report
+- [X] T119 [P] [US3] Use `site/src/lib/recommend.ts` to implement the pure self-report
   recommendation rule
   - Choose the closest plan at or below the time budget, fall back to `1-week`, bias one plan longer
     for no experience in the two heaviest domains, and return an explanatory reason.
 
-- [ ] T120 [P] [US3] Parse and validate weighted plan allocations in `site/src/lib/plans.ts`
+- [X] T120 [P] [US3] Parse and validate weighted plan allocations in `site/src/lib/plans.ts`
   - Require `1-week`, `3-weeks`, and `6-weeks`; verify totals and each domain allocation to three
     decimal places against derived blueprint weights.
 
-- [ ] T121 [US3] Use `site/src/components/PlanChecklist.astro` to implement per-domain marks and
+- [X] T121 [US3] Use `site/src/components/PlanChecklist.astro` to implement per-domain marks and
   hours-and-domains completion
 
-- [ ] T122 [US3] Implement the accessible self-report flow in `site/src/components/Diagnostic.astro`
+- [X] T122 [US3] Implement the accessible self-report flow in `site/src/components/Diagnostic.astro`
   - Collect experience, weeks, and hours; avoid practice items and score claims; persist the
     self-contained response; focus and announce the result.
 
-- [ ] T123 [US3] Implement the ungated plan chooser in `site/src/pages/plans/index.astro`
+- [X] T123 [US3] Implement the ungated plan chooser in `site/src/pages/plans/index.astro`
 
-- [ ] T124 [US3] Use `site/src/pages/plans/[plan].astro` to implement all three weight-descending
+- [X] T124 [US3] Use `site/src/pages/plans/[plan].astro` to implement all three weight-descending
   plan routes
   - Show totals, allocations, weights, plan-specific marks, completion proportions, browser storage
     limits, and the stated behavior when switching plans.
 
-- [ ] T125 [US3] Use `site/src/pages/diagnostic.astro` to implement the stable self-report
+- [X] T125 [US3] Use `site/src/pages/diagnostic.astro` to implement the stable self-report
   diagnostic address
 
 ### User story 3 - Budget study time across the domains (Priority: P3) gates
 
-- [ ] T126 [US3] Run `ruff check .` from repository root `./`
+- [X] T126 [US3] Run `ruff check .` from repository root `./`
 
-- [ ] T127 [US3] Run `ruff format --check .` from repository root `./`
+- [X] T127 [US3] Run `ruff format --check .` from repository root `./`
 
-- [ ] T128 [US3] Run `pytest -q` from repository root `./`
+- [X] T128 [US3] Run `pytest -q` from repository root `./`
 
-- [ ] T129 [US3] Run `python tools/check_blueprint_consistency.py` from repository root `./`
+- [X] T129 [US3] Run `python tools/check_blueprint_consistency.py` from repository root `./`
   - Confirm every displayed weight and item count is derived from `BLUEPRINT.md`.
 
-- [ ] T130 [US3] Run `python tools/check_content_single_source.py` from repository root `./`
+- [X] T130 [US3] Run `python tools/check_content_single_source.py` from repository root `./`
   - Confirm no study markdown was copied from `notes/`, `cheatsheets/`, `guide/`, `study-plans/`, or
     `drills/bank/` into `site/`.
 
-- [ ] T131 [US3] Run `npm run build` from `site/`
+- [X] T131 [US3] Run `npm run build` from `site/`
 
-- [ ] T132 [US3] Run `python -m drills.engine validate` from repository root `./`
+- [X] T132 [US3] Run `python -m drills.engine validate` from repository root `./`
 
-- [ ] T133 [US3] Run `python -m lab.evals run` from repository root `./`
+- [X] T133 [US3] Run `python -m lab.evals run` from repository root `./`
 
-- [ ] T134 [US3] Run `npm run typecheck` from `site/`
+- [X] T134 [US3] Run `npm run typecheck` from `site/`
 
-- [ ] T135 [US3] Run `npm run lint` from `site/`
+- [X] T135 [US3] Run `npm run lint` from `site/`
 
-- [ ] T136 [US3] Run `python tools/check_links.py` from repository root `./`
+- [X] T136 [US3] Run `python tools/check_links.py` from repository root `./`
 
-- [ ] T137 [US3] Run `npm run test:unit` from `site/`
+- [X] T137 [US3] Run `npm run test:unit` from `site/`
 
-- [ ] T138 [US3] Run `npm run test:e2e` from `site/`
+- [X] T138 [US3] Run `npm run test:e2e` from `site/`
   - Confirm no journey requires or offers an account, installation, API key, analytics, tracking,
     cookies, or a third-party runtime request.
 

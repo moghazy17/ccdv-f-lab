@@ -1,0 +1,127 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { loadStudyPlans, type StudyPlan } from "../../lib/plans";
+
+const base = import.meta.env.BASE_URL;
+const href = (path: string) => `${base}${path}`;
+
+const planEntries = await getCollection("studyPlans");
+const plans: StudyPlan[] = loadStudyPlans(planEntries);
+---
+
+<BaseLayout
+  title="Study plans | CCDV-F community study kit"
+  description="Structured hour-allocation study plans for the CCDV-F certification."
+>
+  <h1>Study plans</h1>
+  <p class="page-introduction">
+    Choose a study plan that fits your preparation timeline. Each schedule allocates hours across
+    the eight blueprint domains strictly proportional to their published exam weights.
+  </p>
+
+  <section class="diagnostic-callout" aria-labelledby="diagnostic-callout-title">
+    <h2 id="diagnostic-callout-title">Need help choosing a schedule?</h2>
+    <p>
+      Use our self-report diagnostic to enter your weeks available and estimated study hours per week.
+      It recommends a plan tailored to your time budget.
+    </p>
+    <p>
+      <a href={href("diagnostic/")} class="button-link">Open self-report diagnostic</a>
+    </p>
+  </section>
+
+  <section class="plans-list" aria-labelledby="available-plans-title">
+    <h2 id="available-plans-title">Available study plans</h2>
+    <div class="plans-grid">
+      {plans.map((plan) => (
+        <article class="plan-card">
+          <h3>{plan.title}</h3>
+          <p class="plan-hours">
+            <strong>{plan.totalHours.toFixed(3)}</strong> total study hours
+          </p>
+          <p class="plan-description">
+            Allocates study hours across all eight blueprint domains according to exam weight.
+          </p>
+          <p>
+            <a href={href(`plans/${plan.slug}/`)} class="plan-link">
+              Open {plan.title} ({plan.slug})
+            </a>
+          </p>
+        </article>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .diagnostic-callout {
+    margin-top: 2rem;
+    padding: clamp(1rem, 3vw, 1.75rem);
+    border-left: 0.35rem solid var(--signal);
+    background: var(--panel);
+  }
+
+  .diagnostic-callout h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+  }
+
+  .button-link {
+    display: inline-block;
+    padding: 0.55rem 1.15rem;
+    background: var(--signal);
+    color: var(--paper);
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: 0.2rem;
+  }
+
+  .button-link:hover {
+    filter: brightness(1.1);
+  }
+
+  .plans-list {
+    margin-top: 2.5rem;
+  }
+
+  .plans-list h2 {
+    margin: 0 0 1.25rem;
+    font-size: 1.35rem;
+  }
+
+  .plans-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  }
+
+  .plan-card {
+    padding: 1.5rem;
+    border: 0.0625rem solid var(--rule);
+    background: var(--panel);
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .plan-card h3 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  .plan-hours {
+    margin: 0;
+    color: var(--signal-ink);
+    font-size: 1.05rem;
+  }
+
+  .plan-description {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.925rem;
+  }
+
+  .plan-link {
+    font-weight: 700;
+  }
+</style>

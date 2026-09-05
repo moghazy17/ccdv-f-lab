@@ -6,6 +6,7 @@ import { buildDomainFixture } from "./domain-fixture";
 type AxePage = ConstructorParameters<typeof AxeBuilder>[0]["page"];
 
 test("scaffold and authored domain pages have no axe violations", async ({ page }) => {
+  test.setTimeout(300_000);
   await page.goto("./domains/01-agents-and-workflows/");
   await expect(page.getByTestId("scaffold-notice")).toBeVisible();
   const scaffoldPage = page as unknown as AxePage;

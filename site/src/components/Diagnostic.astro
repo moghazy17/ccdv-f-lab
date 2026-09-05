@@ -1,0 +1,313 @@
+---
+import { domains } from "../lib/blueprint";
+---
+
+<div class="diagnostic-container" data-diagnostic-container>
+  <div class="diagnostic-intro">
+    <p data-testid="diagnostic-disclaimer" class="diagnostic-disclaimer">
+      This diagnostic is a self-report time-budgeting tool. It asks about your available schedule and
+      self-reported experience across blueprint subject areas to recommend a structured study plan.
+      It does not measure your exam knowledge, draw on the practice-item bank, or predict an exam score.
+    </p>
+  </div>
+
+  <form class="diagnostic-form" data-diagnostic-form novalidate>
+    <div class="form-section">
+      <h2>Your time budget</h2>
+      <div class="field-group">
+        <label for="weeks-available">
+          <strong>Weeks available before target exam date:</strong>
+        </label>
+        <input
+          type="number"
+          id="weeks-available"
+          name="weeksAvailable"
+          min="1"
+          max="52"
+          value="3"
+          required
+        />
+      </div>
+
+      <div class="field-group">
+        <label for="hours-per-week">
+          <strong>Estimated study hours per week:</strong>
+        </label>
+        <input
+          type="number"
+          id="hours-per-week"
+          name="hoursPerWeek"
+          min="1"
+          max="80"
+          value="14"
+          required
+        />
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2>Prior experience across blueprint domains</h2>
+      <p class="field-description">
+        Rate your familiarity with each blueprint subject area. Reporting no prior experience in the two
+        heaviest exam domains automatically biases recommendations toward a longer study plan.
+      </p>
+
+      <div class="experience-fields">
+        {domains.map((domain) => (
+          <div class="field-group experience-item">
+            <label for={`exp-${domain.slug}`}>
+              <span>Domain {domain.number}: {domain.name} ({domain.weight}%)</span>
+            </label>
+            <select id={`exp-${domain.slug}`} name={domain.slug} class="experience-select">
+              <option value="some">Some experience</option>
+              <option value="none">No prior experience</option>
+              <option value="strong">Strong experience</option>
+            </select>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="submit-button">Get recommendation</button>
+    </div>
+  </form>
+
+  <div
+    id="diagnostic-result"
+    data-testid="diagnostic-result"
+    class="diagnostic-result"
+    tabindex="-1"
+    role="status"
+    aria-live="polite"
+    style="display: none;"
+  >
+    <div class="result-content">
+      <h2>Recommended study plan</h2>
+      <p class="result-plan-name">
+        <strong data-result-plan-title></strong>
+      </p>
+      <p class="result-reason" data-result-reason></p>
+      <div class="result-actions">
+        <a href="#" class="result-plan-link" data-result-plan-link>
+          Open recommended plan
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { createProgressStorage } from "../lib/storage";
+  import { recommend, type DiagnosticResult, type PlanSlug } from "../lib/recommend";
+
+  const container = document.querySelector<HTMLElement>("[data-diagnostic-container]");
+  if (container) {
+    const form = container.querySelector<HTMLFormElement>("[data-diagnostic-form]");
+    const resultRegion = container.querySelector<HTMLElement>("[data-testid='diagnostic-result']");
+    const planTitleEl = container.querySelector<HTMLElement>("[data-result-plan-title]");
+    const reasonEl = container.querySelector<HTMLElement>("[data-result-reason]");
+    const planLinkEl = container.querySelector<HTMLAnchorElement>("[data-result-plan-link]");
+    const weeksInput = form?.querySelector<HTMLInputElement>("#weeks-available");
+    const hoursInput = form?.querySelector<HTMLInputElement>("#hours-per-week");
+
+    const storage = createProgressStorage();
+    const basePath = (document.querySelector("a.site-name") as HTMLAnchorElement)?.getAttribute("href") ?? "/";
+
+    const planNames: Record<PlanSlug, string> = {
+      "1-week": "1-week study plan (14 hours)",
+      "3-weeks": "3-week study plan (42 hours)",
+      "6-weeks": "6-week study plan (84 hours)"
+    };
+
+    function displayResult(result: DiagnosticResult, shouldFocus: boolean = false): void {
+      if (!resultRegion || !planTitleEl || !reasonEl || !planLinkEl) {
+        return;
+      }
+
+      const planTitle = planNames[result.recommendedPlan] ?? `${result.recommendedPlan} study plan`;
+      planTitleEl.textContent = planTitle;
+      reasonEl.textContent = result.reason;
+
+      const normalizedBase = basePath.endsWith("/") ? basePath : `${basePath}/`;
+      const planUrl = `${normalizedBase}plans/${result.recommendedPlan}/`;
+      planLinkEl.href = planUrl;
+      planLinkEl.textContent = `Open ${result.recommendedPlan} plan`;
+
+      resultRegion.style.display = "block";
+
+      if (shouldFocus) {
+        resultRegion.focus();
+      }
+    }
+
+    // Check existing stored diagnostic
+    const existing = storage.read();
+    if (existing.kind === "ok" && existing.value) {
+      const storedDiag = existing.value.namespaces.foundation.diagnostic as DiagnosticResult | null;
+      if (storedDiag && storedDiag.recommendedPlan) {
+        displayResult(storedDiag, false);
+      }
+    }
+
+    if (form) {
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        const weeks = Number(weeksInput?.value) || 1;
+        const hours = Number(hoursInput?.value) || 1;
+
+        const experience: Record<string, string> = {};
+        const selectElements = form.querySelectorAll<HTMLSelectElement>(".experience-select");
+        selectElements.forEach((sel) => {
+          experience[sel.name] = sel.value;
+        });
+
+        const recommendation = recommend({
+          experience,
+          weeksAvailable: weeks,
+          hoursPerWeek: hours
+        });
+
+        storage.setDiagnostic(recommendation);
+        displayResult(recommendation, true);
+      });
+    }
+  }
+</script>
+
+<style>
+  .diagnostic-container {
+    display: grid;
+    gap: 2rem;
+    margin-top: 1.5rem;
+  }
+
+  .diagnostic-disclaimer {
+    margin: 0;
+    padding: 1rem 1.25rem;
+    border-left: 0.35rem solid var(--signal);
+    background: var(--panel);
+    font-size: 0.95rem;
+    color: var(--muted);
+  }
+
+  .diagnostic-form {
+    display: grid;
+    gap: 2rem;
+    padding: clamp(1.25rem, 4vw, 2rem);
+    border: 0.0625rem solid var(--rule);
+    background: var(--panel);
+  }
+
+  .form-section {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .form-section h2 {
+    margin: 0;
+    font-size: 1.35rem;
+  }
+
+  .field-description {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.925rem;
+  }
+
+  .field-group {
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  .experience-fields {
+    display: grid;
+    gap: 0.85rem;
+    margin-top: 0.5rem;
+  }
+
+  .experience-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 0.0625rem solid var(--rule);
+  }
+
+  @media (max-width: 36rem) {
+    .experience-item {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  input[type="number"],
+  select {
+    padding: 0.45rem 0.65rem;
+    background: var(--paper);
+    color: var(--ink);
+    border: 0.0625rem solid var(--rule);
+    border-radius: 0.2rem;
+  }
+
+  input[type="number"] {
+    max-width: 12rem;
+  }
+
+  .submit-button {
+    padding: 0.75rem 1.5rem;
+    background: var(--signal);
+    color: var(--paper);
+    border: none;
+    border-radius: 0.25rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .submit-button:hover {
+    filter: brightness(1.1);
+  }
+
+  .diagnostic-result {
+    padding: clamp(1.25rem, 4vw, 2rem);
+    border: 0.125rem solid var(--signal);
+    background: var(--panel);
+    border-radius: 0.25rem;
+  }
+
+  .diagnostic-result:focus {
+    outline: 0.2rem solid var(--focus);
+    outline-offset: 0.2rem;
+  }
+
+  .result-content h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.4rem;
+  }
+
+  .result-plan-name {
+    margin: 0 0 0.75rem;
+    font-size: 1.2rem;
+    color: var(--signal-ink);
+  }
+
+  .result-reason {
+    margin: 0 0 1.25rem;
+    line-height: 1.6;
+  }
+
+  .result-plan-link {
+    display: inline-block;
+    padding: 0.65rem 1.25rem;
+    background: var(--signal);
+    color: var(--paper);
+    text-decoration: none;
+    font-weight: 700;
+    border-radius: 0.25rem;
+  }
+
+  .result-plan-link:hover {
+    filter: brightness(1.1);
+  }
+</style>

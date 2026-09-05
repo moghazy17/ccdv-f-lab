@@ -16,7 +16,10 @@
       "planMarks": { "3-weeks": [2, 5] },
       "diagnostic": {
         "source": "self-report",
-        "experience": { "api": "some", "agents": "none", "tools": "some", "security": "none" },
+        "experience": {
+          "02-applications-and-integration": "some",
+          "05-model-selection-and-optimization": "none"
+        },
         "weeksAvailable": 3,
         "hoursPerWeek": 14,
         "recommendedPlan": "3-weeks",
@@ -27,6 +30,11 @@
   }
 }
 ```
+
+**Experience keys.** Each key in `experience` is a **domain slug**, exactly as it appears in the
+exported blueprint data and in the `notes/` directory names. No other spelling is accepted: informal
+keys would force the recommendation rule to guess at aliases, and an unmatched key silently changes
+the recommendation.
 
 ## Versioning rules
 

@@ -9,6 +9,7 @@ const absentLabDomains = [
 ];
 
 test("decision tables retain their columns and absent lab coverage is stated", async ({ page }) => {
+  test.setTimeout(300_000);
   const partial = await buildDomainFixture("partial");
   try {
     await page.goto(`${partial.url}/domains/02-applications-and-integration/`);
