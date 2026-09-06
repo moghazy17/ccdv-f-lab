@@ -33,6 +33,16 @@ test.describe("All scaffold state and honest landing coverage (SC-009, FR-013, F
     );
   });
 
+  test("cheatsheet index reports the authored-note count from the notes", async ({ page }) => {
+    const authored = authoredDomainCount(blueprint.domains.map((domain) => domain.slug));
+
+    await page.goto("./cheatsheets/");
+
+    await expect(page.getByTestId("cheatsheet-content-status")).toContainText(
+      `${authored} of ${blueprint.domains.length} domains have authored notes`
+    );
+  });
+
   test("all eight domain modules render honest scaffold notices and sub-skill lists", async ({
     page
   }) => {
@@ -111,9 +121,7 @@ test.describe("All scaffold state and honest landing coverage (SC-009, FR-013, F
     await expect(resultList).toBeVisible();
 
     // Check that search results for domain scaffold display scaffold status tag
-    const scaffoldBadge = page.locator(".search-result__status");
-    if (await scaffoldBadge.count() > 0) {
-      await expect(scaffoldBadge.first()).toHaveText(/scaffold/i);
-    }
+    const scaffoldBadge = page.locator(".search-result-status").filter({ hasText: /scaffold/i });
+    await expect(scaffoldBadge.first()).toBeVisible();
   });
 });

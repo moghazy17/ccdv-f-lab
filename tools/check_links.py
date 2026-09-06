@@ -17,6 +17,7 @@ _IMAGE_LINK = re.compile(
     r"\((?P<target><[^>]+>|[^\s)]+)(?:\s+[^)]*)?\)"
 )
 _REFERENCE_DEFINITION = re.compile(r"^\s{0,3}\[[^]]+\]:\s*(?P<target><[^\s]+>|\S+)", re.MULTILINE)
+_ATX_HEADING = re.compile(r"^\s{0,3}#{1,6}\s+(?P<heading>.*?)\s*$")
 _IGNORED_DIRECTORIES = {
     ".astro",
     ".git",
@@ -60,19 +61,33 @@ def check_links(root: Path) -> tuple[list[str], int]:
         for match in matches:
             target = match.group("target")
             normalized = _normalize_target(target)
-            if not normalized or normalized.startswith("#"):
+            if not normalized:
                 continue
             if _is_external(normalized):
                 external_links += 1
                 continue
-            destination = _destination(normalized, markdown_path, root)
+            parsed = urlsplit(normalized)
+            destination = (
+                markdown_path
+                if not parsed.path
+                else _destination(unquote(parsed.path), markdown_path, root)
+            )
             if not destination.exists():
                 line = text[: match.start("target")].count("\n") + 1
                 relative_path = markdown_path.relative_to(root)
                 errors.append(
-                    f"{relative_path}:{line}: broken relative link {normalized!r} "
+                    f"{relative_path}:{line}: broken relative link {target!r} "
                     f"(resolved to {destination})"
                 )
+            elif parsed.fragment and destination.suffix.lower() == ".md":
+                fragment = unquote(parsed.fragment)
+                if fragment not in _markdown_heading_ids(destination):
+                    line = text[: match.start("target")].count("\n") + 1
+                    relative_path = markdown_path.relative_to(root)
+                    errors.append(
+                        f"{relative_path}:{line}: broken Markdown fragment {fragment!r} "
+                        f"in {destination}"
+                    )
     errors.extend(check_built_links(root))
     return errors, external_links
 
@@ -110,6 +125,35 @@ def _parse_built_page(page_path: Path) -> _BuiltPageParser:
     parser = _BuiltPageParser()
     parser.feed(page_path.read_text(encoding="utf-8"))
     return parser
+
+
+def _markdown_heading_ids(markdown_path: Path) -> set[str]:
+    """Return GitHub-style generated heading ids, including duplicate-heading suffixes."""
+    heading_counts: dict[str, int] = {}
+    heading_ids: set[str] = set()
+    for line in markdown_path.read_text(encoding="utf-8").splitlines():
+        match = _ATX_HEADING.match(line)
+        if match is None:
+            continue
+        slug = _github_heading_slug(match.group("heading"))
+        if not slug:
+            continue
+        count = heading_counts.get(slug, 0)
+        heading_counts[slug] = count + 1
+        heading_ids.add(slug if count == 0 else f"{slug}-{count}")
+    return heading_ids
+
+
+def _github_heading_slug(heading: str) -> str:
+    """Apply the punctuation removal and hyphenation GitHub uses for Markdown heading links."""
+    text = re.sub(r"\s+#+\s*$", "", heading.strip())
+    text = re.sub(r"\[([^]]+)\]\([^)]*\)", r"\1", text)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = re.sub(r"[*_`~]", "", text)
+    text = "".join(
+        character for character in text.casefold() if character.isalnum() or character in " -_"
+    )
+    return re.sub(r"\s+", "-", text).strip("-")
 
 
 def _configured_base(value: str) -> str:
@@ -170,11 +214,11 @@ def _built_destination(
 
 
 def _normalize_target(target: str) -> str:
-    """Remove Markdown delimiters and URL fragments before checking a local path."""
+    """Remove Markdown delimiters while preserving a fragment for heading validation."""
     target = target.strip()
     if target.startswith("<") and target.endswith(">"):
         target = target[1:-1]
-    return unquote(target.split("#", maxsplit=1)[0].split("?", maxsplit=1)[0])
+    return unquote(target)
 
 
 def _is_external(target: str) -> bool:
@@ -200,6 +244,8 @@ def main(argv: list[str] | None = None) -> int:
     for error in errors:
         print(error)
     print(f"External links skipped: {external_links}")
+    if not (root / "site" / "dist").is_dir():
+        print("Built-output links skipped: site/dist is absent.")
     if errors:
         print(f"Broken relative links: {len(errors)}")
         return 1

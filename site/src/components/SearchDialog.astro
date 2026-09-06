@@ -304,7 +304,7 @@
   // Global trigger click handler
   document.addEventListener("click", (event: MouseEvent) => {
     const target = event.target as HTMLElement | null;
-    if (target?.closest("#search-trigger")) {
+    if (target?.closest("[data-search-trigger]")) {
       event.preventDefault();
       openSearch();
     }

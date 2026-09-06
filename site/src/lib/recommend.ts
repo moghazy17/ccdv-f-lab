@@ -20,10 +20,13 @@ export interface DiagnosticResult {
   completedAt: string;
 }
 
+type RankedDomain = Pick<(typeof domains)[number], "name" | "slug" | "weight">;
+
 export function recommend(
   input: DiagnosticInput,
   planTotals: Record<PlanSlug, number>,
-  completedAt: string = new Date().toISOString()
+  completedAt: string = new Date().toISOString(),
+  domainsToRank: readonly RankedDomain[] = domains
 ): DiagnosticResult {
   const weeks = Math.max(1, Math.round(input.weeksAvailable || 1));
   const hoursPerWeek = Math.max(1, Number(input.hoursPerWeek) || 1);
@@ -42,7 +45,7 @@ export function recommend(
   }
 
   const normalizedExperience = normalizeExperience(input.experience);
-  const isBiased = hasNoExperienceInHeaviestDomains(normalizedExperience);
+  const isBiased = hasNoExperienceInHeaviestDomains(normalizedExperience, domainsToRank);
 
   let recommendedPlan = basePlan;
   if (isBiased) {
@@ -60,7 +63,8 @@ export function recommend(
     isBiased,
     planTotals,
     recommendedPlan,
-    weeks
+    weeks,
+    domainsToRank
   });
 
   return {
@@ -91,9 +95,10 @@ function normalizeExperience(
 }
 
 function hasNoExperienceInHeaviestDomains(
-  experience: Record<string, ExperienceLevel>
+  experience: Record<string, ExperienceLevel>,
+  domainsToRank: readonly RankedDomain[] = domains
 ): boolean {
-  return heaviestDomainSlugs().every((slug) => experience[slug] === "none");
+  return heaviestDomainSlugs(domainsToRank).every((slug) => experience[slug] === "none");
 }
 
 /**
@@ -101,11 +106,22 @@ function hasNoExperienceInHeaviestDomains(
  * Hard-coding which domains are heaviest would silently target the wrong ones if the published
  * weights ever change, and no gate would catch it.
  */
-function heaviestDomainSlugs(): string[] {
-  return [...domains]
+export function heaviestDomainSlugs(
+  domainsToRank: readonly RankedDomain[] = domains
+): string[] {
+  return [...domainsToRank]
     .sort((left, right) => right.weight - left.weight)
     .slice(0, 2)
     .map((domain) => domain.slug);
+}
+
+export function heaviestDomainNames(
+  domainsToRank: readonly RankedDomain[] = domains
+): string[] {
+  return [...domainsToRank]
+    .sort((left, right) => right.weight - left.weight)
+    .slice(0, 2)
+    .map((domain) => domain.name);
 }
 
 interface ReasonParams {
@@ -116,6 +132,7 @@ interface ReasonParams {
   planTotals: Record<PlanSlug, number>;
   recommendedPlan: PlanSlug;
   weeks: number;
+  domainsToRank: readonly RankedDomain[];
 }
 
 function buildReason(params: ReasonParams): string {
@@ -123,7 +140,8 @@ function buildReason(params: ReasonParams): string {
   const planHours = planTotals[recommendedPlan];
 
   if (isBiased && recommendedPlan !== basePlan) {
-    return `Your time budget of ${weeks} ${weeks === 1 ? "week" : "weeks"} at ${hoursPerWeek} hours per week (${budget} hours total) matches the ${basePlan} plan. Because you reported no prior experience in the two heaviest domains (Applications and Integration, and Model Selection and Optimization), we recommend the ${recommendedPlan} (${planHours}-hour) plan to provide adequate preparation time.`;
+    const heavyDomainNames = heaviestDomainNames(params.domainsToRank);
+    return `Your time budget of ${weeks} ${weeks === 1 ? "week" : "weeks"} at ${hoursPerWeek} hours per week (${budget} hours total) matches the ${basePlan} plan. Because you reported no prior experience in the two heaviest domains (${heavyDomainNames.join(", and ")}), we recommend the ${recommendedPlan} (${planHours}-hour) plan to provide adequate preparation time.`;
   }
 
   if (budget < planTotals["1-week"]) {

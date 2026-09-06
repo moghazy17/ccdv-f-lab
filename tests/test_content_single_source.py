@@ -55,3 +55,20 @@ def test_single_source_gate_rejects_prose_stripped_of_markdown_formatting(tmp_pa
 
     assert len(errors) == 1
     assert "study-plans/plan.md" in errors[0].replace("\\", "/")
+
+
+def test_single_source_gate_rejects_copied_decision_table_cells(tmp_path: Path) -> None:
+    """Long authored decision-table cells receive the same protection as paragraphs."""
+    (tmp_path / "notes").mkdir()
+    (tmp_path / "site" / "src").mkdir(parents=True)
+    cell = "Choose this approach when a deterministic sequence gives safer and clearer control."
+    (tmp_path / "notes" / "source.md").write_text(
+        f"| Option | Choose this when |\n|---|---|\n| Workflow | {cell} |\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "site" / "src" / "page.astro").write_text(f"<p>{cell}</p>\n", encoding="utf-8")
+
+    errors = find_duplicate_prose(tmp_path)
+
+    assert len(errors) == 1
+    assert "notes/source.md" in errors[0].replace("\\", "/")

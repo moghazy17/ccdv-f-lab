@@ -4,11 +4,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from drills.engine.blueprint import load_blueprint, slugify
 from tools.build_cheatsheets import build_cheatsheets
 from tools.build_flashcards import build_flashcards
 from tools.check_blueprint_consistency import main as consistency_main
 from tools.check_links import check_links
+from tools.check_links import main as links_main
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -33,6 +36,40 @@ def test_link_checker_reports_a_broken_relative_link_with_its_line(tmp_path: Pat
     assert len(errors) == 1
     assert errors[0].startswith("page.md:2:")
     assert "missing.md" in errors[0]
+
+
+def test_link_checker_validates_markdown_fragments_in_target_and_same_files(tmp_path: Path) -> None:
+    """Markdown heading links are accepted only when their GitHub-style fragments exist."""
+    (tmp_path / "guide.md").write_text("# Guide details\n\n## Next steps\n", encoding="utf-8")
+    (tmp_path / "page.md").write_text(
+        "# Page\n\n[Guide](guide.md#guide-details)\n[Section](#page)\n", encoding="utf-8"
+    )
+
+    errors, external_links = check_links(tmp_path)
+
+    assert errors == []
+    assert external_links == 0
+
+
+def test_link_checker_reports_a_broken_markdown_fragment(tmp_path: Path) -> None:
+    """A link to a removed Markdown heading blocks the local-link gate."""
+    (tmp_path / "guide.md").write_text("# Guide\n", encoding="utf-8")
+    (tmp_path / "page.md").write_text("[Missing](guide.md#missing-heading)\n", encoding="utf-8")
+
+    errors, _ = check_links(tmp_path)
+
+    assert errors == [
+        f"page.md:1: broken Markdown fragment 'missing-heading' in {tmp_path / 'guide.md'}"
+    ]
+
+
+def test_link_checker_reports_when_built_output_is_unavailable(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The Markdown-only run identifies why it did not inspect generated HTML."""
+    assert links_main(["--root", str(tmp_path)]) == 0
+
+    assert "Built-output links skipped: site/dist is absent." in capsys.readouterr().out
 
 
 def test_link_checker_checks_built_routes_and_heading_fragments(tmp_path: Path) -> None:

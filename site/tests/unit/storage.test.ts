@@ -5,6 +5,7 @@ import {
   createProgressStorage,
   emptyProgress,
   migrateProgress,
+  themeBootstrapScript,
   type StorageLike
 } from "../../src/lib/storage";
 
@@ -25,6 +26,37 @@ class MemoryStorage implements StorageLike {
 }
 
 describe("progress storage", () => {
+  test("theme bootstrap refuses future and invalid schema records", () => {
+    const originalDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
+    const originalStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+    const document = { documentElement: { dataset: {} as Record<string, string> } };
+    const storage = new MemoryStorage();
+
+    Object.defineProperty(globalThis, "document", { configurable: true, value: document });
+    Object.defineProperty(globalThis, "localStorage", { configurable: true, value: storage });
+    try {
+      for (const schemaVersion of [2, "1", undefined]) {
+        storage.setItem(
+          PROGRESS_STORAGE_KEY,
+          JSON.stringify({ schemaVersion, namespaces: { foundation: { theme: "dark" } } })
+        );
+        Function(themeBootstrapScript)();
+        expect(document.documentElement.dataset.theme).toBe("system");
+      }
+    } finally {
+      if (originalDocument) {
+        Object.defineProperty(globalThis, "document", originalDocument);
+      } else {
+        Reflect.deleteProperty(globalThis, "document");
+      }
+      if (originalStorage) {
+        Object.defineProperty(globalThis, "localStorage", originalStorage);
+      } else {
+        Reflect.deleteProperty(globalThis, "localStorage");
+      }
+    }
+  });
+
   test("migrates a lower version without mutating its input", () => {
     const older = {
       schemaVersion: 0,
@@ -106,5 +138,50 @@ describe("progress storage", () => {
     expect(accessor.replace(newer as unknown as typeof valid).kind).toBe("newer-version");
     // Stored data still intact
     expect(accessor.read().value?.namespaces.foundation.planMarks["3-weeks"]).toEqual([1, 2]);
+  });
+});
+
+describe("concurrent plan-mark writes", () => {
+  test("a competing tab's clobbering write is detected and the mark is reapplied", () => {
+    // Simulate the interleaving that loses a mark: this tab reads, a second tab writes its own
+    // whole envelope, then this tab's write lands. The second tab's record is injected once, at
+    // the moment this tab has already read but not yet written.
+    class ClobberingStorage extends MemoryStorage {
+      clobberOnNextWrite: string | null = null;
+
+      setItem(key: string, value: string): void {
+        super.setItem(key, value);
+        if (this.clobberOnNextWrite !== null) {
+          const competing = this.clobberOnNextWrite;
+          this.clobberOnNextWrite = null;
+          super.setItem(key, competing);
+        }
+      }
+    }
+
+    const storage = new ClobberingStorage();
+    const competingEnvelope = emptyProgress("2026-01-01T00:00:00.000Z");
+    competingEnvelope.namespaces.foundation.planMarks["3-weeks"] = [5];
+    storage.clobberOnNextWrite = JSON.stringify(competingEnvelope);
+
+    const progress = createProgressStorage(storage, () => "2026-01-02T00:00:00.000Z");
+    const result = progress.setPlanMark("3-weeks", 2, true);
+
+    expect(result.kind).toBe("ok");
+    const stored = progress.read();
+    expect(stored.kind).toBe("ok");
+    expect(stored.value?.namespaces.foundation.planMarks["3-weeks"]).toEqual([2, 5]);
+  });
+
+  test("an uncontended write still performs a single merge", () => {
+    const storage = new MemoryStorage();
+    const progress = createProgressStorage(storage, () => "2026-01-02T00:00:00.000Z");
+
+    expect(progress.setPlanMark("3-weeks", 2, true).kind).toBe("ok");
+    expect(progress.setPlanMark("3-weeks", 5, true).kind).toBe("ok");
+    expect(progress.setPlanMark("3-weeks", 2, false).kind).toBe("ok");
+
+    const stored = progress.read();
+    expect(stored.value?.namespaces.foundation.planMarks["3-weeks"]).toEqual([5]);
   });
 });

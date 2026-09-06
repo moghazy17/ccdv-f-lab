@@ -158,6 +158,7 @@ const href = (path: string) => `${base}${path}`;
 
 <script>
   import { createProgressStorage, type ProgressEnvelope } from "../lib/storage";
+  import { escapeHtml, formatPlanMarks } from "../lib/progress-summary";
   import {
     exportProgress,
     hasRecordedProgress,
@@ -183,15 +184,6 @@ const href = (path: string) => `${base}${path}`;
 
   let triggerElement: HTMLElement | null = null;
   let pendingEnvelope: ProgressEnvelope | null = null;
-
-  function formatPlanMarks(summary: RecordSummary): string {
-    if (summary.plans.length === 0) {
-      return "No plan marks recorded";
-    }
-    return summary.plans
-      .map((p) => `${p.planSlug}: Domain${p.domainNumbers.length > 1 ? "s" : ""} ${p.domainNumbers.join(", ")} (${p.count} of 8 domains)`)
-      .join("; ");
-  }
 
   function renderOverview(): void {
     const readResult = storage.read();
@@ -232,7 +224,7 @@ const href = (path: string) => `${base}${path}`;
     const marksHtml = `<p><strong>Plan marks:</strong> ${formatPlanMarks(summary)}</p>`;
     const diagHtml = `<p><strong>Diagnostic:</strong> ${summary.hasDiagnostic ? "Completed" : "Not taken yet"}</p>`;
     const themeHtml = `<p><strong>Theme:</strong> ${summary.theme}</p>`;
-    const updatedHtml = `<p><strong>Last updated:</strong> ${summary.updatedAt}</p>`;
+    const updatedHtml = `<p><strong>Last updated:</strong> ${escapeHtml(summary.updatedAt)}</p>`;
 
     summaryEl.innerHTML = `
       <div class="summary-details">
@@ -256,13 +248,13 @@ const href = (path: string) => `${base}${path}`;
       <div class="comparison-grid">
         <div class="comparison-column comparison-column--current">
           <h3>Current browser progress (will be replaced)</h3>
-          <p><strong>Last updated:</strong> ${currentSummary.updatedAt}</p>
+          <p><strong>Last updated:</strong> ${escapeHtml(currentSummary.updatedAt)}</p>
           <p><strong>Plan marks:</strong> ${formatPlanMarks(currentSummary)}</p>
           <p><strong>Diagnostic:</strong> ${currentSummary.hasDiagnostic ? "Completed" : "None"}</p>
         </div>
         <div class="comparison-column comparison-column--incoming">
           <h3>Incoming file progress</h3>
-          <p><strong>Last updated:</strong> ${incomingSummary.updatedAt}</p>
+          <p><strong>Last updated:</strong> ${escapeHtml(incomingSummary.updatedAt)}</p>
           <p><strong>Plan marks:</strong> ${formatPlanMarks(incomingSummary)}</p>
           <p><strong>Diagnostic:</strong> ${incomingSummary.hasDiagnostic ? "Completed" : "None"}</p>
         </div>

@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/prevent_destructive_actions.py",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/prevent_destructive_actions.py\"",
             "timeout": 5
           }
         ]
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python .claude/hooks/prevent_destructive_actions.py",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/prevent_destructive_actions.py\"",
             "timeout": 5
           }
         ]

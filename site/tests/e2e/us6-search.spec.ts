@@ -108,6 +108,15 @@ test.describe("User Story 6: Search keyboard journey", () => {
     await expect(searchTrigger).toBeFocused();
   });
 
+  test("header search trigger opens the dialog", async ({ page }) => {
+    await page.goto("./");
+
+    await page.getByTestId("search-trigger-header").click();
+
+    await expect(page.getByTestId("search-dialog")).toBeVisible();
+    await expect(page.getByTestId("search-input")).toBeFocused();
+  });
+
   test("a query with no matches plainly displays an empty message", async ({ page }) => {
     await page.goto("./");
 

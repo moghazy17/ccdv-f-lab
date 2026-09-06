@@ -17,7 +17,7 @@ PROTECTED_ROOTS = (
 )
 SITE_TEXT_EXTENSIONS = {".astro", ".css", ".html", ".js", ".json", ".md", ".mjs", ".ts", ".txt"}
 IGNORED_SITE_DIRECTORIES = {
-    ".astro",  # Astro's generated content cache holds copies of the sources it loaded.
+    ".astro",  # Untracked build output necessarily mirrors the sources and is skipped by this gate.
     ".git",
     "dist",
     "node_modules",
@@ -101,10 +101,11 @@ def _prose_fragments(source_path: Path) -> set[str]:
 
 
 def _markdown_paragraphs(lines: list[str]) -> list[str]:
-    """Return paragraph-like Markdown content while excluding headings, tables, and metadata."""
+    """Return meaningful Markdown paragraphs and decision-table cells, excluding metadata."""
     paragraphs: list[str] = []
     current: list[str] = []
     in_front_matter = False
+    in_table = False
     for index, line in enumerate(lines):
         stripped = line.strip()
         if index == 0 and stripped == "---":
@@ -118,18 +119,36 @@ def _markdown_paragraphs(lines: list[str]) -> list[str]:
             if current:
                 paragraphs.append(" ".join(current))
                 current = []
+            in_table = False
             continue
-        if stripped.startswith("#") or stripped.startswith("|"):
+        if stripped.startswith("#"):
             if current:
                 paragraphs.append(" ".join(current))
                 current = []
+            in_table = False
+            continue
+        if stripped.startswith("|"):
+            if current:
+                paragraphs.append(" ".join(current))
+                current = []
+            cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+            if _is_table_separator(cells):
+                in_table = True
+            elif in_table:
+                paragraphs.extend(cells)
             continue
         if stripped.startswith("Authoring prompt:"):
             continue
+        in_table = False
         current.append(_MARKDOWN_PREFIX.sub("", stripped))
     if current:
         paragraphs.append(" ".join(current))
     return paragraphs
+
+
+def _is_table_separator(cells: list[str]) -> bool:
+    """Recognize Markdown alignment rows so they never become protected prose."""
+    return bool(cells) and all(re.fullmatch(r":?-{3,}:?", cell) for cell in cells)
 
 
 def _yaml_values(lines: list[str]) -> list[str]:

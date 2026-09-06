@@ -89,4 +89,32 @@ This schedule assumes **15.000 total hours**
 `;
     expect(() => parseStudyPlanMarkdown("1-week", driftedMarkdown)).toThrow(/does not match expected allocation/i);
   });
+
+  test("rejects a non-numeric domain weight", () => {
+    const markdown = `
+# One-week study plan
+This schedule assumes **14.000 total hours**
+
+| Domain | Weight | Hours |
+|---|---:|---:|
+| Agents and Workflows | invalid | 2.058 |
+`;
+
+    expect(() => parseStudyPlanMarkdown("1-week", markdown)).toThrow(
+      /weight NaN% does not match/i
+    );
+  });
+
+  test("rejects a non-numeric domain hours cell", () => {
+    const markdown = `
+# One-week study plan
+This schedule assumes **14.000 total hours**
+
+| Domain | Weight | Hours |
+|---|---:|---:|
+| Agents and Workflows | 14.7% | invalid |
+`;
+
+    expect(() => parseStudyPlanMarkdown("1-week", markdown)).toThrow(/hours NaN does not match/i);
+  });
 });

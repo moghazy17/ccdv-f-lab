@@ -138,6 +138,24 @@ describe("recommendation rule", () => {
     expect(result.recommendedPlan).toBe("3-weeks");
   });
 
+  test("names the heaviest domains from the ranked fixture in its explanation", () => {
+    const changedWeights = [
+      { name: "Prompt practice", slug: "prompt-practice", weight: 40 },
+      { name: "Tool design", slug: "tool-design", weight: 30 },
+      { name: "Other material", slug: "other-material", weight: 10 }
+    ];
+    const input: DiagnosticInput = {
+      experience: { "prompt-practice": "none", "tool-design": "none" },
+      weeksAvailable: 2,
+      hoursPerWeek: 10
+    };
+
+    const result = recommend(input, planTotals, "2026-09-05T10:00:00.000Z", changedWeights);
+
+    expect(result.reason).toContain("Prompt practice, and Tool design");
+    expect(result.reason).not.toContain("Applications and Integration");
+  });
+
   test("derives thresholds purely from the passed plan totals argument", () => {
     const customTotals = {
       "1-week": 10,

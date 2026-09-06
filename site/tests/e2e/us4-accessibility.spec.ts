@@ -50,6 +50,7 @@ test.describe("US4 - Guide pages keyboard navigation", () => {
     await page.keyboard.press("Tab"); // Flashcards
     await page.keyboard.press("Tab"); // Playground
     await page.keyboard.press("Tab"); // Theme select
+    await page.keyboard.press("Tab"); // Header search
     await page.keyboard.press("Tab"); // Home breadcrumb
     await page.keyboard.press("Tab"); // First non-current guide nav link ("Exam day")
 

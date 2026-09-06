@@ -8,6 +8,7 @@ interface Props {
 
 const { plan } = Astro.props;
 const sortedAllocations = allocationsOrderedByWeight(plan.allocations);
+const domainCount = plan.allocations.length;
 ---
 
 <section
@@ -15,6 +16,7 @@ const sortedAllocations = allocationsOrderedByWeight(plan.allocations);
   data-plan-checklist
   data-plan-slug={plan.slug}
   data-plan-hours={plan.totalHours}
+  data-plan-domain-count={domainCount}
 >
   <div class="plan-header-summary">
     <p class="plan-hours-display">
@@ -28,7 +30,7 @@ const sortedAllocations = allocationsOrderedByWeight(plan.allocations);
     >
       <h3>Plan progress</h3>
       <p class="completion-summary" data-testid="plan-completion-summary">
-        0 of 8 domains (0%), 0.000 of {plan.totalHours.toFixed(3)} hours (0%)
+        0 of {domainCount} domains (0%), 0.000 of {plan.totalHours.toFixed(3)} hours (0%)
       </p>
       <div class="completion-track" aria-hidden="true">
         <div class="completion-fill" style="width: 0%"></div>
@@ -101,6 +103,7 @@ const sortedAllocations = allocationsOrderedByWeight(plan.allocations);
   if (checklist) {
     const planSlug = checklist.dataset.planSlug ?? "";
     const totalPlanHours = Number(checklist.dataset.planHours) || 0;
+    const domainCount = Number(checklist.dataset.planDomainCount) || 0;
     const summaryEl = checklist.querySelector<HTMLElement>("[data-testid='plan-completion-summary']");
     const progressFill = checklist.querySelector<HTMLElement>(".completion-fill");
     const errorEl = checklist.querySelector<HTMLElement>("[data-testid='storage-error']");
@@ -119,22 +122,23 @@ const sortedAllocations = allocationsOrderedByWeight(plan.allocations);
     let inMemoryMarks = new Set<number>();
 
     function updateView(markedNumbers: Set<number>): void {
+      const planMarks = new Set([...markedNumbers].filter((num) => domainHoursMap.has(num)));
       checkboxes.forEach((cb) => {
         const num = Number(cb.dataset.domainNumber);
-        cb.checked = markedNumbers.has(num);
+        cb.checked = planMarks.has(num);
       });
 
-      const completedCount = markedNumbers.size;
-      const completedHoursSum = [...markedNumbers].reduce(
+      const completedCount = planMarks.size;
+      const completedHoursSum = [...planMarks].reduce(
         (sum, num) => sum + (domainHoursMap.get(num) ?? 0),
         0
       );
       const completedHours = Number(completedHoursSum.toFixed(3));
-      const domainsPct = Math.round((completedCount / 8) * 100);
+      const domainsPct = domainCount > 0 ? Math.round((completedCount / domainCount) * 100) : 0;
       const hoursPct = totalPlanHours > 0 ? Math.round((completedHours / totalPlanHours) * 100) : 0;
 
       if (summaryEl) {
-        summaryEl.textContent = `${completedCount} of 8 domains (${domainsPct}%), ${completedHours.toFixed(3)} of ${totalPlanHours.toFixed(3)} hours (${hoursPct}%)`;
+        summaryEl.textContent = `${completedCount} of ${domainCount} domains (${domainsPct}%), ${completedHours.toFixed(3)} of ${totalPlanHours.toFixed(3)} hours (${hoursPct}%)`;
       }
       if (progressFill) {
         progressFill.style.width = `${hoursPct}%`;

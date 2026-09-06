@@ -147,6 +147,75 @@ test.describe("US7 - Import safety, refusal, replacement disclosure, and accessi
     await expect(page.getByTestId("mark-domain-6")).not.toBeChecked();
   });
 
+  test("renders imported hostile values as text without executing them", async ({ page }) => {
+    const payload = '<img src=x onerror="window.importPayloadExecuted=true">';
+    const incomingEnvelope = {
+      schemaVersion: 1,
+      updatedAt: payload,
+      namespaces: {
+        foundation: {
+          theme: "system",
+          planMarks: { [payload]: [1] },
+          diagnostic: null
+        }
+      }
+    };
+
+    await page.goto("./progress/");
+    await page.evaluate(() => {
+      (window as Window & { importPayloadExecuted?: boolean }).importPayloadExecuted = false;
+    });
+    await page.getByTestId("import-input").setInputFiles({
+      name: "hostile.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify(incomingEnvelope), "utf-8")
+    });
+
+    const dialog = page.getByTestId("import-confirm-dialog");
+    await expect(dialog).toBeVisible();
+    await expect(page.getByTestId("replacement-summary")).toContainText(payload);
+    expect(
+      await page.evaluate(
+        () => (window as Window & { importPayloadExecuted?: boolean }).importPayloadExecuted
+      )
+    ).toBe(false);
+
+    await page.getByTestId("confirm-replace-button").click();
+    await expect(page.getByTestId("current-progress-summary")).toContainText(payload);
+    expect(
+      await page.evaluate(
+        () => (window as Window & { importPayloadExecuted?: boolean }).importPayloadExecuted
+      )
+    ).toBe(false);
+  });
+
+  test("ignores imported plan marks for domains outside the selected plan", async ({ page }) => {
+    const incomingEnvelope = {
+      schemaVersion: 1,
+      updatedAt: "2026-09-05T12:00:00.000Z",
+      namespaces: {
+        foundation: {
+          theme: "system",
+          planMarks: { "3-weeks": [99] },
+          diagnostic: null
+        }
+      }
+    };
+
+    await page.goto("./progress/");
+    await page.getByTestId("import-input").setInputFiles({
+      name: "unknown-domain.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify(incomingEnvelope), "utf-8")
+    });
+    await expect(page.getByTestId("import-confirm-dialog")).toBeVisible();
+    await page.getByTestId("confirm-replace-button").click();
+
+    await page.goto("./plans/3-weeks/");
+    await expect(page.getByTestId("plan-completion-summary")).toContainText("0 of 8 domains (0%)");
+    await expect(page.getByTestId("mark-domain-1")).not.toBeChecked();
+  });
+
   test("confirmation dialog satisfies modal accessibility (focus trap, Escape dismissal, return focus)", async ({
     page
   }) => {

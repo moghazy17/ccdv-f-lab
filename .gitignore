@@ -38,6 +38,7 @@ coverage/
 *.log
 site/playwright-report/
 site/test-results/
+site/.astro/
 
 # Isolated fixture builds from the domain-content e2e test
 site/.us2-*

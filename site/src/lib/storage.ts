@@ -1,5 +1,6 @@
 export const PROGRESS_STORAGE_KEY = "ccdv-f:progress";
 export const CURRENT_SCHEMA_VERSION = 1;
+const PLAN_MARK_WRITE_RETRIES = 1;
 
 export type Theme = "light" | "dark" | "system";
 
@@ -29,10 +30,15 @@ export const themeBootstrapScript = `(() => {
   try {
     const raw = localStorage.getItem(${JSON.stringify(PROGRESS_STORAGE_KEY)});
     const parsed = raw ? JSON.parse(raw) : null;
-    const theme = parsed?.namespaces?.foundation?.theme;
-    if (theme === "light" || theme === "dark" || theme === "system") {
-      document.documentElement.dataset.theme = theme;
-    }
+    const schemaVersion = parsed?.schemaVersion;
+    const theme =
+      typeof schemaVersion === "number" &&
+      Number.isFinite(schemaVersion) &&
+      schemaVersion <= ${CURRENT_SCHEMA_VERSION}
+        ? parsed?.namespaces?.foundation?.theme
+        : "system";
+    document.documentElement.dataset.theme =
+      theme === "light" || theme === "dark" || theme === "system" ? theme : "system";
   } catch (_) {
     document.documentElement.dataset.theme = "system";
   }
@@ -137,23 +143,20 @@ export class ProgressStorage {
 
   setPlanMark(planSlug: string, domainNumber: number, marked: boolean): StorageResult {
     // Merge one domain mark against the latest stored record rather than a stale tab snapshot.
+    // Browser storage offers no compare-and-set, so a second tab can write its own whole envelope
+    // between this read and this write and drop the mark. Reading the record back detects that and
+    // merges again, which recovers the mark without making every write asynchronous.
     if (!Number.isInteger(domainNumber) || domainNumber < 1 || planSlug.length === 0) {
       return { kind: "malformed" };
     }
-    const current = this.read();
-    if (current.kind !== "ok" || current.value === undefined) {
-      return current;
+    let result = this.mergePlanMark(planSlug, domainNumber, marked);
+    for (let retry = 0; retry < PLAN_MARK_WRITE_RETRIES; retry += 1) {
+      if (result.kind !== "ok" || this.storedMarkMatches(planSlug, domainNumber, marked)) {
+        return result;
+      }
+      result = this.mergePlanMark(planSlug, domainNumber, marked);
     }
-    const next = cloneEnvelope(current.value);
-    const marks = new Set(next.namespaces.foundation.planMarks[planSlug] ?? []);
-    if (marked) {
-      marks.add(domainNumber);
-    } else {
-      marks.delete(domainNumber);
-    }
-    next.updatedAt = this.now();
-    next.namespaces.foundation.planMarks[planSlug] = [...marks].sort((left, right) => left - right);
-    return this.write(next);
+    return result;
   }
 
   setDiagnostic(diagnostic: unknown): StorageResult {
@@ -189,6 +192,37 @@ export class ProgressStorage {
       window.removeEventListener("storage", this.onStorageEvent);
     }
     this.listeners.clear();
+  }
+
+  private mergePlanMark(
+    planSlug: string,
+    domainNumber: number,
+    marked: boolean
+  ): StorageResult {
+    const current = this.read();
+    if (current.kind !== "ok" || current.value === undefined) {
+      return current;
+    }
+    const next = cloneEnvelope(current.value);
+    const marks = new Set(next.namespaces.foundation.planMarks[planSlug] ?? []);
+    if (marked) {
+      marks.add(domainNumber);
+    } else {
+      marks.delete(domainNumber);
+    }
+    next.updatedAt = this.now();
+    next.namespaces.foundation.planMarks[planSlug] = [...marks].sort((left, right) => left - right);
+    return this.write(next);
+  }
+
+  private storedMarkMatches(planSlug: string, domainNumber: number, marked: boolean): boolean {
+    // Treat an unreadable record as a match so an unavailable store cannot spin the retry loop.
+    const stored = this.read();
+    if (stored.kind !== "ok" || stored.value === undefined) {
+      return true;
+    }
+    const marks = stored.value.namespaces.foundation.planMarks[planSlug] ?? [];
+    return marks.includes(domainNumber) === marked;
   }
 
   private write(value: ProgressEnvelope): StorageResult {

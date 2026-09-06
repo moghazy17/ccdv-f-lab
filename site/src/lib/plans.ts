@@ -67,7 +67,7 @@ export function parseStudyPlanMarkdown(slug: string, markdown: string): StudyPla
     }
 
     const rowWeight = parseWeight(row.weight);
-    if (Math.abs(rowWeight - domain.weight) > 0.001) {
+    if (!Number.isFinite(rowWeight) || Math.abs(rowWeight - domain.weight) > 0.001) {
       throw new Error(
         `Plan ${slug} domain "${domain.name}" weight ${rowWeight}% does not match blueprint weight ${domain.weight}%`
       );
@@ -75,7 +75,7 @@ export function parseStudyPlanMarkdown(slug: string, markdown: string): StudyPla
 
     const expectedHours = Number(((totalHours * domain.weight) / 100).toFixed(3));
     const rowHours = Number(row.hours);
-    if (Math.abs(rowHours - expectedHours) > 0.001) {
+    if (!Number.isFinite(rowHours) || Math.abs(rowHours - expectedHours) > 0.001) {
       throw new Error(
         `Plan ${slug} domain "${domain.name}" hours ${rowHours} does not match expected allocation ${expectedHours} to three decimal places`
       );

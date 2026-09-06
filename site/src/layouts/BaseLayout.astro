@@ -57,8 +57,10 @@ const searchAttrs = buildSearchAttributes(searchRecord ?? {});
                 role="button"
                 href="#search-dialog"
                 class="search-trigger search-trigger--header"
-                tabindex="-1"
-                aria-hidden="true"
+                data-search-trigger
+                data-testid="search-trigger-header"
+                aria-label="Search study kit (Ctrl+K or Cmd+K)"
+                aria-keyshortcuts="Control+K Meta+K"
               >
                 <svg
                   class="search-trigger__icon"
@@ -100,6 +102,7 @@ const searchAttrs = buildSearchAttributes(searchRecord ?? {});
                 href="#search-dialog"
                 class="search-trigger"
                 id="search-trigger"
+                data-search-trigger
                 data-testid="search-trigger"
                 aria-label="Search study kit (Ctrl+K or Cmd+K)"
                 aria-keyshortcuts="Control+K Meta+K"
