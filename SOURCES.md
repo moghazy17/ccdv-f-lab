@@ -22,7 +22,8 @@ documentation rather than a community summary. Add rows as notes are written.
 
 | Source | What it establishes | Verified |
 |---|---|---|
-| _(add as notes are written)_ | | |
+| [Models overview][models] — Anthropic | The current lineup with model IDs, context windows, max output, and per-MTok pricing; which models take adaptive versus extended thinking; the default effort level, and that Claude Haiku 4.5 does not support effort at all; that every model ID is a pinned snapshot, including the dateless ones; batch at 50% of synchronous price and cache reads at 10% of base input; the published retirement commitments | 2026-09-05 |
+| [Steering thinking][steering] — Anthropic | The effort levels and what each does, with `high` as the default; that effort is set at `output_config.effort` rather than inside `thinking`; that changing effort mid-conversation invalidates the prompt cache while restating the default does not; that thinking counts toward `max_tokens` and there is no separate thinking budget; that billing covers the full reasoning regardless of the `display` setting; `usage.output_tokens_details.thinking_tokens` | 2026-09-05 |
 
 ## Deliberately not sources
 
@@ -36,3 +37,5 @@ documentation rather than a community summary. Add rows as notes are written.
 [faq]: https://anthropic-partners.skilljar.com/page/faq-certifications
 [path]: https://anthropic-partners.skilljar.com/path/claude-certified-developer-foundations
 [prep]: https://anthropic-partners.skilljar.com/page/claude-certification-exam-prep-courses
+[models]: https://platform.claude.com/docs/en/about-claude/models/overview
+[steering]: https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost

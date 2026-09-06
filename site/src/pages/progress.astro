@@ -1,0 +1,697 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const base = import.meta.env.BASE_URL;
+const href = (path: string) => `${base}${path}`;
+---
+
+<BaseLayout
+  title="Study progress, export and import | CCDV-F community study kit"
+  description="Export, import, and backup your CCDV-F study progress across browsers and devices without an account or server."
+>
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href={href("plans/")}>&larr; Study plans</a>
+  </nav>
+
+  <h1>Study progress and transfer</h1>
+  <p class="page-introduction">
+    Your study progress is saved only on your own device in this browser. No account, login, or
+    server is used. You can export your progress to a file to create a backup or transfer it to another
+    browser, or import a previously exported file.
+  </p>
+
+  <div
+    id="browser-only-warning"
+    data-testid="browser-only-warning"
+    class="notice notice--warning"
+    role="note"
+    hidden
+  >
+    <div class="notice__content">
+      <strong>Storage notice:</strong> Your study progress lives only in this browser and can be lost
+      if browser storage or site data is cleared. Export a backup file to keep your progress safe or
+      to transfer it to another device.
+    </div>
+  </div>
+
+  <section class="progress-section" aria-labelledby="overview-title">
+    <h2 id="overview-title">Current browser progress</h2>
+    <div
+      id="current-progress-summary"
+      data-testid="current-progress-summary"
+      class="summary-card"
+      aria-live="polite"
+    >
+      <p class="loading-hint">Loading stored progress&hellip;</p>
+    </div>
+  </section>
+
+  <section class="progress-section" aria-labelledby="export-title">
+    <h2 id="export-title">Export progress</h2>
+    <p>
+      Download your complete study progress as a single JSON file (<code>ccdv-f-progress-YYYY-MM-DD.json</code>).
+      The download is generated locally in your browser. No data is transmitted anywhere.
+    </p>
+    <div class="action-row">
+      <button
+        type="button"
+        id="export-button"
+        data-testid="export-button"
+        class="btn btn--primary"
+      >
+        Export progress to file
+      </button>
+    </div>
+    <div
+      id="export-status"
+      data-testid="export-status"
+      class="notice notice--success"
+      role="status"
+      hidden
+    ></div>
+  </section>
+
+  <section class="progress-section" aria-labelledby="import-title">
+    <h2 id="import-title">Import progress</h2>
+    <p>
+      Import a previously exported progress file. <strong>Merging is deliberately not offered:</strong>
+      an import replaces your existing progress wholesale. Before anything is replaced, you will see
+      a comparison of both records and must confirm the replacement.
+    </p>
+    <div class="action-row">
+      <input
+        type="file"
+        id="import-input"
+        data-testid="import-input"
+        accept=".json,application/json"
+        class="sr-only"
+        aria-hidden="true"
+        tabindex="-1"
+      />
+      <button
+        type="button"
+        id="import-button"
+        data-testid="import-button"
+        class="btn btn--secondary"
+      >
+        Choose file to import&hellip;
+      </button>
+    </div>
+    <div
+      id="import-error"
+      data-testid="import-error"
+      class="notice notice--error"
+      role="alert"
+      hidden
+    ></div>
+    <div
+      id="import-success"
+      data-testid="import-success"
+      class="notice notice--success"
+      role="status"
+      hidden
+    ></div>
+  </section>
+
+  <dialog
+    id="import-confirm-dialog"
+    class="confirm-dialog"
+    data-testid="import-confirm-dialog"
+    aria-labelledby="confirm-dialog-title"
+  >
+    <div class="confirm-dialog__container">
+      <header class="confirm-dialog__header">
+        <h2 id="confirm-dialog-title">Confirm replacing progress</h2>
+      </header>
+      <div class="confirm-dialog__body">
+        <p class="warning-callout">
+          <strong>Warning:</strong> Importing this file will replace all progress currently stored in
+          this browser. Merging records is not supported.
+        </p>
+        <div
+          id="replacement-summary"
+          data-testid="replacement-summary"
+          class="replacement-summary-card"
+        ></div>
+      </div>
+      <footer class="confirm-dialog__footer">
+        <button
+          type="button"
+          id="cancel-import-button"
+          data-testid="cancel-import-button"
+          class="btn btn--secondary"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          id="confirm-replace-button"
+          data-testid="confirm-replace-button"
+          class="btn btn--danger"
+        >
+          Replace current progress
+        </button>
+      </footer>
+    </div>
+  </dialog>
+</BaseLayout>
+
+<script>
+  import { createProgressStorage, type ProgressEnvelope } from "../lib/storage";
+  import { escapeHtml, formatPlanMarks } from "../lib/progress-summary";
+  import {
+    exportProgress,
+    hasRecordedProgress,
+    parseAndValidateImport,
+    summarizeEnvelope,
+    type RecordSummary
+  } from "../lib/transfer";
+
+  const storage = createProgressStorage();
+
+  const warningEl = document.getElementById("browser-only-warning");
+  const summaryEl = document.getElementById("current-progress-summary");
+  const exportBtn = document.getElementById("export-button");
+  const exportStatusEl = document.getElementById("export-status");
+  const importInput = document.getElementById("import-input") as HTMLInputElement | null;
+  const importButton = document.getElementById("import-button");
+  const importErrorEl = document.getElementById("import-error");
+  const importSuccessEl = document.getElementById("import-success");
+  const dialog = document.getElementById("import-confirm-dialog") as HTMLDialogElement | null;
+  const replacementSummaryEl = document.getElementById("replacement-summary");
+  const cancelBtn = document.getElementById("cancel-import-button");
+  const confirmBtn = document.getElementById("confirm-replace-button");
+
+  let triggerElement: HTMLElement | null = null;
+  let pendingEnvelope: ProgressEnvelope | null = null;
+
+  function renderOverview(): void {
+    const readResult = storage.read();
+    if (!summaryEl) return;
+
+    if (readResult.kind === "unavailable") {
+      summaryEl.innerHTML = `
+        <p class="error-text">Browser storage is unavailable. Your progress cannot be stored or transferred.</p>
+      `;
+      if (warningEl) warningEl.hidden = true;
+      return;
+    }
+
+    if (readResult.kind === "malformed") {
+      summaryEl.innerHTML = `
+        <p class="error-text">Stored progress data is malformed and could not be read safely.</p>
+      `;
+      if (warningEl) warningEl.hidden = true;
+      return;
+    }
+
+    if (readResult.kind === "newer-version") {
+      summaryEl.innerHTML = `
+        <p class="error-text">Stored progress was written by a newer version of the study kit and cannot be read here.</p>
+      `;
+      if (warningEl) warningEl.hidden = true;
+      return;
+    }
+
+    const envelope = readResult.value;
+    const summary = summarizeEnvelope(envelope);
+    const hasProgress = hasRecordedProgress(envelope);
+
+    if (warningEl) {
+      warningEl.hidden = !hasProgress;
+    }
+
+    const marksHtml = `<p><strong>Plan marks:</strong> ${formatPlanMarks(summary)}</p>`;
+    const diagHtml = `<p><strong>Diagnostic:</strong> ${summary.hasDiagnostic ? "Completed" : "Not taken yet"}</p>`;
+    const themeHtml = `<p><strong>Theme:</strong> ${summary.theme}</p>`;
+    const updatedHtml = `<p><strong>Last updated:</strong> ${escapeHtml(summary.updatedAt)}</p>`;
+
+    summaryEl.innerHTML = `
+      <div class="summary-details">
+        ${marksHtml}
+        ${diagHtml}
+        ${themeHtml}
+        ${updatedHtml}
+      </div>
+    `;
+  }
+
+  function openConfirmDialog(incomingEnvelope: ProgressEnvelope, incomingSummary: RecordSummary): void {
+    if (!dialog || !replacementSummaryEl) return;
+
+    pendingEnvelope = incomingEnvelope;
+    triggerElement = importButton ?? (document.activeElement as HTMLElement | null);
+
+    const currentSummary = summarizeEnvelope(storage.read().value);
+
+    replacementSummaryEl.innerHTML = `
+      <div class="comparison-grid">
+        <div class="comparison-column comparison-column--current">
+          <h3>Current browser progress (will be replaced)</h3>
+          <p><strong>Last updated:</strong> ${escapeHtml(currentSummary.updatedAt)}</p>
+          <p><strong>Plan marks:</strong> ${formatPlanMarks(currentSummary)}</p>
+          <p><strong>Diagnostic:</strong> ${currentSummary.hasDiagnostic ? "Completed" : "None"}</p>
+        </div>
+        <div class="comparison-column comparison-column--incoming">
+          <h3>Incoming file progress</h3>
+          <p><strong>Last updated:</strong> ${escapeHtml(incomingSummary.updatedAt)}</p>
+          <p><strong>Plan marks:</strong> ${formatPlanMarks(incomingSummary)}</p>
+          <p><strong>Diagnostic:</strong> ${incomingSummary.hasDiagnostic ? "Completed" : "None"}</p>
+        </div>
+      </div>
+    `;
+
+    dialog.showModal();
+    if (cancelBtn) {
+      cancelBtn.focus();
+    }
+  }
+
+  function closeConfirmDialog(): void {
+    if (!dialog || !dialog.open) return;
+    dialog.close();
+    pendingEnvelope = null;
+    if (importInput) {
+      importInput.value = "";
+    }
+    if (triggerElement && typeof triggerElement.focus === "function") {
+      triggerElement.focus();
+    }
+    triggerElement = null;
+  }
+
+  // Handle Export
+  if (exportBtn) {
+    exportBtn.addEventListener("click", () => {
+      if (exportStatusEl) exportStatusEl.hidden = true;
+      const result = exportProgress(storage);
+      if (result.success && exportStatusEl) {
+        exportStatusEl.textContent = `Progress exported successfully as ${result.filename}.`;
+        exportStatusEl.hidden = false;
+      }
+    });
+  }
+
+  // Handle Import Selection
+  if (importInput) {
+    importInput.addEventListener("change", async () => {
+      if (importErrorEl) {
+        importErrorEl.hidden = true;
+        importErrorEl.textContent = "";
+      }
+      if (importSuccessEl) {
+        importSuccessEl.hidden = true;
+        importSuccessEl.textContent = "";
+      }
+
+      const files = importInput.files;
+      if (!files || files.length === 0) return;
+
+      const file = files[0];
+      try {
+        const text = await file.text();
+        const validation = parseAndValidateImport(text);
+
+        if (validation.kind !== "ok") {
+          if (importErrorEl) {
+            importErrorEl.textContent = validation.message;
+            importErrorEl.hidden = false;
+          }
+          importInput.value = "";
+          return;
+        }
+
+        openConfirmDialog(validation.envelope, validation.summary);
+      } catch {
+        if (importErrorEl) {
+          importErrorEl.textContent = "Failed to read the selected file. Existing progress is untouched.";
+          importErrorEl.hidden = false;
+        }
+        importInput.value = "";
+      }
+    });
+  }
+
+  if (importButton) {
+    importButton.addEventListener("click", () => {
+      importInput?.click();
+    });
+  }
+
+  // Cancel button
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", closeConfirmDialog);
+  }
+
+  // Confirm replacement button
+  if (confirmBtn) {
+    confirmBtn.addEventListener("click", () => {
+      if (!pendingEnvelope) return;
+      const replaceResult = storage.replace(pendingEnvelope);
+
+      if (replaceResult.kind === "ok") {
+        closeConfirmDialog();
+        if (importSuccessEl) {
+          importSuccessEl.textContent = "Progress imported and restored successfully.";
+          importSuccessEl.hidden = false;
+        }
+        renderOverview();
+      } else {
+        closeConfirmDialog();
+        if (importErrorEl) {
+          importErrorEl.textContent = "Failed to write imported progress to browser storage.";
+          importErrorEl.hidden = false;
+        }
+      }
+    });
+  }
+
+  // Dialog backdrop and escape key
+  if (dialog) {
+    dialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      closeConfirmDialog();
+    });
+
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) {
+        closeConfirmDialog();
+      }
+    });
+
+    // Focus trap between Cancel and Replace
+    dialog.addEventListener("keydown", (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeConfirmDialog();
+        return;
+      }
+
+      if (event.key === "Tab") {
+        const focusable = [cancelBtn, confirmBtn].filter((el): el is HTMLElement => Boolean(el));
+        if (focusable.length < 2) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (event.shiftKey) {
+          if (document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    });
+  }
+
+  storage.subscribe(() => {
+    renderOverview();
+  });
+
+  renderOverview();
+</script>
+
+<style>
+  .breadcrumb {
+    margin-bottom: 1.5rem;
+    font-size: 0.925rem;
+  }
+
+  .page-introduction {
+    font-size: 1.125rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    color: var(--ink);
+  }
+
+  .progress-section {
+    margin-top: 2.5rem;
+    padding: clamp(1rem, 3vw, 1.5rem);
+    border: 0.0625rem solid var(--rule);
+    background: var(--panel);
+  }
+
+  .progress-section h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.35rem;
+  }
+
+  .summary-card {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--paper);
+    border: 0.0625rem solid var(--rule);
+  }
+
+  .summary-details p {
+    margin: 0.4rem 0;
+    font-size: 0.95rem;
+  }
+
+  .action-row {
+    margin-top: 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.65rem 1.25rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    text-decoration: none;
+    border: 0.0625rem solid transparent;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .btn:focus-visible {
+    outline: 0.2rem solid var(--focus);
+    outline-offset: 0.15rem;
+  }
+
+  .btn--primary {
+    background: var(--signal);
+    color: #ffffff;
+    border-color: var(--signal);
+  }
+
+  .btn--primary:hover {
+    background: var(--signal-ink);
+  }
+
+  .btn--secondary {
+    background: var(--panel);
+    color: var(--ink);
+    border-color: var(--rule);
+  }
+
+  .btn--secondary:hover {
+    background: var(--paper);
+    border-color: var(--muted);
+  }
+
+  .btn--danger {
+    background: #b42318;
+    color: #ffffff;
+    border-color: #b42318;
+  }
+
+  .btn--danger:hover {
+    background: #912018;
+  }
+
+  .notice {
+    margin-top: 1.25rem;
+    padding: 0.85rem 1.15rem;
+    border-left: 0.35rem solid var(--signal);
+    background: var(--paper);
+    font-size: 0.95rem;
+  }
+
+  .notice--warning {
+    border-left-color: #b54708;
+    background: #fff8eb;
+    color: #7a2e0e;
+  }
+
+  :root[data-theme="dark"] .notice--warning {
+    background: #2b1f0c;
+    color: #ffd899;
+    border-left-color: #f79009;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root[data-theme="system"] .notice--warning {
+      background: #2b1f0c;
+      color: #ffd899;
+      border-left-color: #f79009;
+    }
+  }
+
+  .notice--success {
+    border-left-color: #027a48;
+    background: #ecfdf3;
+    color: #027a48;
+  }
+
+  :root[data-theme="dark"] .notice--success {
+    background: #0d2b1d;
+    color: #a6f4c5;
+    border-left-color: #12b76a;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root[data-theme="system"] .notice--success {
+      background: #0d2b1d;
+      color: #a6f4c5;
+      border-left-color: #12b76a;
+    }
+  }
+
+  .notice--error {
+    border-left-color: #b42318;
+    background: #fef3f2;
+    color: #b42318;
+  }
+
+  :root[data-theme="dark"] .notice--error {
+    background: #2c100e;
+    color: #fecdca;
+    border-left-color: #f04438;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root[data-theme="system"] .notice--error {
+      background: #2c100e;
+      color: #fecdca;
+      border-left-color: #f04438;
+    }
+  }
+
+  .error-text {
+    color: #b42318;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .loading-hint {
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Modal Dialog */
+  .confirm-dialog {
+    padding: 0;
+    margin: auto;
+    border: none;
+    border-radius: 0.5rem;
+    background: transparent;
+    max-width: min(90vw, 40rem);
+    width: 100%;
+    color: var(--ink);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.35);
+  }
+
+  .confirm-dialog::backdrop {
+    background: rgba(16, 26, 38, 0.7);
+    backdrop-filter: blur(4px);
+  }
+
+  .confirm-dialog__container {
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    border: 0.0625rem solid var(--rule);
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  .confirm-dialog__header {
+    padding: 1rem 1.25rem;
+    border-bottom: 0.0625rem solid var(--rule);
+  }
+
+  .confirm-dialog__header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  .confirm-dialog__body {
+    padding: 1.25rem;
+  }
+
+  .warning-callout {
+    margin: 0 0 1.25rem;
+    padding: 0.75rem 1rem;
+    background: var(--paper);
+    border-left: 0.25rem solid #b42318;
+    font-size: 0.95rem;
+  }
+
+  .comparison-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  @media (min-width: 36rem) {
+    .comparison-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .comparison-column {
+    padding: 0.85rem;
+    background: var(--paper);
+    border: 0.0625rem solid var(--rule);
+    font-size: 0.9rem;
+  }
+
+  .comparison-column h3 {
+    margin: 0 0 0.5rem;
+    font-size: 0.95rem;
+  }
+
+  .comparison-column p {
+    margin: 0.35rem 0;
+  }
+
+  .comparison-column--current {
+    border-color: #b42318;
+  }
+
+  .comparison-column--incoming {
+    border-color: #027a48;
+  }
+
+  .confirm-dialog__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 0.85rem 1.25rem;
+    border-top: 0.0625rem solid var(--rule);
+    background: var(--paper);
+  }
+</style>

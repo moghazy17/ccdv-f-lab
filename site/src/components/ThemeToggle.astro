@@ -1,0 +1,30 @@
+---
+const controlId = "theme-preference";
+---
+
+<label class="theme-toggle" for={controlId}>
+  <span>Theme</span>
+  <select id={controlId} data-theme-toggle aria-label="Choose colour theme">
+    <option value="system">System</option>
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
+  </select>
+</label>
+
+<script>
+  import { applyTheme, createProgressStorage, type Theme } from "../lib/storage";
+
+  const control = document.querySelector<HTMLSelectElement>("[data-theme-toggle]");
+  if (control) {
+    const storage = createProgressStorage();
+    const current = storage.read();
+    const savedTheme = current.value?.namespaces.foundation.theme;
+    control.value = savedTheme ?? document.documentElement.dataset.theme ?? "system";
+
+    control.addEventListener("change", () => {
+      const theme = control.value as Theme;
+      applyTheme(theme);
+      storage.setTheme(theme);
+    });
+  }
+</script>

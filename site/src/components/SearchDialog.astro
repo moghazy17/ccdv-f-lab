@@ -1,0 +1,660 @@
+
+<dialog
+  id="search-dialog"
+  class="search-dialog"
+  data-testid="search-dialog"
+  aria-label="Search study kit"
+>
+  <div class="search-dialog__container">
+    <header class="search-dialog__header">
+      <div class="search-input-wrapper">
+        <svg
+          class="search-input-icon"
+          aria-hidden="true"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <label for="search-input" class="sr-only">Search study kit</label>
+        <input
+          id="search-input"
+          class="search-input"
+          data-testid="search-input"
+          type="search"
+          placeholder="Search concepts, domains, guides, plans..."
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+        />
+      </div>
+      <span
+        role="button"
+        tabindex="0"
+        id="search-close-button"
+        class="search-close-button"
+        data-testid="search-close-button"
+        aria-label="Close search (Escape)"
+      >
+        <span aria-hidden="true">&times;</span>
+      </span>
+    </header>
+
+    <div
+      id="search-results-region"
+      class="search-dialog__body"
+      role="region"
+      aria-live="polite"
+      aria-label="Search results"
+    >
+      <p id="search-initial-hint" class="search-hint">
+        Type to search notes, guides, study plans, cheatsheets, and the blueprint.
+      </p>
+      <div
+        id="search-results"
+        class="search-results"
+        data-testid="search-results"
+        role="list"
+      >
+      </div>
+      <p
+        id="search-empty"
+        class="search-empty"
+        data-testid="search-empty"
+        hidden
+      >
+      </p>
+    </div>
+
+    <footer class="search-dialog__footer">
+      <span class="search-key-tip"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> navigate</span>
+      <span class="search-key-tip"><kbd>Enter</kbd> open</span>
+      <span class="search-key-tip"><kbd>Esc</kbd> dismiss</span>
+    </footer>
+  </div>
+</dialog>
+
+<script>
+  import { getRecordTypeLabel, validateSearchMetadata } from "../lib/search";
+
+  interface PagefindResultItem {
+    data: () => Promise<{
+      url: string;
+      excerpt: string;
+      meta?: Record<string, unknown>;
+      sub_results?: Array<{ title: string; url: string; excerpt: string }>;
+    }>;
+  }
+
+  interface PagefindSearchResponse {
+    results: PagefindResultItem[];
+  }
+
+  interface PagefindInstance {
+    init: () => Promise<void>;
+    options: (opts: { basePath: string; baseUrl: string }) => Promise<void>;
+    search: (query: string) => Promise<PagefindSearchResponse>;
+  }
+
+  let triggerElement: HTMLElement | null = null;
+  let pagefindPromise: Promise<PagefindInstance> | null = null;
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let activeQueryId = 0;
+
+  const dialog = document.getElementById("search-dialog") as HTMLDialogElement | null;
+  const searchInput = document.getElementById("search-input") as HTMLInputElement | null;
+  const closeButton = document.getElementById("search-close-button") as HTMLElement | null;
+  const initialHint = document.getElementById("search-initial-hint");
+  const resultsContainer = document.getElementById("search-results");
+  const emptyMessage = document.getElementById("search-empty");
+
+  function getBaseUrl(): string {
+    const rootBase = document.documentElement.dataset.base;
+    if (rootBase) {
+      return rootBase.endsWith("/") ? rootBase : `${rootBase}/`;
+    }
+    return "/ccdv-f-lab/";
+  }
+
+  function getPagefind(): Promise<PagefindInstance> {
+    if (!pagefindPromise) {
+      const base = getBaseUrl();
+      const scriptUrl = `${base}pagefind/pagefind.js`;
+      pagefindPromise = import(/* @vite-ignore */ scriptUrl).then(async (module) => {
+        const pf = module as PagefindInstance;
+        await pf.options({
+          basePath: `${base}pagefind/`,
+          baseUrl: base
+        });
+        return pf;
+      });
+    }
+    return pagefindPromise;
+  }
+
+  function openSearch(): void {
+    if (!dialog || dialog.open) {
+      return;
+    }
+    triggerElement = document.activeElement as HTMLElement | null;
+    dialog.showModal();
+
+    if (searchInput) {
+      searchInput.value = "";
+      searchInput.focus();
+    }
+    resetResultsView();
+
+    // Load Pagefind runtime on demand when dialog opens
+    getPagefind().catch(() => {});
+  }
+
+  function closeSearch(): void {
+    if (!dialog || !dialog.open) {
+      return;
+    }
+    dialog.close();
+    if (triggerElement && typeof triggerElement.focus === "function") {
+      triggerElement.focus();
+    }
+    triggerElement = null;
+  }
+
+  function resetResultsView(): void {
+    if (initialHint) initialHint.hidden = false;
+    if (resultsContainer) resultsContainer.innerHTML = "";
+    if (emptyMessage) {
+      emptyMessage.hidden = true;
+      emptyMessage.textContent = "";
+    }
+  }
+
+  function escapeHtml(str: string): string {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function renderEmptyState(query: string): void {
+    if (initialHint) initialHint.hidden = true;
+    if (resultsContainer) resultsContainer.innerHTML = "";
+    if (emptyMessage) {
+      emptyMessage.hidden = false;
+      emptyMessage.textContent = `No matching material found for "${query}".`;
+    }
+  }
+
+  function renderResults(
+    query: string,
+    items: Array<{
+      url: string;
+      excerpt: string;
+      meta?: Record<string, unknown>;
+    }>
+  ): void {
+    if (!resultsContainer) return;
+    if (items.length === 0) {
+      renderEmptyState(query);
+      return;
+    }
+
+    if (initialHint) initialHint.hidden = true;
+    if (emptyMessage) emptyMessage.hidden = true;
+
+    const fragment = document.createDocumentFragment();
+
+    items.forEach((item, index) => {
+      const meta = validateSearchMetadata(item.meta);
+      const title = meta.title || item.url;
+      const typeLabel = getRecordTypeLabel(meta.type);
+
+      const itemWrapper = document.createElement("div");
+      itemWrapper.className = "search-result-item";
+      itemWrapper.setAttribute("role", "listitem");
+
+      const link = document.createElement("a");
+      link.href = item.url;
+      link.className = "search-result-link";
+      link.setAttribute("data-index", String(index));
+      link.setAttribute("data-type", meta.type);
+
+      let metaHtml = `
+        <div class="search-result-meta">
+          <span class="search-result-title">${escapeHtml(title)}</span>
+          <span class="search-result-badge search-result-badge--${escapeHtml(meta.type)}">${escapeHtml(typeLabel)}</span>
+      `;
+
+      if (meta.domain) {
+        metaHtml += `<span class="search-result-domain">${escapeHtml(meta.domain)}</span>`;
+      }
+      if (meta.weight) {
+        metaHtml += `<span class="search-result-weight">${escapeHtml(meta.weight)}</span>`;
+      }
+      if (meta.status) {
+        metaHtml += `<span class="search-result-status search-result-status--${escapeHtml(meta.status)}">${escapeHtml(meta.status)}</span>`;
+      }
+
+      metaHtml += `</div>`;
+
+      if (item.excerpt) {
+        metaHtml += `<p class="search-result-excerpt">${item.excerpt}</p>`;
+      }
+
+      link.innerHTML = metaHtml;
+      link.addEventListener("click", () => {
+        closeSearch();
+      });
+
+      itemWrapper.appendChild(link);
+      fragment.appendChild(itemWrapper);
+    });
+
+    resultsContainer.innerHTML = "";
+    resultsContainer.appendChild(fragment);
+  }
+
+  async function executeSearch(query: string): Promise<void> {
+    const queryId = ++activeQueryId;
+    try {
+      const pf = await getPagefind();
+      const response = await pf.search(query);
+      if (queryId !== activeQueryId) return;
+
+      if (!response.results || response.results.length === 0) {
+        renderEmptyState(query);
+        return;
+      }
+
+      const items = await Promise.all(
+        response.results.slice(0, 15).map((result) => result.data())
+      );
+      if (queryId !== activeQueryId) return;
+
+      renderResults(query, items);
+    } catch {
+      if (queryId === activeQueryId) {
+        renderEmptyState(query);
+      }
+    }
+  }
+
+  // Keyboard shortcut: Ctrl+K or Cmd+K opens/closes
+  window.addEventListener("keydown", (event: KeyboardEvent) => {
+    if ((event.metaKey || event.ctrlKey) && (event.key === "k" || event.key === "K")) {
+      event.preventDefault();
+      if (dialog && dialog.open) {
+        closeSearch();
+      } else {
+        openSearch();
+      }
+    }
+  });
+
+  // Global trigger click handler
+  document.addEventListener("click", (event: MouseEvent) => {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("[data-search-trigger]")) {
+      event.preventDefault();
+      openSearch();
+    }
+  });
+
+  if (closeButton) {
+    closeButton.addEventListener("click", closeSearch);
+    closeButton.addEventListener("keydown", (event: KeyboardEvent) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        closeSearch();
+      }
+    });
+  }
+
+  if (dialog) {
+    dialog.addEventListener("cancel", (event) => {
+      event.preventDefault();
+      closeSearch();
+    });
+
+    // Backdrop click dismisses dialog
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) {
+        closeSearch();
+      }
+    });
+
+    // Keyboard navigation within the dialog
+    dialog.addEventListener("keydown", (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeSearch();
+        return;
+      }
+
+      const resultLinks = Array.from(
+        dialog.querySelectorAll<HTMLAnchorElement>(".search-result-link")
+      );
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        if (document.activeElement === searchInput && resultLinks.length > 0) {
+          resultLinks[0].focus();
+        } else {
+          const currentIndex = resultLinks.indexOf(document.activeElement as HTMLAnchorElement);
+          if (currentIndex >= 0 && currentIndex < resultLinks.length - 1) {
+            resultLinks[currentIndex + 1].focus();
+          } else if (currentIndex === resultLinks.length - 1 && searchInput) {
+            searchInput.focus();
+          }
+        }
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        if (document.activeElement === searchInput && resultLinks.length > 0) {
+          resultLinks[resultLinks.length - 1].focus();
+        } else {
+          const currentIndex = resultLinks.indexOf(document.activeElement as HTMLAnchorElement);
+          if (currentIndex > 0) {
+            resultLinks[currentIndex - 1].focus();
+          } else if (currentIndex === 0 && searchInput) {
+            searchInput.focus();
+          }
+        }
+      } else if (event.key === "Enter") {
+        if (document.activeElement === searchInput && resultLinks.length > 0) {
+          event.preventDefault();
+          resultLinks[0].click();
+        }
+      }
+    });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      const query = searchInput.value.trim();
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+      if (!query) {
+        resetResultsView();
+        return;
+      }
+      debounceTimer = setTimeout(() => {
+        executeSearch(query);
+      }, 50);
+    });
+  }
+</script>
+
+<style>
+  .search-dialog {
+    padding: 0;
+    margin: auto;
+    border: none;
+    border-radius: 0.5rem;
+    background: transparent;
+    max-width: min(90vw, 42rem);
+    width: 100%;
+    color: var(--ink);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.35);
+  }
+
+  .search-dialog::backdrop {
+    background: rgba(16, 26, 38, 0.7);
+    backdrop-filter: blur(4px);
+  }
+
+  .search-dialog__container {
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+    background: var(--panel);
+    border: 0.0625rem solid var(--rule);
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  .search-dialog__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 0.0625rem solid var(--rule);
+    background: var(--panel);
+  }
+
+  .search-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+  }
+
+  .search-input-icon {
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .search-input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--ink);
+    font-size: 1.1rem;
+    padding: 0.25rem 0;
+  }
+
+  .search-input:focus-visible {
+    outline: none;
+  }
+
+  .search-close-button {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    border-radius: 0.25rem;
+  }
+
+  .search-close-button:hover,
+  .search-close-button:focus-visible {
+    color: var(--ink);
+    background: var(--paper);
+  }
+
+  .search-dialog__body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.75rem 1rem;
+    min-height: 12rem;
+  }
+
+  .search-hint {
+    color: var(--muted);
+    font-size: 0.95rem;
+    padding: 1rem 0;
+    text-align: center;
+  }
+
+  .search-empty {
+    color: var(--muted);
+    font-size: 1rem;
+    padding: 2rem 1rem;
+    text-align: center;
+  }
+
+  .search-results {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .search-result-item {
+    margin: 0;
+  }
+
+  .search-result-link {
+    display: block;
+    padding: 0.65rem 0.85rem;
+    border-radius: 0.35rem;
+    text-decoration: none;
+    color: var(--ink);
+    border: 0.0625rem solid transparent;
+    transition: background-color 0.1s ease;
+  }
+
+  .search-result-link:hover,
+  .search-result-link:focus-visible {
+    background: var(--paper);
+    border-color: var(--rule);
+    outline: 0.15rem solid var(--focus);
+    outline-offset: -0.05rem;
+  }
+
+  .search-result-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.6rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .search-result-title {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--signal-ink);
+  }
+
+  .search-result-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.1rem 0.45rem;
+    border-radius: 0.2rem;
+    background: var(--paper);
+    border: 0.0625rem solid var(--rule);
+    color: var(--muted);
+  }
+
+  .search-result-badge--note {
+    border-color: #075e9c;
+    color: #075e9c;
+  }
+
+  .search-result-badge--guide {
+    border-color: #6941c6;
+    color: #6941c6;
+  }
+
+  .search-result-badge--plan {
+    border-color: #027a48;
+    color: #027a48;
+  }
+
+  .search-result-badge--cheatsheet {
+    border-color: #b54708;
+    color: #b54708;
+  }
+
+  .search-result-badge--blueprint {
+    border-color: #3538cd;
+    color: #3538cd;
+  }
+
+  .search-result-domain {
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .search-result-weight {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--signal);
+  }
+
+  .search-result-status {
+    font-size: 0.75rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 0.2rem;
+    background: #fef0c7;
+    color: #93370d;
+    font-weight: 500;
+  }
+
+  .search-result-status--authored {
+    background: #ecfdf3;
+    color: #027a48;
+  }
+
+  .search-result-status--scaffold {
+    background: #fef0c7;
+    color: #93370d;
+  }
+
+  .search-result-excerpt {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .search-result-excerpt :global(mark) {
+    background: rgba(255, 189, 112, 0.4);
+    color: inherit;
+    font-weight: 600;
+    padding: 0.05rem 0.15rem;
+    border-radius: 0.15rem;
+  }
+
+  .search-dialog__footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0.6rem 1rem;
+    border-top: 0.0625rem solid var(--rule);
+    background: var(--paper);
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .search-key-tip {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .search-key-tip kbd {
+    background: var(--panel);
+    border: 0.0625rem solid var(--rule);
+    border-radius: 0.2rem;
+    padding: 0.05rem 0.35rem;
+    font-family: inherit;
+    font-size: 0.75rem;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>

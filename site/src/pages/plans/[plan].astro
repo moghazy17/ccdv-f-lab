@@ -1,0 +1,100 @@
+---
+import { getCollection } from "astro:content";
+import PlanChecklist from "../../components/PlanChecklist.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { loadStudyPlans, type StudyPlan } from "../../lib/plans";
+
+export async function getStaticPaths() {
+  const planEntries = await getCollection("studyPlans");
+  const plans: StudyPlan[] = loadStudyPlans(planEntries);
+
+  return plans.map((plan) => ({
+    params: { plan: plan.slug },
+    props: {
+      allPlans: plans,
+      plan
+    }
+  }));
+}
+
+interface Props {
+  allPlans: StudyPlan[];
+  plan: StudyPlan;
+}
+
+const { allPlans, plan } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const href = (path: string) => `${base}${path}`;
+---
+
+<BaseLayout
+  title={`${plan.title} | CCDV-F community study kit`}
+  description={`Hour allocation schedule and progress tracker for the ${plan.title}.`}
+  searchRecord={{ type: "plan" }}
+>
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href={href("plans/")}>&larr; All study plans</a>
+  </nav>
+
+  <h1>{plan.title}</h1>
+  <p class="page-introduction">
+    This schedule allocates a total of <strong>{plan.totalHours.toFixed(3)} study hours</strong> across
+    the eight exam domains. Allocations are ordered with the heaviest blueprint areas first so you can
+    prioritize study time where it matters most.
+  </p>
+
+  <PlanChecklist plan={plan} />
+
+  <section class="switch-plans-section" aria-labelledby="switch-plans-title">
+    <h2 id="switch-plans-title">Switch study plan</h2>
+    <p>
+      Marks recorded on this plan are preserved. When you switch to another plan, its marks are tracked
+      independently.
+    </p>
+    <ul class="switch-plans-list">
+      {allPlans.map((otherPlan) => (
+        <li>
+          {otherPlan.slug === plan.slug ? (
+            <span class="current-plan" aria-current="page">
+              <strong>{otherPlan.title}</strong> ({otherPlan.totalHours.toFixed(3)} hours) &mdash; current
+            </span>
+          ) : (
+            <a href={href(`plans/${otherPlan.slug}/`)}>
+              {otherPlan.title} ({otherPlan.totalHours.toFixed(3)} hours)
+            </a>
+          )}
+        </li>
+      ))}
+    </ul>
+  </section>
+</BaseLayout>
+
+<style>
+  .breadcrumb {
+    margin-bottom: 1.5rem;
+    font-size: 0.925rem;
+  }
+
+  .switch-plans-section {
+    margin-top: 3rem;
+    padding: clamp(1rem, 3vw, 1.5rem);
+    border: 0.0625rem solid var(--rule);
+    background: var(--panel);
+  }
+
+  .switch-plans-section h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+  }
+
+  .switch-plans-list {
+    margin: 1rem 0 0;
+    padding-left: 1.25rem;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .current-plan {
+    color: var(--muted);
+  }
+</style>

@@ -1,0 +1,141 @@
+---
+import { getCollection } from "astro:content";
+
+import ScaffoldNotice from "../../components/ScaffoldNotice.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ContentLayout from "../../layouts/ContentLayout.astro";
+import { domains, domainBySlug } from "../../lib/blueprint";
+import { buildDomainContent } from "../../lib/domain-content";
+
+export function getStaticPaths() {
+  return domains.map((domain) => ({ params: { domain: domain.slug } }));
+}
+
+const domain = domainBySlug(Astro.params.domain ?? "");
+if (domain === undefined) {
+  throw new Error("The requested domain is not present in the generated blueprint data.");
+}
+
+const noteEntries = await getCollection("notes");
+const content = buildDomainContent(domain, noteEntries);
+const outstandingSubSkills = content.subSkills.filter((subSkill) => subSkill.status === "scaffold");
+const itemLabel = `${domain.approximateItems} ${domain.approximateItems === 1 ? "item" : "items"}`;
+const base = import.meta.env.BASE_URL;
+---
+
+<BaseLayout
+  title={`${domain.name} | CCDV-F community study kit`}
+  description={`Study material status and published blueprint coverage for ${domain.name}.`}
+  searchRecord={{
+    type: "note",
+    domain: domain.slug,
+    weight: domain.weight,
+    status: content.status
+  }}
+>
+  <header class="domain-module__header">
+    <p class="domain-module__number">Domain {domain.number}</p>
+    <h1>{domain.name}</h1>
+    <p class="page-introduction">
+      Read the material that has been authored for this domain, alongside its published exam value.
+    </p>
+    <dl class="domain-exam-weight" data-testid="domain-exam-weight">
+      <div>
+        <dt>Exam weight</dt>
+        <dd>{domain.weight}%</dd>
+      </div>
+      <div>
+        <dt>Approximate items</dt>
+        <dd>About {itemLabel}</dd>
+      </div>
+    </dl>
+  </header>
+
+  {
+    content.status === "scaffold" ? (
+      <ScaffoldNotice domain={domain} subSkills={content.subSkills} />
+    ) : (
+      <>
+        <section
+          class="domain-status"
+          data-testid="domain-status"
+          aria-labelledby="domain-status-title"
+        >
+          <h2 id="domain-status-title">
+            {content.status === "authored"
+              ? "All note sections are authored"
+              : "Partially authored"}
+          </h2>
+          <p>
+            {
+              content.status === "authored"
+                ? "Every source section in this domain has written material."
+                : "Written sections appear below. Outstanding sub-skills remain visible " +
+                  "so coverage is not implied."
+            }
+          </p>
+        </section>
+        <section
+          class="domain-status"
+          data-testid="sub-skill-status"
+          aria-labelledby="sub-skill-status-title"
+        >
+          <h2 id="sub-skill-status-title">Sub-skill status</h2>
+          <ul class="sub-skill-list">
+            {content.subSkills.map(({ definition, status }) => (
+              <li>
+                <strong>{definition.name}</strong>
+                <span>{status === "authored" ? "Authored" : "Scaffolded"}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+        {content.markdown.length > 0 && <ContentLayout markdown={content.markdown} />}
+        {outstandingSubSkills.length > 0 && (
+          <section
+            class="outstanding-sub-skills"
+            data-testid="outstanding-sub-skills"
+            aria-labelledby="outstanding-sub-skills-title"
+          >
+            <h2 id="outstanding-sub-skills-title">Outstanding sub-skills</h2>
+            <p>These sub-skills do not yet have authored note material.</p>
+            <ul>
+              {outstandingSubSkills.map(({ definition }) => <li>{definition.name}</li>)}
+            </ul>
+          </section>
+        )}
+      </>
+    )
+  }
+
+  <section
+    class="domain-reserved-region"
+    data-testid="domain-lab-region"
+    aria-labelledby="domain-lab-title"
+  >
+    <h2 id="domain-lab-title">Reference application</h2>
+    {
+      content.labModules.length === 0 ? (
+        <p>The reference application does not yet demonstrate this domain.</p>
+      ) : (
+        <>
+          <p>Related reference-application modules have reserved addresses.</p>
+          <ul>
+            {content.labModules.map((module) => (
+              <li><a href={`${base}labs/${module}/`}>{module}</a></li>
+            ))}
+          </ul>
+        </>
+      )
+    }
+  </section>
+
+  <section
+    class="domain-reserved-region"
+    data-testid="domain-practice-region"
+    aria-labelledby="domain-practice-title"
+  >
+    <h2 id="domain-practice-title">Practice</h2>
+    <p>This region is reserved for the domain self-check and drill count.</p>
+  </section>
+</BaseLayout>

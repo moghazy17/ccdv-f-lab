@@ -1,0 +1,22 @@
+---
+import { createMarkdownProcessor } from "@astrojs/markdown-remark";
+
+interface Props {
+  markdown: string;
+}
+
+const { markdown } = Astro.props;
+const processor = await createMarkdownProcessor();
+const rendered = await processor.render(markdown);
+const contentHtml = rendered.code
+  .replaceAll(
+    "<table>",
+    '<div class="table-scroll" tabindex="0" aria-label="Decision table"><table>'
+  )
+  .replaceAll("</table>", "</table></div>");
+---
+
+<section class="domain-content" data-testid="domain-content" aria-labelledby="domain-content-title">
+  <h2 id="domain-content-title">Authored material</h2>
+  <div class="domain-content__markdown" set:html={contentHtml}></div>
+</section>

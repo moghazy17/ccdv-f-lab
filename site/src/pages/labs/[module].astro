@@ -1,0 +1,15 @@
+---
+import { readdirSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
+import ReservedPage from "../../components/ReservedPage.astro";
+
+export function getStaticPaths() {
+  const labDirectory = fileURLToPath(new URL("../../../../lab/", import.meta.url));
+  return readdirSync(labDirectory, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".py") && entry.name !== "__init__.py")
+    .map((entry) => ({ params: { module: entry.name.replace(/\.py$/, "") } }));
+}
+---
+
+<ReservedPage title="Lab module" capability="this runnable lab module" />

@@ -1,6 +1,7 @@
 # Secrets — never commit
 .env
 .env.*
+.env*
 *.key
 credentials.json
 
@@ -29,3 +30,15 @@ Thumbs.db
 
 # Generated mocks are reproducible from their seed
 drills/mocks/*.yaml
+
+# Site toolchain
+node_modules/
+dist/
+coverage/
+*.log
+site/playwright-report/
+site/test-results/
+site/.astro/
+
+# Isolated fixture builds from the domain-content e2e test
+site/.us2-*

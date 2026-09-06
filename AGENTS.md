@@ -67,8 +67,3 @@ ruff check .
 ruff format --check .
 pytest -q
 ```
-
-## Commits
-
-**Do not run `git add` or `git commit`.** Leave work uncommitted in the working tree; the orchestrator
-reviews the diff, re-runs the gates, and commits.

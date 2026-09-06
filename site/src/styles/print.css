@@ -1,0 +1,110 @@
+@media print {
+  @page {
+    margin: 1.5cm;
+    size: auto;
+  }
+
+  :root,
+  :root[data-theme="dark"],
+  :root[data-theme="light"],
+  :root[data-theme="system"],
+  html,
+  body {
+    color-scheme: light !important;
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    --ink: #000000 !important;
+    --paper: #ffffff !important;
+    --panel: #ffffff !important;
+    --muted: #333333 !important;
+    --rule: #777777 !important;
+    --signal: #000000 !important;
+    --signal-ink: #000000 !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+  }
+
+  .site-header,
+  .site-nav,
+  .theme-toggle,
+  .skip-link,
+  .breadcrumb,
+  .no-print,
+  button,
+  .search-trigger,
+  .search-dialog,
+  [data-search],
+  dialog {
+    display: none !important;
+  }
+
+  .page-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .page-content > * {
+    max-width: 100% !important;
+  }
+
+  .table-scroll {
+    overflow: visible !important;
+    max-width: 100% !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+
+  tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+
+  th,
+  td {
+    border-color: #777777 !important;
+    color: #000000 !important;
+    padding: 0.35rem 0.5rem !important;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+    color: #000000 !important;
+  }
+
+  a {
+    color: #000000 !important;
+    text-decoration: underline !important;
+  }
+
+  .print-attribution,
+  .site-footer {
+    display: block !important;
+    border-top: 1pt solid #777777 !important;
+    margin-top: 1.5rem !important;
+    padding-top: 0.5rem !important;
+    color: #333333 !important;
+    font-size: 9pt !important;
+  }
+}

@@ -1,0 +1,54 @@
+---
+import type { BlueprintDomain } from "../lib/blueprint";
+import type { DomainSubSkill } from "../lib/domain-content";
+
+interface Props {
+  domain: BlueprintDomain;
+  subSkills: readonly DomainSubSkill[];
+}
+
+const { domain, subSkills } = Astro.props;
+const contributionUrl = `https://github.com/moghazy17/ccdv-f-lab/tree/main/notes/${domain.slug}`;
+
+const itemLabel = (itemCount: number) => `${itemCount} ${itemCount === 1 ? "item" : "items"}`;
+---
+
+<section
+  class="scaffold-notice"
+  data-testid="scaffold-notice"
+  aria-labelledby="scaffold-notice-title"
+>
+  <h2 id="scaffold-notice-title" data-testid="domain-status">Notes are not yet written</h2>
+  <p>
+    This domain has no authored note sections. The blueprint below shows what the domain measures
+    while the notes are being contributed.
+  </p>
+  <h3>What this domain covers</h3>
+  <div class="table-scroll" tabindex="0" aria-label="Sub-skill coverage table">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Sub-skill</th>
+          <th scope="col">Exam weight</th>
+          <th scope="col">Approximate items</th>
+          <th scope="col">What it measures</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {subSkills.map(({ definition, status }) => (
+          <tr>
+            <th scope="row">{definition.name}</th>
+            <td>{definition.weight}%</td>
+            <td>About {itemLabel(definition.approximateItems)}</td>
+            <td>{definition.measured}</td>
+            <td>{status === "authored" ? "Authored" : "Scaffolded"}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <p>
+    <a href={contributionUrl}>Contribute a note for {domain.name} on GitHub</a>.
+  </p>
+</section>

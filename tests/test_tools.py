@@ -4,11 +4,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from drills.engine.blueprint import load_blueprint, slugify
 from tools.build_cheatsheets import build_cheatsheets
 from tools.build_flashcards import build_flashcards
 from tools.check_blueprint_consistency import main as consistency_main
 from tools.check_links import check_links
+from tools.check_links import main as links_main
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -35,6 +38,68 @@ def test_link_checker_reports_a_broken_relative_link_with_its_line(tmp_path: Pat
     assert "missing.md" in errors[0]
 
 
+def test_link_checker_validates_markdown_fragments_in_target_and_same_files(tmp_path: Path) -> None:
+    """Markdown heading links are accepted only when their GitHub-style fragments exist."""
+    (tmp_path / "guide.md").write_text("# Guide details\n\n## Next steps\n", encoding="utf-8")
+    (tmp_path / "page.md").write_text(
+        "# Page\n\n[Guide](guide.md#guide-details)\n[Section](#page)\n", encoding="utf-8"
+    )
+
+    errors, external_links = check_links(tmp_path)
+
+    assert errors == []
+    assert external_links == 0
+
+
+def test_link_checker_reports_a_broken_markdown_fragment(tmp_path: Path) -> None:
+    """A link to a removed Markdown heading blocks the local-link gate."""
+    (tmp_path / "guide.md").write_text("# Guide\n", encoding="utf-8")
+    (tmp_path / "page.md").write_text("[Missing](guide.md#missing-heading)\n", encoding="utf-8")
+
+    errors, _ = check_links(tmp_path)
+
+    assert errors == [
+        f"page.md:1: broken Markdown fragment 'missing-heading' in {tmp_path / 'guide.md'}"
+    ]
+
+
+def test_link_checker_reports_when_built_output_is_unavailable(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The Markdown-only run identifies why it did not inspect generated HTML."""
+    assert links_main(["--root", str(tmp_path)]) == 0
+
+    assert "Built-output links skipped: site/dist is absent." in capsys.readouterr().out
+
+
+def test_link_checker_checks_built_routes_and_heading_fragments(tmp_path: Path) -> None:
+    """Built links must use the configured base, a trailing slash, and a real emitted fragment."""
+    dist = tmp_path / "site" / "dist"
+    (dist / "topic").mkdir(parents=True)
+    (dist / "index.html").write_text(
+        '<a href="/ccdv-f-lab/topic/#details">Topic</a>', encoding="utf-8"
+    )
+    (dist / "topic" / "index.html").write_text('<h1 id="details">Details</h1>', encoding="utf-8")
+
+    errors, external_links = check_links(tmp_path)
+
+    assert errors == []
+    assert external_links == 0
+
+
+def test_link_checker_rejects_a_broken_built_fragment(tmp_path: Path) -> None:
+    """A built deep link to a removed heading fails the same local-link gate."""
+    dist = tmp_path / "site" / "dist"
+    dist.mkdir(parents=True)
+    (dist / "index.html").write_text('<a href="#missing">Missing</a>', encoding="utf-8")
+
+    errors, _ = check_links(tmp_path)
+
+    assert [error.replace("\\", "/") for error in errors] == [
+        "site/dist/index.html: broken built fragment '#missing'"
+    ]
+
+
 def test_blueprint_consistency_gate_passes_for_the_repository() -> None:
     """The checked-in blueprint and every dependent tree currently agree."""
     assert consistency_main([]) == 0
@@ -49,8 +114,42 @@ def test_blueprint_consistency_gate_rejects_a_mutated_domain_weight(tmp_path: Pa
     assert consistency_main(["--blueprint", str(altered)]) == 1
 
 
-def test_generators_handle_the_note_skeletons_and_create_expected_layout(tmp_path: Path) -> None:
-    """Empty scaffolds generate an importable empty deck and one structural sheet per domain."""
+def _write_scaffold_notes(notes_path: Path) -> None:
+    """Create a notes tree whose every heading carries only an authoring prompt."""
+    blueprint = load_blueprint()
+    for domain in blueprint.domains:
+        directory = notes_path / f"{domain.number:02d}-{slugify(domain.name)}"
+        directory.mkdir(parents=True)
+        sub_skills = "\n".join(f'  - name: "{name}"' for name in domain.sub_skills)
+        headings = "\n\n".join(
+            f"## {name}\n\nAuthoring prompt: Add original material." for name in domain.sub_skills
+        )
+        (directory / "README.md").write_text(
+            f'---\ndomain_name: "{domain.name}"\nsub_skills:\n{sub_skills}\n---\n\n'
+            f"# {domain.name}\n\n{headings}\n",
+            encoding="utf-8",
+        )
+
+
+def test_generators_turn_unauthored_scaffolds_into_an_empty_deck(tmp_path: Path) -> None:
+    """A tree of pure scaffolds yields an importable empty deck and no authored extracts."""
+    blueprint = load_blueprint()
+    notes = tmp_path / "notes"
+    _write_scaffold_notes(notes)
+    flashcards = tmp_path / "flashcards" / "ccdv-f.tsv"
+    cheatsheets = tmp_path / "cheatsheets"
+
+    counts = build_flashcards(notes, flashcards)
+    sheets = build_cheatsheets(notes, cheatsheets)
+
+    assert flashcards.read_text(encoding="utf-8") == ""
+    assert counts == {domain.name: 0 for domain in blueprint.domains}
+    for sheet in sheets:
+        assert "## Authored note extracts" not in sheet.read_text(encoding="utf-8")
+
+
+def test_generators_create_the_expected_layout_for_every_domain(tmp_path: Path) -> None:
+    """Against the repository's own notes, every domain still gets one structural sheet."""
     blueprint = load_blueprint()
     flashcards = tmp_path / "flashcards" / "ccdv-f.tsv"
     cheatsheets = tmp_path / "cheatsheets"
@@ -59,8 +158,7 @@ def test_generators_handle_the_note_skeletons_and_create_expected_layout(tmp_pat
     sheets = build_cheatsheets(ROOT / "notes", cheatsheets)
 
     assert flashcards.is_file()
-    assert flashcards.read_text(encoding="utf-8") == ""
-    assert counts == {domain.name: 0 for domain in blueprint.domains}
+    assert set(counts) == {domain.name for domain in blueprint.domains}
     assert sheets == tuple(
         cheatsheets / f"{domain.number:02d}-{slugify(domain.name)}.md"
         for domain in blueprint.domains
@@ -69,7 +167,6 @@ def test_generators_handle_the_note_skeletons_and_create_expected_layout(tmp_pat
         text = sheet.read_text(encoding="utf-8")
         assert f"# {domain.name} cheat sheet" in text
         assert f"| {domain.weight}% |" in text
-        assert "## Authored note extracts" not in text
 
 
 def test_flashcard_generator_preserves_exact_blueprint_labels(tmp_path: Path) -> None:

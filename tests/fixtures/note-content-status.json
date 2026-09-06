@@ -1,0 +1,24 @@
+{
+  "cases": [
+    {
+      "name": "scaffold prompts do not author a section",
+      "markdown": "# Overview\n\nAuthoring prompt: Explain the topic.\n\n## Tradeoffs\n\n  Authoring prompt: Compare the options.\n",
+      "authoredHeadings": []
+    },
+    {
+      "name": "one written section remains partial",
+      "markdown": "# Overview\n\nA concise explanation is present.\n\n## Tradeoffs\n\nAuthoring prompt: Compare the options.\n",
+      "authoredHeadings": ["Overview"]
+    },
+    {
+      "name": "written Markdown counts as authored",
+      "markdown": "# First section\n\n- A deliberate list item\n\n## Second section\n\n```text\nA code example\n```\n",
+      "authoredHeadings": ["First section", "Second section"]
+    },
+    {
+      "name": "headings alone do not author a section",
+      "markdown": "# First section\n\n## Nested heading\n\n### Another heading\n",
+      "authoredHeadings": []
+    }
+  ]
+}

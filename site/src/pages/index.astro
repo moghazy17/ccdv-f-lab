@@ -1,0 +1,69 @@
+---
+import CoverageSummary from "../components/CoverageSummary.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { blueprint, domains } from "../lib/blueprint";
+
+const { examFacts } = blueprint;
+const formattedFee = new Intl.NumberFormat("en-US", {
+  currency: "USD",
+  maximumFractionDigits: 0,
+  style: "currency"
+}).format(examFacts.feeUsd);
+const highestWeightedDomains = [...domains].sort((left, right) => right.weight - left.weight).slice(0, 2);
+---
+
+<BaseLayout
+  title="CCDV-F exam orientation | CCDV-F community study kit"
+  description="Exam orientation and weight-based study priorities for CCDV-F."
+>
+  <h1>CCDV-F community study kit</h1>
+  <p class="page-introduction">
+    An unofficial community study kit for the Claude Certified Developer – Foundations certification.
+  </p>
+
+  <section class="exam-orientation" aria-labelledby="exam-facts-title">
+    <h2 id="exam-facts-title">Exam facts</h2>
+    <dl class="exam-facts" data-testid="exam-facts">
+      <div>
+        <dt>Exam items</dt>
+        <dd>{examFacts.items} items</dd>
+      </div>
+      <div>
+        <dt>Time limit</dt>
+        <dd>{examFacts.timeLimitMinutes} minutes</dd>
+      </div>
+      <div>
+        <dt>Passing score</dt>
+        <dd>{examFacts.passingScore} on a {examFacts.scaleMin}–{examFacts.scaleMax} scale</dd>
+      </div>
+      <div>
+        <dt>Exam fee</dt>
+        <dd>{formattedFee} USD</dd>
+      </div>
+      <div>
+        <dt>Credential validity</dt>
+        <dd>{examFacts.validityMonths} months</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="readiness-guidance" aria-labelledby="readiness-guidance-title">
+    <h2 id="readiness-guidance-title">Readiness guidance</h2>
+    <p>
+      This project offers static readiness guidance. It does not assess, score, or measure your
+      knowledge.
+    </p>
+    <p>
+      Begin with the domains that carry the greatest published weight, then review every domain in
+      the blueprint before deciding how to use your study time.
+    </p>
+    <ol>
+      {highestWeightedDomains.map((domain) => (
+        <li>{domain.name}: {domain.weight}% of the exam.</li>
+      ))}
+    </ol>
+    <p><a href={`${import.meta.env.BASE_URL}blueprint/`}>Compare all {domains.length} domains and sub-skills</a>.</p>
+  </section>
+
+  <CoverageSummary />
+</BaseLayout>

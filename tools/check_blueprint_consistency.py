@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from decimal import Decimal
 from pathlib import Path
@@ -21,6 +22,7 @@ from drills.engine.blueprint import (  # noqa: E402
 )
 from drills.engine.mock import apportion_items, domain_quota_difference  # noqa: E402
 from drills.engine.validation import find_bank_items  # noqa: E402
+from tools.export_site_data import BlueprintExportError, export_blueprint_data  # noqa: E402
 
 _TOLERANCE = Decimal("0.000001")
 
@@ -39,6 +41,29 @@ def check_consistency(root: Path, blueprint_path: Path) -> None:
     _check_drills(root / "drills" / "bank", blueprint)
     _check_readme(root / "README.md", parsed_domains)
     _check_mock_quotas(blueprint)
+    check_site_blueprint_data(
+        blueprint_path, root / "notes", root / "site" / "src" / "data" / "blueprint.json"
+    )
+
+
+def check_site_blueprint_data(blueprint_path: Path, notes_path: Path, data_path: Path) -> None:
+    """Require committed site data to equal a fresh export from the current blueprint."""
+    if not data_path.is_file():
+        raise ConsistencyError(f"Derived site blueprint data is missing: {data_path}.")
+    try:
+        actual = json.loads(data_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ConsistencyError(
+            f"Derived site blueprint data cannot be read: {data_path}."
+        ) from error
+    try:
+        expected = export_blueprint_data(blueprint_path, notes_path)
+    except BlueprintExportError as error:
+        raise ConsistencyError(
+            f"Derived site blueprint data cannot be generated: {error}"
+        ) from error
+    if actual != expected:
+        raise ConsistencyError("Derived site blueprint data is stale against BLUEPRINT.md.")
 
 
 def _check_weights(parsed_domains: list[tuple[int, str, str]], blueprint_text: str) -> None:

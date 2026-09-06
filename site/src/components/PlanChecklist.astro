@@ -1,0 +1,303 @@
+---
+import { allocationsOrderedByWeight, type StudyPlan } from "../lib/plans";
+import { PLAN_SWITCHING_NOTICE, STORAGE_NOTICE } from "../lib/progress";
+
+interface Props {
+  plan: StudyPlan;
+}
+
+const { plan } = Astro.props;
+const sortedAllocations = allocationsOrderedByWeight(plan.allocations);
+const domainCount = plan.allocations.length;
+---
+
+<section
+  class="plan-checklist"
+  data-plan-checklist
+  data-plan-slug={plan.slug}
+  data-plan-hours={plan.totalHours}
+  data-plan-domain-count={domainCount}
+>
+  <div class="plan-header-summary">
+    <p class="plan-hours-display">
+      Total scheduled hours: <strong data-testid="plan-total-hours">{plan.totalHours.toFixed(3)}</strong>
+    </p>
+    <div
+      class="plan-completion"
+      data-testid="plan-completion-container"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      <h3>Plan progress</h3>
+      <p class="completion-summary" data-testid="plan-completion-summary">
+        0 of {domainCount} domains (0%), 0.000 of {plan.totalHours.toFixed(3)} hours (0%)
+      </p>
+      <div class="completion-track" aria-hidden="true">
+        <div class="completion-fill" style="width: 0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    data-testid="storage-error"
+    class="storage-error"
+    role="alert"
+    style="display: none;"
+  ></div>
+
+  <div class="plan-notices">
+    <p data-testid="plan-switching-notice" class="notice notice--switching">
+      {PLAN_SWITCHING_NOTICE}
+    </p>
+    <p data-testid="storage-notice" class="notice notice--storage">
+      {STORAGE_NOTICE}
+    </p>
+  </div>
+
+  <div class="table-scroll">
+    <table class="plan-table">
+      <caption class="sr-only">Study allocations for {plan.title}</caption>
+      <thead>
+        <tr>
+          <th scope="col" class="col-status">Done</th>
+          <th scope="col">Domain</th>
+          <th scope="col" class="col-weight">Exam weight</th>
+          <th scope="col" class="col-hours">Allocated hours</th>
+        </tr>
+      </thead>
+      <tbody>
+        {sortedAllocations.map((alloc) => (
+          <tr
+            data-testid="plan-allocation-row"
+            data-domain-number={alloc.domainNumber}
+            data-hours={alloc.hours}
+          >
+            <td class="col-status">
+              <input
+                type="checkbox"
+                id={`mark-domain-${plan.slug}-${alloc.domainNumber}`}
+                data-testid={`mark-domain-${alloc.domainNumber}`}
+                data-domain-number={alloc.domainNumber}
+                aria-label={`Mark Domain ${alloc.domainNumber}: ${alloc.domainName} as worked through`}
+              />
+            </td>
+            <td>
+              <label for={`mark-domain-${plan.slug}-${alloc.domainNumber}`}>
+                <strong>Domain {alloc.domainNumber}: {alloc.domainName}</strong>
+              </label>
+            </td>
+            <td class="col-weight">{alloc.weight}%</td>
+            <td class="col-hours">{alloc.hours.toFixed(3)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+  import { createProgressStorage } from "../lib/storage";
+  import { storageErrorMessage } from "../lib/progress";
+
+  const checklist = document.querySelector<HTMLElement>("[data-plan-checklist]");
+  if (checklist) {
+    const planSlug = checklist.dataset.planSlug ?? "";
+    const totalPlanHours = Number(checklist.dataset.planHours) || 0;
+    const domainCount = Number(checklist.dataset.planDomainCount) || 0;
+    const summaryEl = checklist.querySelector<HTMLElement>("[data-testid='plan-completion-summary']");
+    const progressFill = checklist.querySelector<HTMLElement>(".completion-fill");
+    const errorEl = checklist.querySelector<HTMLElement>("[data-testid='storage-error']");
+    const rows = checklist.querySelectorAll<HTMLTableRowElement>("[data-testid='plan-allocation-row']");
+
+    const domainHoursMap = new Map<number, number>();
+    const checkboxes = checklist.querySelectorAll<HTMLInputElement>("input[type='checkbox'][data-domain-number]");
+
+    rows.forEach((row) => {
+      const num = Number(row.dataset.domainNumber);
+      const hours = Number(row.dataset.hours);
+      domainHoursMap.set(num, hours);
+    });
+
+    const storage = createProgressStorage();
+    let inMemoryMarks = new Set<number>();
+
+    function updateView(markedNumbers: Set<number>): void {
+      const planMarks = new Set([...markedNumbers].filter((num) => domainHoursMap.has(num)));
+      checkboxes.forEach((cb) => {
+        const num = Number(cb.dataset.domainNumber);
+        cb.checked = planMarks.has(num);
+      });
+
+      const completedCount = planMarks.size;
+      const completedHoursSum = [...planMarks].reduce(
+        (sum, num) => sum + (domainHoursMap.get(num) ?? 0),
+        0
+      );
+      const completedHours = Number(completedHoursSum.toFixed(3));
+      const domainsPct = domainCount > 0 ? Math.round((completedCount / domainCount) * 100) : 0;
+      const hoursPct = totalPlanHours > 0 ? Math.round((completedHours / totalPlanHours) * 100) : 0;
+
+      if (summaryEl) {
+        summaryEl.textContent = `${completedCount} of ${domainCount} domains (${domainsPct}%), ${completedHours.toFixed(3)} of ${totalPlanHours.toFixed(3)} hours (${hoursPct}%)`;
+      }
+      if (progressFill) {
+        progressFill.style.width = `${hoursPct}%`;
+      }
+    }
+
+    function showError(message: string | null): void {
+      if (!errorEl) return;
+      if (message) {
+        errorEl.textContent = message;
+        errorEl.style.display = "block";
+      } else {
+        errorEl.textContent = "";
+        errorEl.style.display = "none";
+      }
+    }
+
+    function syncFromStorage(): void {
+      const result = storage.read();
+      if (result.kind !== "ok" || !result.value) {
+        showError(storageErrorMessage(result));
+        updateView(inMemoryMarks);
+        return;
+      }
+      showError(null);
+      const marks = result.value.namespaces.foundation.planMarks[planSlug] ?? [];
+      inMemoryMarks = new Set(marks);
+      updateView(inMemoryMarks);
+    }
+
+    checkboxes.forEach((cb) => {
+      cb.addEventListener("change", () => {
+        const num = Number(cb.dataset.domainNumber);
+        const checked = cb.checked;
+
+        if (checked) {
+          inMemoryMarks.add(num);
+        } else {
+          inMemoryMarks.delete(num);
+        }
+        updateView(inMemoryMarks);
+
+        const writeResult = storage.setPlanMark(planSlug, num, checked);
+        if (writeResult.kind !== "ok") {
+          showError(storageErrorMessage(writeResult));
+        } else {
+          showError(null);
+        }
+      });
+    });
+
+    storage.subscribe(() => {
+      syncFromStorage();
+    });
+
+    syncFromStorage();
+  }
+</script>
+
+<style>
+  .plan-checklist {
+    display: grid;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .plan-header-summary {
+    display: grid;
+    gap: 1rem;
+    padding: clamp(1rem, 3vw, 1.5rem);
+    border: 0.0625rem solid var(--rule);
+    background: var(--panel);
+  }
+
+  .plan-hours-display {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+
+  .plan-completion h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.05rem;
+  }
+
+  .completion-summary {
+    margin: 0 0 0.5rem;
+    font-weight: 600;
+  }
+
+  .completion-track {
+    width: 100%;
+    height: 0.75rem;
+    overflow: hidden;
+    background: var(--rule);
+    border-radius: 0.2rem;
+  }
+
+  .completion-fill {
+    height: 100%;
+    background: var(--signal);
+    transition: width 0.2s ease-in-out;
+  }
+
+  .storage-error {
+    padding: 0.85rem 1.15rem;
+    border-left: 0.35rem solid var(--focus);
+    background: var(--paper);
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .plan-notices {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .notice {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    border-left: 0.25rem solid var(--signal);
+    background: var(--panel);
+    font-size: 0.925rem;
+  }
+
+  .plan-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--panel);
+  }
+
+  .col-status {
+    width: 3.5rem;
+    text-align: center;
+  }
+
+  .col-weight {
+    width: 7rem;
+    text-align: right;
+  }
+
+  .col-hours {
+    width: 8rem;
+    text-align: right;
+  }
+
+  input[type="checkbox"] {
+    width: 1.25rem;
+    height: 1.25rem;
+    cursor: pointer;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+</style>

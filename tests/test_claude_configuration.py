@@ -33,7 +33,7 @@ def test_project_claude_instructions_live_at_the_repository_root() -> None:
 
 def test_hook_denies_protected_file_write_and_permits_an_ordinary_file() -> None:
     """The direct executable hook has both a deny path and a non-destructive allow path."""
-    denied = run_hook({"tool_name": "Write", "tool_input": {"file_path": "BLUEPRINT.md"}})
+    denied = run_hook({"tool_name": "Write", "tool_input": {"file_path": "LICENSE"}})
     permitted = run_hook({"tool_name": "Write", "tool_input": {"file_path": "lab/security.py"}})
 
     assert denied.returncode != 0
