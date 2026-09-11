@@ -17,6 +17,9 @@ orchestrator. **Domain note content is written by hand** — see "Not delegated"
 | T8 | Codex | CI workflows + flashcard/cheatsheet generators | ✅ see below |
 | T9+ | **by hand** | Domain notes, drill items | ongoing, weekly |
 
+The drill bank contains 54 item files: 53 eligible original items reach learner surfaces, while one
+format demonstration documents the item format and is excluded from learner surfaces.
+
 ## Not delegated
 
 **Domain notes and drill items.** Writing them is the studying — the repo exists to serve that, not to

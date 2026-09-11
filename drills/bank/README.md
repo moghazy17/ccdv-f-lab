@@ -15,3 +15,8 @@ exercises, never recalled or reconstructed exam material. Validate additions bef
 ```powershell
 python -m drills.engine validate
 ```
+
+CI runs that exact command before publication. The site exporter rejects a malformed item, excludes
+items marked `format_demonstration: true`, and publishes every eligible item to the weighted mock and
+to its domain's scored quiz. Rebuild the site after validation; no site-code change is needed for an
+eligible item to appear.

@@ -149,6 +149,10 @@ explicitly subject to change. Re-check it against `BLUEPRINT.md` before trusting
 Note trees are scaffolds until written. They give a consistent, weight-sized structure without
 presenting uncited material as settled guidance.
 
+The drill bank contains 54 item files. Fifty-three eligible original items reach the weighted mock
+and their domain quizzes; one format demonstration documents the YAML shape and is excluded from
+learner surfaces.
+
 | Domain | Notes |
 |---|---|
 | Agents and Workflows | Skeleton |
