@@ -162,8 +162,10 @@ const { entrySource, slug } = Astro.props;
         status.textContent = result.stopped
           ? "Stopped before the run finished."
           : `Finished in ${Math.round(result.durationMs)} ms.`;
-      } catch {
-        status.textContent = "The run could not be started. Reload the page and try again.";
+      } catch (error) {
+        if (!runtime.isRuntimeStoppedError(error)) {
+          status.textContent = "The run could not be started. Reload the page and try again.";
+        }
       } finally {
         unsubscribeStatus();
         unsubscribeProgress();

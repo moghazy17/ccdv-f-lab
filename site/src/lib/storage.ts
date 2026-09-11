@@ -1,6 +1,7 @@
 import type { PracticeItem } from "./items";
 
 export const PROGRESS_STORAGE_KEY = "ccdv-f:progress";
+export const LAST_REPORT_SESSION_KEY = "ccdv-f:last-report";
 export const CURRENT_SCHEMA_VERSION = 1;
 const WRITE_MERGE_RETRIES = 1;
 
@@ -342,7 +343,7 @@ export class ProgressStorage {
   clearPracticeResults(): StorageResult {
     // Clear the four namespaces this feature owns and leave `foundation` untouched (FR-051):
     // a candidate discarding practice keeps their theme, plan marks, and diagnostic outcome.
-    return this.mergeAndRetry(
+    const result = this.mergeAndRetry(
       (envelope) => {
         const empty = emptyProgress(envelope.updatedAt).namespaces;
         envelope.namespaces.labs = empty.labs;
@@ -357,6 +358,14 @@ export class ProgressStorage {
         Object.keys(envelope.namespaces.quiz.results).length === 0 &&
         Object.keys(envelope.namespaces.flashcards.state).length === 0
     );
+    if (result.kind === "ok") {
+      try {
+        sessionStorage.removeItem(LAST_REPORT_SESSION_KEY);
+      } catch {
+        // Practice progress is still cleared when session storage is unavailable.
+      }
+    }
+    return result;
   }
 
   setRecallOutcome(promptKey: string, outcome: RecallOutcome): StorageResult {
@@ -510,7 +519,8 @@ export class ProgressStorage {
       (envelope) => {
         envelope.namespaces.foundation.diagnostic = diagnostic;
       },
-      (envelope) => envelope.namespaces.foundation.diagnostic === diagnostic
+      (envelope) =>
+        JSON.stringify(envelope.namespaces.foundation.diagnostic) === JSON.stringify(diagnostic)
     );
   }
 

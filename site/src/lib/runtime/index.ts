@@ -17,6 +17,7 @@
 
 export {
   currentStatus,
+  isRuntimeStoppedError,
   load,
   run,
   stop,
@@ -24,6 +25,7 @@ export {
   subscribeStatus
 } from "./client";
 export type { OutputChunk, OutputListener, OutputStream, ProgressListener, StatusListener } from "./client";
+export { RuntimeStoppedError } from "./client";
 
 /** Where the runtime is in its lifecycle, from the caller's point of view. */
 export type RuntimeStatus = "idle" | "loading" | "ready" | "running" | "failed";

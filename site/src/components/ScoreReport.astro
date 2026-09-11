@@ -27,6 +27,9 @@ const anchorPercent = ((mock.passingScore - mock.scaleMinimum) / scaleRange) * 1
   <p data-testid="score-report-empty" data-score-report-empty>
     No attempt has been scored on this device yet.
   </p>
+  <p data-score-storage-warning hidden>
+    This report could not be saved to browser storage. It is available only in this tab's session.
+  </p>
 
   <div data-score-report-body hidden>
     <p data-testid="score-report-expiry" data-score-report-expiry hidden>
@@ -87,7 +90,8 @@ const anchorPercent = ((mock.passingScore - mock.scaleMinimum) / scaleRange) * 1
 
 <script>
   import type { ScoreReport, ScoreSummary } from "../lib/storage";
-  import { createProgressStorage } from "../lib/storage";
+  import { roundHalfToEven } from "../lib/scoring";
+  import { LAST_REPORT_SESSION_KEY, createProgressStorage } from "../lib/storage";
 
   const root = document.querySelector<HTMLElement>("[data-score-report]");
   if (root !== null) {
@@ -105,6 +109,7 @@ const anchorPercent = ((mock.passingScore - mock.scaleMinimum) / scaleRange) * 1
     const expiryNotice = root.querySelector<HTMLElement>("[data-score-report-expiry]");
     const detailDropped = root.querySelector<HTMLElement>("[data-score-detail-dropped]");
     const allCorrect = root.querySelector<HTMLElement>("[data-score-all-correct]");
+    const storageWarning = root.querySelector<HTMLElement>("[data-score-storage-warning]");
     if (
       empty === null ||
       body === null ||
@@ -127,6 +132,12 @@ const anchorPercent = ((mock.passingScore - mock.scaleMinimum) / scaleRange) * 1
     }
     empty.hidden = true;
     body.hidden = false;
+    if (
+      new URLSearchParams(window.location.search).get("storage") === "failed" &&
+      storageWarning !== null
+    ) {
+      storageWarning.hidden = false;
+    }
 
     if (report.timeRanOut && expiryNotice !== null) {
       expiryNotice.hidden = false;
@@ -155,7 +166,7 @@ const anchorPercent = ((mock.passingScore - mock.scaleMinimum) / scaleRange) * 1
     }
 
     const fraction = report.itemCount === 0 ? 0 : report.correct / report.itemCount;
-    const scaled = Math.round(scaleMinimum + (scaleMaximum - scaleMinimum) * fraction);
+    const scaled = roundHalfToEven(scaleMinimum + (scaleMaximum - scaleMinimum) * fraction);
     estimate.textContent = `Estimated ${scaled} out of ${scaleMaximum}.`;
 
     if (report.ready) {
@@ -203,17 +214,16 @@ const anchorPercent = ((mock.passingScore - mock.scaleMinimum) / scaleRange) * 1
 
   /** The newest stored report, falling back to one held only for this session. */
   function latestReport(): ScoreReport | ScoreSummary | null {
-    const stored = createProgressStorage().mockProgress();
-    const newest = stored?.reports[0] ?? stored?.summaries[0] ?? null;
-    if (newest !== null) {
-      return newest;
-    }
     try {
-      const raw = sessionStorage.getItem("ccdv-f:last-report");
-      return raw === null ? null : (JSON.parse(raw) as ScoreReport);
+      const raw = sessionStorage.getItem(LAST_REPORT_SESSION_KEY);
+      if (raw !== null) {
+        return JSON.parse(raw) as ScoreReport;
+      }
     } catch {
-      return null;
+      // Fall through to persistent history when the session handoff is unavailable.
     }
+    const stored = createProgressStorage().mockProgress();
+    return stored?.reports[0] ?? stored?.summaries[0] ?? null;
   }
 </script>
 

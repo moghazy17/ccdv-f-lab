@@ -103,7 +103,7 @@ export function summarizeEnvelope(envelope: ProgressEnvelope | null | undefined)
     hasDiagnostic: foundation.diagnostic !== null && foundation.diagnostic !== undefined,
     theme: foundation.theme ?? "system",
     labsEditedCount: labs ? Object.keys(labs.edits ?? {}).length : 0,
-    mockReportCount: mock ? mock.reports.length + mock.summaries.length : 0,
+    mockReportCount: mock ? (mock.reports ?? []).length + (mock.summaries ?? []).length : 0,
     mockHasInProgressAttempt: mock ? mock.current !== null : false,
     quizResultCount: quiz ? Object.keys(quiz.results ?? {}).length : 0,
     flashcardsTrackedCount: flashcards ? Object.keys(flashcards.state ?? {}).length : 0

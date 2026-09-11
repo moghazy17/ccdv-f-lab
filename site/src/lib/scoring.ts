@@ -71,7 +71,7 @@ export interface ScoreOutcome {
  * every exact `.5`, and an estimate that differs between the two implementations is exactly the
  * drift the fixtures exist to catch.
  */
-function roundHalfToEven(value: number): number {
+export function roundHalfToEven(value: number): number {
   const floor = Math.floor(value);
   const remainder = value - floor;
   if (remainder > 0.5) {

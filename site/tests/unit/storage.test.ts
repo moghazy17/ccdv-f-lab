@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import {
   CURRENT_SCHEMA_VERSION,
+  LAST_REPORT_SESSION_KEY,
   PROGRESS_STORAGE_KEY,
   checkStorageAvailability,
   createProgressStorage,
@@ -14,6 +15,7 @@ import {
 class MemoryStorage implements StorageLike {
   readonly values = new Map<string, string>();
   failWrites = false;
+  writeCount = 0;
 
   getItem(key: string): string | null {
     return this.values.get(key) ?? null;
@@ -23,6 +25,7 @@ class MemoryStorage implements StorageLike {
     if (this.failWrites) {
       throw new Error("quota exceeded");
     }
+    this.writeCount += 1;
     this.values.set(key, value);
   }
 
@@ -32,6 +35,14 @@ class MemoryStorage implements StorageLike {
 }
 
 describe("progress storage", () => {
+  test("writes an unchanged diagnostic object only once", () => {
+    const storage = new MemoryStorage();
+    const progress = createProgressStorage(storage, () => "2026-01-02T00:00:00.000Z");
+
+    expect(progress.setDiagnostic({ recommendedPlan: "3-weeks" }).kind).toBe("ok");
+    expect(storage.writeCount).toBe(1);
+  });
+
   test("theme bootstrap refuses future and invalid schema records", () => {
     const originalDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
     const originalStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
@@ -302,6 +313,24 @@ describe("practice namespaces", () => {
     expect(cleared?.mock).toEqual({ current: null, reports: [], summaries: [] });
     expect(cleared?.quiz).toEqual({ results: {}, recall: {} });
     expect(cleared?.flashcards).toEqual({ state: {} });
+  });
+
+  test("clears the session report after practice results are cleared", () => {
+    const originalSessionStorage = Object.getOwnPropertyDescriptor(globalThis, "sessionStorage");
+    const session = new MemoryStorage();
+    session.setItem(LAST_REPORT_SESSION_KEY, "stored report");
+    Object.defineProperty(globalThis, "sessionStorage", { configurable: true, value: session });
+
+    try {
+      expect(createProgressStorage(new MemoryStorage()).clearPracticeResults().kind).toBe("ok");
+      expect(session.getItem(LAST_REPORT_SESSION_KEY)).toBeNull();
+    } finally {
+      if (originalSessionStorage) {
+        Object.defineProperty(globalThis, "sessionStorage", originalSessionStorage);
+      } else {
+        Reflect.deleteProperty(globalThis, "sessionStorage");
+      }
+    }
   });
 });
 

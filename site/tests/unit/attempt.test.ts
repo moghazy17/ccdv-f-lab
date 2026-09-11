@@ -163,6 +163,26 @@ describe("building and retaining reports", () => {
     expect(wrong.rationale).toContain("d.");
   });
 
+  it("rejects duplicate selections in report item detail", () => {
+    const duplicateAttempt = createAttempt(
+      [item("duplicate", "Alpha", ["a", "b"])],
+      120,
+      submittedAt,
+      "attempt-duplicate"
+    );
+    duplicateAttempt.answers = { duplicate: ["a", "a"] };
+    const duplicateOutcome = scoreAttempt(
+      duplicateAttempt.items,
+      duplicateAttempt.answers,
+      ["Alpha"],
+      { minimum: 100, maximum: 1000, passingScore: 720 }
+    );
+
+    expect(buildReport(duplicateAttempt, duplicateOutcome, submittedAt).items[0].isCorrect).toBe(
+      false
+    );
+  });
+
   it("keeps three full reports and demotes the fourth-oldest to a summary", () => {
     const made = (index: number): ScoreReport => ({ ...report, attemptId: `attempt-${index}` });
     let stored: { reports: ScoreReport[]; summaries: ReturnType<typeof summarise>[] } = {

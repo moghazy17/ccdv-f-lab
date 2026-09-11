@@ -5,6 +5,7 @@ import {
   READINESS_DOMAIN_FRACTION,
   READINESS_OVERALL_FRACTION,
   isCorrect,
+  roundHalfToEven,
   scoreAttempt,
   type ScorableItem,
   type Selections
@@ -110,6 +111,12 @@ describe("exact-set matching", () => {
 
   it("rejects a selection of the right size made of wrong options", () => {
     expect(isCorrect(item, ["b", "d"])).toBe(false);
+  });
+});
+
+describe("scaled-score rounding", () => {
+  it("rounds an even integer plus one half to the even integer", () => {
+    expect(roundHalfToEven(212.5)).toBe(212);
   });
 });
 

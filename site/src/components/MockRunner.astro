@@ -68,6 +68,17 @@ const base = import.meta.env.BASE_URL;
     </div>
   </div>
 
+  <div data-mock-panel="unscoreable" hidden>
+    <h2>This attempt cannot be scored</h2>
+    <p>
+      Its saved items no longer match the current blueprint. Discard this attempt, then start a new
+      mock built from the current blueprint.
+    </p>
+    <button type="button" class="action-button" data-mock-discard-unscoreable>
+      Discard this attempt
+    </button>
+  </div>
+
   <div data-mock-panel="running" hidden>
     <div class="mock-runner__bar">
       <p class="mock-runner__timer" data-testid="mock-timer" data-mock-timer aria-hidden="true"></p>
@@ -113,7 +124,12 @@ const base = import.meta.env.BASE_URL;
     type MockData
   } from "../lib/attempt";
   import { scoreAttempt } from "../lib/scoring";
-  import { checkStorageAvailability, createProgressStorage } from "../lib/storage";
+  import {
+    LAST_REPORT_SESSION_KEY,
+    checkStorageAvailability,
+    createProgressStorage,
+    type StorageResult
+  } from "../lib/storage";
   import type { MockAttempt } from "../lib/storage";
   import type { PracticeItem } from "../lib/items";
 
@@ -140,6 +156,7 @@ const base = import.meta.env.BASE_URL;
     const panels = {
       start: root.querySelector<HTMLElement>('[data-mock-panel="start"]'),
       expired: root.querySelector<HTMLElement>('[data-mock-panel="expired"]'),
+      unscoreable: root.querySelector<HTMLElement>('[data-mock-panel="unscoreable"]'),
       running: root.querySelector<HTMLElement>('[data-mock-panel="running"]')
     };
     const timer = root.querySelector<HTMLElement>("[data-mock-timer]");
@@ -156,7 +173,7 @@ const base = import.meta.env.BASE_URL;
     const storageState = checkStorageAvailability();
     // FR-052: an unavailable store must not make the mock unusable. The attempt lives in memory
     // and stays answerable to the end; only its persistence is lost, and the page says so.
-    const storage = storageState === "available" ? createProgressStorage() : null;
+    let storage = storageState === "available" ? createProgressStorage() : null;
     if (storageState !== "available" && storageNotice !== null) {
       storageNotice.hidden = false;
       storageNotice.textContent =
@@ -169,6 +186,20 @@ const base = import.meta.env.BASE_URL;
     let currentIndex = 0;
     let lastAnnouncedMinute = -1;
     let tick: number | null = null;
+    let persistenceFailed = false;
+
+    function handleStorageResult(result: StorageResult | undefined): void {
+      if (result === undefined || result.kind === "ok") {
+        return;
+      }
+      persistenceFailed = true;
+      storage = null;
+      if (storageNotice !== null) {
+        storageNotice.hidden = false;
+        storageNotice.textContent =
+          "Browser storage stopped accepting this attempt. Your answers remain available in this tab, but they and the final report will not be kept.";
+      }
+    }
 
     function show(panel: keyof typeof panels): void {
       for (const [name, element] of Object.entries(panels)) {
@@ -180,7 +211,7 @@ const base = import.meta.env.BASE_URL;
 
     function persistAttempt(): void {
       if (attempt !== null) {
-        storage?.setMockAttempt(attempt);
+        handleStorageResult(storage?.setMockAttempt(attempt));
       }
     }
 
@@ -188,24 +219,31 @@ const base = import.meta.env.BASE_URL;
       if (attempt === null) {
         return;
       }
-      stopClock();
       const submittedAt = new Date();
-      const outcome = scoreAttempt(attempt.items, attempt.answers, payload.domainNames, {
-        minimum: payload.mock.scaleMinimum,
-        maximum: payload.mock.scaleMaximum,
-        passingScore: payload.mock.passingScore
-      });
+      let outcome;
+      try {
+        outcome = scoreAttempt(attempt.items, attempt.answers, payload.domainNames, {
+          minimum: payload.mock.scaleMinimum,
+          maximum: payload.mock.scaleMaximum,
+          passingScore: payload.mock.passingScore
+        });
+      } catch {
+        stopClock();
+        show("unscoreable");
+        return;
+      }
+      stopClock();
       const report = buildReport(attempt, outcome, submittedAt, timeRanOut);
-      storage?.saveReport(report, retainReports);
       // The report page reads from storage; when storage is gone it is handed the one report in
       // the session so a candidate still sees the result they just earned.
       try {
-        sessionStorage.setItem("ccdv-f:last-report", JSON.stringify(report));
+        sessionStorage.setItem(LAST_REPORT_SESSION_KEY, JSON.stringify(report));
       } catch {
         // A session-storage failure costs nothing the stored report does not already cover.
       }
+      handleStorageResult(storage?.saveReport(report, retainReports));
       attempt = null;
-      window.location.href = reportUrl;
+      window.location.href = persistenceFailed ? `${reportUrl}?storage=failed` : reportUrl;
     }
 
     function stopClock(): void {
@@ -325,7 +363,7 @@ const base = import.meta.env.BASE_URL;
             .map((candidate) => candidate.id)
             .filter((id) => next.has(id));
           attempt.answers[item.id] = ordered;
-          storage?.recordAnswer(item.id, ordered);
+          handleStorageResult(storage?.recordAnswer(item.id, ordered));
           renderItemList();
         });
         const label = document.createElement("label");
@@ -364,7 +402,15 @@ const base = import.meta.env.BASE_URL;
       .querySelector<HTMLButtonElement>("[data-mock-discard-expired]")
       ?.addEventListener("click", () => {
         attempt = null;
-        storage?.setMockAttempt(null);
+        handleStorageResult(storage?.setMockAttempt(null));
+        show("start");
+      });
+
+    root
+      .querySelector<HTMLButtonElement>("[data-mock-discard-unscoreable]")
+      ?.addEventListener("click", () => {
+        attempt = null;
+        handleStorageResult(storage?.setMockAttempt(null));
         show("start");
       });
 

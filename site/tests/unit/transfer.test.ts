@@ -56,6 +56,13 @@ describe("transfer module", () => {
     expect(summary.hasDiagnostic).toBe(false);
   });
 
+  test("summarizes a partial mock namespace", () => {
+    const envelope = emptyProgress("2026-09-05T10:00:00.000Z");
+    envelope.namespaces.mock = {} as typeof envelope.namespaces.mock;
+
+    expect(summarizeEnvelope(envelope).mockReportCount).toBe(0);
+  });
+
   test("detects whether progress has been recorded", () => {
     const empty = emptyProgress("2026-09-05T10:00:00.000Z");
     expect(hasRecordedProgress(empty)).toBe(false);

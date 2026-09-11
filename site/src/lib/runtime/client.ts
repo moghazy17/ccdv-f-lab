@@ -17,6 +17,19 @@ import type { LoadProgress, RunResult, RuntimeStatus } from "./index";
 
 export type OutputStream = "stdout" | "stderr";
 
+/** A runtime request ended because Stop was pressed or a newer request replaced it. */
+export class RuntimeStoppedError extends Error {
+  constructor() {
+    super("The runtime request was stopped.");
+    this.name = "RuntimeStoppedError";
+  }
+}
+
+/** Whether an error represents an intentional runtime stop rather than a load failure. */
+export function isRuntimeStoppedError(error: unknown): error is RuntimeStoppedError {
+  return error instanceof RuntimeStoppedError;
+}
+
 /** One streamed chunk of output, delivered as the run produces it. */
 export interface OutputChunk {
   stream: OutputStream;
@@ -79,6 +92,7 @@ export async function load(): Promise<void> {
   }
   setStatus("loading");
   await new Promise<void>((resolve, reject) => {
+    pendingInit?.reject(new RuntimeStoppedError());
     pendingInit = { resolve, reject };
     worker?.postMessage({ type: "init", bundleUrl: bundleUrl() } satisfies InboundMessage);
   });
@@ -94,6 +108,7 @@ export async function run(source: string, onOutput?: OutputListener): Promise<Ru
   }
   setStatus("running");
   return new Promise<RunResult>((resolve) => {
+    settleStoppedRun();
     pendingRun = { resolve, stdout: "", stderr: "", startedAt: performanceNow(), onOutput };
     worker?.postMessage({ type: "run", source } satisfies InboundMessage);
   });
@@ -105,23 +120,29 @@ export async function run(source: string, onOutput?: OutputListener): Promise<Ru
  * call re-initialises from the HTTP cache and reports that through the progress subscription.
  */
 export function stop(): void {
-  if (pendingRun !== null) {
-    const finished = pendingRun;
-    pendingRun = null;
-    finished.resolve({
-      stdout: finished.stdout,
-      stderr: finished.stderr,
-      traceback: null,
-      durationMs: performanceNow() - finished.startedAt,
-      stopped: true,
-      truncated: false
-    });
-  }
+  settleStoppedRun();
+  pendingInit?.reject(new RuntimeStoppedError());
+  pendingInit = null;
   worker?.terminate();
   worker = null;
-  pendingInit = null;
   awaitingReinitialisation = true;
   setStatus("idle");
+}
+
+function settleStoppedRun(): void {
+  if (pendingRun === null) {
+    return;
+  }
+  const finished = pendingRun;
+  pendingRun = null;
+  finished.resolve({
+    stdout: finished.stdout,
+    stderr: finished.stderr,
+    traceback: null,
+    durationMs: performanceNow() - finished.startedAt,
+    stopped: true,
+    truncated: false
+  });
 }
 
 function createWorker(): Worker {

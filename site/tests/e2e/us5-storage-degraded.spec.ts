@@ -29,6 +29,7 @@ test.describe("US5 - practice surfaces with unavailable storage", () => {
     await page.getByTestId("mock-submit").click();
     await expect(page).toHaveURL(/\/mock\/report\/$/);
     await expect(page.getByTestId("score-overall")).toBeVisible();
+    await expect(page.locator("[data-score-storage-warning]")).toBeHidden();
 
     await page.goto("./domains/04-eval-testing-and-debugging/quiz/");
     await expect(page.locator("[data-quiz-storage-notice]")).toContainText(

@@ -12,7 +12,7 @@
 
 import type { PracticeItem } from "./items";
 import type { DomainScore, MockAttempt, ScoreReport, ScoreSummary } from "./storage";
-import type { ScoreOutcome } from "./scoring";
+import { isCorrect, type ScoreOutcome } from "./scoring";
 
 /** The build-time mock contract, exactly as `tools/export_mock_data.py` emits it. */
 export interface MockData {
@@ -178,13 +178,11 @@ export function buildReport(
     items: attempt.items.map((item) => {
       const selected = attempt.answers[item.id] ?? [];
       const correct = item.options.filter((option) => option.correct).map((option) => option.id);
-      const isCorrect =
-        selected.length === correct.length && selected.every((id) => correct.includes(id));
       return {
         itemId: item.id,
         selected: [...selected],
         correct,
-        isCorrect,
+        isCorrect: isCorrect(item, selected),
         // FR-032: the explanation for a wrong answer is the rationale of every option, so a
         // candidate learns why their choice failed as well as why the right one holds.
         rationale: item.options
