@@ -64,9 +64,11 @@ domain's recall prompts. Every note written grows three surfaces at once with no
 
 ### Known follow-ups
 
-- **Push and enable Pages.** `git push -u origin 002-blueprint-guard-and-frontmatter`, then in
-  GitHub repo settings set **Pages → Source: GitHub Actions**, or `pages.yml` fails on the first
-  push to `main`.
+- **Push the branch and open a pull request.**
+  `git push -u origin 002-blueprint-guard-and-frontmatter`. Pages needs no setup: it is already on
+  **Source: GitHub Actions** (`build_type: workflow`) and `pages.yml` deployed successfully from
+  `main` on the feature 001 merge, so merging this branch publishes it. Verify with
+  `gh api repos/moghazy17/ccdv-f-lab/pages` rather than assuming either way.
 - **Repo-relative links do not survive rendering.** Note prose still names `SOURCES.md` and
   `lab/*.py` in code spans rather than linking them, because `/domains/<slug>/` has no such route.
   `AGENTS.md` wants those links. The fix is a small remark plugin rewriting repo-relative links to
