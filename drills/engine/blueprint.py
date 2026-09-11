@@ -24,6 +24,7 @@ class Blueprint:
 
     domains: tuple[Domain, ...]
     exam_item_count: int
+    time_limit_minutes: int
     scale_minimum: int
     scale_maximum: int
     passing_score: int
@@ -81,19 +82,23 @@ def parse_sub_skills(blueprint: str, domain_number: int) -> list[tuple[str, str]
     ]
 
 
-def _parse_exam_facts(blueprint: str) -> tuple[int, int, int, int]:
+def _parse_exam_facts(blueprint: str) -> tuple[int, int, int, int, int]:
     exam_facts = blueprint.split("## Exam facts", maxsplit=1)[1].split("## Domains", maxsplit=1)[0]
     item_match = re.search(r"^\|\s*Items\s*\|\s*\*{0,2}(\d+)", exam_facts, re.MULTILINE)
+    time_match = re.search(r"^\|\s*Time limit\s*\|\s*\*{0,2}(\d+)", exam_facts, re.MULTILINE)
     score_match = re.search(
         r"^\|\s*Passing score\s*\|\s*\*{0,2}(\d+).*?\*{0,2}(\d+)\s*[–-]\s*(\d+)",
         exam_facts,
         re.MULTILINE,
     )
-    if item_match is None or score_match is None:
-        raise ValueError("Blueprint exam facts do not contain item count and scaled-score range")
+    if item_match is None or time_match is None or score_match is None:
+        raise ValueError(
+            "Blueprint exam facts do not contain item count, time limit, and scaled-score range"
+        )
 
     return (
         int(item_match.group(1)),
+        int(time_match.group(1)),
         int(score_match.group(2)),
         int(score_match.group(3)),
         int(score_match.group(1)),
@@ -120,10 +125,13 @@ def load_blueprint(path: Path = DEFAULT_BLUEPRINT_PATH) -> Blueprint:
         )
         for number, name, weight in parsed_domains
     )
-    item_count, scale_minimum, scale_maximum, passing_score = _parse_exam_facts(text)
+    item_count, time_limit_minutes, scale_minimum, scale_maximum, passing_score = _parse_exam_facts(
+        text
+    )
     return Blueprint(
         domains=domains,
         exam_item_count=item_count,
+        time_limit_minutes=time_limit_minutes,
         scale_minimum=scale_minimum,
         scale_maximum=scale_maximum,
         passing_score=passing_score,

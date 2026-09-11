@@ -1,0 +1,55 @@
+id: pinned-model-id-vs-floating-alias
+domain: Applications and Integration
+sub_skill: Configuration Management
+difficulty: application
+select: 1
+stem: >-
+  A configuration module hardcodes a model constant such as "claude-sonnet-5" and rejects any
+  other string at startup. A new engineer proposes changing it to a floating alias such as
+  "claude-sonnet-latest" so the integration "always gets the newest Sonnet automatically." Should
+  that change be made?
+options:
+  - id: a
+    text: >-
+      No. Every published model ID, including the dateless ones, is documented as a pinned
+      snapshot; validating against an explicit, fixed model constant rather than a floating alias
+      is what keeps behavior reproducible across deployments and lets a model upgrade be a
+      reviewed, intentional change.
+    correct: true
+    rationale: >-
+      Because every model ID is a pinned snapshot rather than a moving target, an explicit
+      allow-list of pinned constants is what actually gives the integration control over when its
+      behavior changes; a floating alias would remove exactly that control the pinning was
+      designed to provide.
+  - id: b
+    text: >-
+      Yes, because a floating alias guarantees lower latency than any pinned snapshot.
+    correct: false
+    rationale: >-
+      Model identifiers are documented for which snapshot they resolve to, not for a latency
+      guarantee; nothing in that documentation ties a floating naming scheme to lower latency.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      Yes, but only after switching every task in the integration to the largest available model
+      tier first.
+    correct: false
+    rationale: >-
+      Which model tier is used for a task is a separate decision from whether the identifier that
+      selects it is pinned or floating; escalating to a larger tier does not address the
+      reproducibility problem an unpinned alias would introduce.
+    trap_type: bigger-model
+  - id: d
+    text: >-
+      The change is harmless as long as the team adds a comment in the code noting which model was
+      live when the alias was introduced.
+    correct: false
+    rationale: >-
+      A comment describing a moment in time does not stop the alias from silently resolving to a
+      different snapshot on a later date; it does not restore the reproducibility a pinned
+      constant enforced at startup.
+    trap_type: cost-theater
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-09"

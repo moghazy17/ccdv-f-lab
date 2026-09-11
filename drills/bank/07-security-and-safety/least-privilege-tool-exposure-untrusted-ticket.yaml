@@ -1,0 +1,56 @@
+id: least-privilege-tool-exposure-untrusted-ticket
+domain: Security and Safety
+sub_skill: Guardrails and Safe Deployment
+difficulty: analysis
+select: 1
+stem: >-
+  A ticket-triage system scopes an untrusted ticket to read-only tools only (knowledge-base search
+  and customer lookup). While processing that same untrusted ticket, the model requests a
+  create_followup write tool call, and a support agent explicitly approves it. What should the
+  dispatcher do, and why?
+options:
+  - id: a
+    text: >-
+      Deny the call, because create_followup is not in the untrusted ticket's exposed tool set; a
+      human approval cannot grant a capability that the trust-level policy never exposed to that
+      ticket in the first place.
+    correct: true
+    rationale: >-
+      Limiting access to sensitive actions by trust level is a least-privilege guardrail applied
+      before any approval step is considered; approval and tool exposure are separate layers, and
+      an approval on a tool the policy never exposed does not retroactively expose it.
+  - id: b
+    text: >-
+      Allow the call, because an explicit human approval is a stronger control than any tool
+      policy and should override it.
+    correct: false
+    rationale: >-
+      Approval and least-privilege exposure are different layers with different jobs: exposure
+      decides which capabilities exist for this ticket's trust level at all, and approval only
+      governs whether an already-exposed write tool may run; treating approval as able to override
+      exposure collapses that layering.
+    trap_type: wrong-layer
+  - id: c
+    text: >-
+      Allow the call after switching the request to a larger model, on the theory that a more
+      capable model would only have requested an appropriate tool.
+    correct: false
+    rationale: >-
+      Model capability does not change which tools a given trust level is permitted to use; the
+      exposure decision is a policy applied before dispatch, not a function of how capable the
+      model is.
+    trap_type: bigger-model
+  - id: d
+    text: >-
+      Allow the call, log the approval, and treat the audit trail as sufficient control for a
+      write action on an untrusted ticket.
+    correct: false
+    rationale: >-
+      A log entry records that the action happened; it does not prevent an untrusted ticket from
+      causing a write side effect the trust-level policy was designed to keep out of reach, so it
+      is not a substitute for denying the call.
+    trap_type: false-capability
+sources:
+  - title: Mitigate jailbreaks and prompt injections — Anthropic (Claude Platform docs)
+    url: https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/mitigate-jailbreaks
+    verified_on: "2026-09-08"

@@ -1,0 +1,57 @@
+id: context-window-tool-output-pruning-vs-compaction
+domain: Agents and Workflows
+sub_skill: Agent Patterns and Frameworks
+difficulty: analysis
+select: 1
+stem: >-
+  A long-running research agent's transcript is growing mostly because of several large
+  knowledge-base search results from early turns; those specific results are no longer needed
+  now that the agent has extracted what it wanted from them, but the surrounding assistant
+  reasoning and later turns still matter for the task. Which approach fits this situation best?
+options:
+  - id: a
+    text: >-
+      Clear or truncate just the oversized tool-result content in place, replacing it with a short
+      placeholder, while leaving the surrounding turns and later history intact.
+    correct: true
+    rationale: >-
+      This matches context editing's tool-result clearing: it selectively removes specific,
+      no-longer-needed tool results while preserving the rest of the conversation's structure,
+      which fits a situation where only certain old tool outputs, not the whole history, are stale.
+  - id: b
+    text: >-
+      Replace the entire early portion of the transcript with one summary, discarding the original
+      tool calls and the assistant reasoning around them together.
+    correct: false
+    rationale: >-
+      Compaction summarizes and replaces the full history it covers, including reasoning that
+      still matters; using it here discards more than the two stale tool outputs actually require,
+      when a narrower edit would have preserved everything else.
+    trap_type: overkill
+  - id: c
+    text: Ask the model in the system prompt to return smaller search results in the future.
+    correct: false
+    rationale: >-
+      This is a request the model can fail to follow, and it does nothing about the large results
+      already sitting in the transcript right now.
+    trap_type: unenforceable-politeness
+  - id: d
+    text: >-
+      Move the agent to a model with a larger context window so no editing is needed this
+      session.
+    correct: false
+    rationale: >-
+      A larger window delays running out of space but does not address that specific stale content
+      is occupying it; the same growth pattern eventually exhausts a larger window too.
+    trap_type: bigger-model
+  - id: e
+    text: Reduce the number of prompt-caching breakpoints used in the request.
+    correct: false
+    rationale: >-
+      Caching breakpoints affect which prefix is reused for cost and latency; they do not remove or
+      shrink any content from the context window itself.
+    trap_type: irrelevant-knob
+sources:
+  - title: Context editing — Anthropic (Claude Platform docs)
+    url: https://platform.claude.com/docs/en/build-with-claude/context-editing
+    verified_on: "2026-09-08"

@@ -1,0 +1,53 @@
+id: slash-command-scope-collision-resolution
+domain: Applications and Integration
+sub_skill: Claude Application Design
+difficulty: application
+select: 1
+stem: >-
+  A developer has a personal /deploy command defined under their own machine's commands directory
+  for personal use, and the same repository also ships a project /deploy command checked into
+  source control and shared with the whole team. Both are present for a session in that
+  repository. Per the documented scope priority for name collisions, which command actually runs
+  when the developer types /deploy?
+options:
+  - id: a
+    text: >-
+      The personal command runs, because personal scope resolves ahead of project scope in the
+      documented collision order (enterprise, personal, project, nested, plugin, bundled).
+    correct: true
+    rationale: >-
+      The documented scope priority places personal commands ahead of project commands when two
+      commands share the same name, so the personal version is the one that actually runs, not
+      the shared project version.
+  - id: b
+    text: >-
+      The project command runs, because configuration checked into the repository should always
+      take precedence over a single developer's personal setup.
+    correct: false
+    rationale: >-
+      Wanting the shared, version-controlled command to win is a reasonable instinct, but it does
+      not match the documented resolution order, which places personal scope ahead of project
+      scope; the actual mechanism resolves the collision the other way.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: >-
+      Both commands run in sequence, personal first and then project, because Claude Code merges
+      same-named commands rather than picking a single one.
+    correct: false
+    rationale: >-
+      Command resolution selects a single command by scope priority; there is no documented merge
+      behavior that runs multiple same-named commands in sequence.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Whichever command file was modified most recently runs, since Claude Code resolves
+      collisions by file modification time.
+    correct: false
+    rationale: >-
+      Scope, not file modification time, governs which command resolves; there is no documented
+      timestamp-based resolution mechanism for colliding command names.
+    trap_type: false-capability
+sources:
+  - title: Custom slash commands — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/slash-commands
+    verified_on: "2026-09-09"

@@ -1,0 +1,53 @@
+id: batch-results-correlated-by-custom-id-not-position
+domain: Applications and Integration
+sub_skill: Software Engineering Foundations
+difficulty: application
+select: 1
+stem: >-
+  A nightly job submits 5,000 independent ticket-classification requests through the Message
+  Batches API and needs to write each result back to the matching database row once the batch
+  ends. What is the correct way to match a batch result to the request that produced it?
+options:
+  - id: a
+    text: >-
+      Index results by each result's custom_id field, the identifier that was set on the
+      originating request when the batch was submitted.
+    correct: true
+    rationale: >-
+      Batch results can return in any order and may not match the ordering requests were
+      submitted in; custom_id is the field documented for correlating a result back to its
+      request regardless of the order results arrive in.
+  - id: b
+    text: >-
+      Assume results stream back in the same order the requests were submitted in, and pair the
+      two lists together by position.
+    correct: false
+    rationale: >-
+      The Message Batches API documents that results can return in any order and may not match
+      submission order; assuming positional correspondence will silently mismatch some rows once
+      results arrive out of order.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      Re-submit the entire batch a second time and only trust results that come back identical
+      across both runs.
+    correct: false
+    rationale: >-
+      Doubling every request to cross-check identity does not solve the correlation problem the
+      custom_id field already solves; it doubles cost and latency for no benefit over reading the
+      field the API provides for exactly this purpose.
+    trap_type: overkill
+  - id: d
+    text: >-
+      Switch all 5,000 requests to the realtime Messages API instead, since realtime responses
+      always return in request order.
+    correct: false
+    rationale: >-
+      This abandons the asynchronous batch pattern that this volume and delay-tolerant workload
+      calls for, trading away the batch discount and throughput to solve what is a straightforward
+      result-correlation problem, not a processing-path problem.
+    trap_type: wrong-layer
+sources:
+  - title: Batch processing — Anthropic (Claude Platform docs)
+    url: https://platform.claude.com/docs/en/build-with-claude/batch-processing
+    verified_on: "2026-09-09"

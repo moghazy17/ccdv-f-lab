@@ -1,0 +1,56 @@
+id: code-review-flags-overengineered-multi-agent-pr
+domain: Applications and Integration
+sub_skill: Software Engineering Foundations
+difficulty: analysis
+select: 1
+stem: >-
+  A pull request adds a three-agent supervisor/worker framework, with its own message bus and
+  retry orchestration, to accomplish a task that is, in practice, three sequential Messages API
+  calls: extract fields from a document, classify the result, and format a reply. During code
+  review, what is the most defensible objection to raise?
+options:
+  - id: a
+    text: >-
+      The added framework and multi-agent abstraction introduce debugging and maintenance
+      overhead disproportionate to a task expressible as three direct, sequential API calls; start
+      with the simplest solution and add complexity only when a single call or workflow cannot
+      meet the requirement.
+    correct: true
+    rationale: >-
+      Anthropic's own guidance is that frameworks simplify some low-level tasks but add a layer of
+      abstraction that can obscure what is happening, and recommends starting with the simplest
+      solution and escalating complexity only when needed; a fixed three-step sequential task is
+      exactly the case that does not need it.
+  - id: b
+    text: >-
+      Request that every agent in the framework be switched to the largest available model so the
+      extra orchestration layer produces more reliable results.
+    correct: false
+    rationale: >-
+      A bigger model on each agent does not address the reviewable problem, which is that the
+      orchestration layer itself is unnecessary complexity for a fixed three-step task, not that
+      any one step is under-powered.
+    trap_type: bigger-model
+  - id: c
+    text: >-
+      Approve the PR as written, since more code paths and more agents give the system more
+      resilience against failures.
+    correct: false
+    rationale: >-
+      Additional agents, retry orchestration, and a message bus do not make this fixed three-step
+      sequential task more resilient in any way it actually needs; they add surface area to
+      maintain and debug without a corresponding benefit.
+    trap_type: overkill
+  - id: d
+    text: >-
+      Ask the author to add a comment explaining why the multi-agent design was chosen, and
+      approve once the comment is added.
+    correct: false
+    rationale: >-
+      A comment documents the decision but does not address the actual maintenance and debugging
+      cost the added abstraction introduces for a task that three direct calls already solve.
+    trap_type: cost-theater
+sources:
+  - title: Building effective agents — Anthropic
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    verified_on: "2026-09-09"

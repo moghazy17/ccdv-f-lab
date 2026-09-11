@@ -33,6 +33,14 @@ const searchAttrs = buildSearchAttributes(searchRecord ?? {});
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
+    {/*
+      Executed lab code cannot reach the network: the worker deletes `fetch`, `XMLHttpRequest`,
+      `WebSocket`, `EventSource`, and `importScripts` before it runs anything. This policy is the
+      second lock (FR-004) — if a future runtime hands one of those back, the browser still refuses
+      any origin but this one. Only `connect-src` is declared, so nothing else about how the page
+      loads changes.
+    */}
+    <meta http-equiv="Content-Security-Policy" content="connect-src 'self'" />
     <title>{title}</title>
     <script is:inline set:html={themeBootstrapScript}></script>
   </head>

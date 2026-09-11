@@ -34,10 +34,18 @@ _HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*$", re.MULTILINE)
 
 
 def load_notes(notes_path: Path) -> tuple[Note, ...]:
-    """Load Markdown notes in path order, accepting an empty notes directory."""
+    """Load Markdown notes in a platform-independent path order, accepting an empty directory.
+
+    Sorting ``Path`` objects directly is not portable: ``PureWindowsPath`` compares case-folded
+    while ``PurePosixPath`` compares by code point, so ``README.md`` sorts before
+    ``decision-tables.md`` on Linux and after it on Windows. Anything generated from this order -
+    ``flashcards/ccdv-f.tsv`` above all - would then depend on the machine that built it. Sorting
+    the POSIX string fixes one order everywhere.
+    """
     if not notes_path.exists():
         return ()
-    return tuple(parse_note(path) for path in sorted(notes_path.rglob("*.md")))
+    paths = sorted(notes_path.rglob("*.md"), key=lambda path: path.as_posix())
+    return tuple(parse_note(path) for path in paths)
 
 
 def parse_note(path: Path) -> Note:

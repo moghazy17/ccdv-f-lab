@@ -18,6 +18,11 @@ export interface RecordSummary {
   totalMarks: number;
   hasDiagnostic: boolean;
   theme: string;
+  labsEditedCount: number;
+  mockReportCount: number;
+  mockHasInProgressAttempt: boolean;
+  quizResultCount: number;
+  flashcardsTrackedCount: number;
 }
 
 export type ImportValidationResult =
@@ -59,11 +64,20 @@ export function summarizeEnvelope(envelope: ProgressEnvelope | null | undefined)
       plans: [],
       totalMarks: 0,
       hasDiagnostic: false,
-      theme: "system"
+      theme: "system",
+      labsEditedCount: 0,
+      mockReportCount: 0,
+      mockHasInProgressAttempt: false,
+      quizResultCount: 0,
+      flashcardsTrackedCount: 0
     };
   }
 
   const foundation = envelope.namespaces.foundation;
+  const labs = envelope.namespaces.labs;
+  const mock = envelope.namespaces.mock;
+  const quiz = envelope.namespaces.quiz;
+  const flashcards = envelope.namespaces.flashcards;
   const rawMarks = foundation.planMarks ?? {};
   const plans: PlanMarksSummary[] = Object.entries(rawMarks)
     .map(([planSlug, domainNumbers]) => {
@@ -87,7 +101,12 @@ export function summarizeEnvelope(envelope: ProgressEnvelope | null | undefined)
     plans,
     totalMarks,
     hasDiagnostic: foundation.diagnostic !== null && foundation.diagnostic !== undefined,
-    theme: foundation.theme ?? "system"
+    theme: foundation.theme ?? "system",
+    labsEditedCount: labs ? Object.keys(labs.edits ?? {}).length : 0,
+    mockReportCount: mock ? mock.reports.length + mock.summaries.length : 0,
+    mockHasInProgressAttempt: mock ? mock.current !== null : false,
+    quizResultCount: quiz ? Object.keys(quiz.results ?? {}).length : 0,
+    flashcardsTrackedCount: flashcards ? Object.keys(flashcards.state ?? {}).length : 0
   };
 }
 

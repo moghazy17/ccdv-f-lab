@@ -1,0 +1,486 @@
+---
+/**
+ * The weighted mock exam: assembly, navigation, the countdown, resume, and submission.
+ *
+ * Every figure this surface uses — the item count, the time limit, the per-domain quotas — is read
+ * from `site/src/data/mock.json`, which `tools/export_mock_data.py` derives from `BLUEPRINT.md` by
+ * calling the drill engine's own apportionment (FR-023, FR-024). Nothing here types a number.
+ *
+ * The bank travels to the browser as JSON rather than as rendered markup so that item text never
+ * enters the search index and an assembled mock can differ between attempts. There is no Python
+ * runtime on this page by design: the mock is the surface that can least afford a 6 MiB download.
+ */
+
+import type { PracticeItem } from "../lib/items";
+import type { MockData } from "../lib/attempt";
+
+interface Props {
+  mock: MockData;
+  bank: PracticeItem[];
+  available: Record<string, number>;
+  domainNames: string[];
+}
+
+const { available, bank, domainNames, mock } = Astro.props;
+const base = import.meta.env.BASE_URL;
+---
+
+<section class="mock-runner" data-mock-runner data-report-url={`${base}mock/report/`}>
+  <script
+    is:inline
+    type="application/json"
+    data-mock-bank
+    data-pagefind-ignore
+    set:html={JSON.stringify({ mock, bank, available, domainNames })}
+  />
+  <p data-mock-storage-notice hidden></p>
+
+  <div data-mock-panel="start">
+    <h2>Before you start</h2>
+    <dl class="mock-facts" data-testid="mock-facts">
+      <div>
+        <dt>Items</dt>
+        <dd data-testid="mock-item-count">{mock.fullMockSize}</dd>
+      </div>
+      <div>
+        <dt>Time limit</dt>
+        <dd data-testid="mock-time-limit">{mock.timeLimitMinutes} minutes</dd>
+      </div>
+    </dl>
+    <p>
+      The countdown runs on the clock, not on the time this page is open. Closing the tab does not
+      pause it, and the attempt resumes with whatever time is left.
+    </p>
+    <button type="button" class="action-button" data-mock-start>Start the mock</button>
+  </div>
+
+  <div data-mock-panel="expired" hidden>
+    <h2 data-testid="mock-expired-title">That attempt ran out of time while you were away</h2>
+    <p>
+      It has not been scored, kept, or resumed. Choose what happens to it: nothing is decided for
+      you.
+    </p>
+    <div class="mock-runner__actions">
+      <button type="button" class="action-button" data-mock-score-expired>
+        Score it as it stood
+      </button>
+      <button type="button" class="action-button" data-mock-discard-expired>Discard it</button>
+    </div>
+  </div>
+
+  <div data-mock-panel="running" hidden>
+    <div class="mock-runner__bar">
+      <p class="mock-runner__timer" data-testid="mock-timer" data-mock-timer aria-hidden="true"></p>
+      <p class="visually-hidden" role="status" aria-live="polite" data-mock-timer-announce></p>
+      <p data-testid="mock-progress" data-mock-progress></p>
+    </div>
+
+    <nav class="mock-runner__nav" aria-label="Items in this attempt">
+      <ol data-mock-item-list data-testid="mock-item-list"></ol>
+    </nav>
+
+    <article class="mock-runner__item" data-mock-item aria-live="polite">
+      <h2 data-mock-item-heading></h2>
+      <p class="mock-runner__domain" data-mock-item-domain></p>
+      <p class="mock-runner__stem" data-testid="mock-stem" data-mock-item-stem></p>
+      <fieldset class="mock-runner__options">
+        <legend data-mock-item-legend></legend>
+        <div data-mock-item-options></div>
+      </fieldset>
+    </article>
+
+    <div class="mock-runner__actions">
+      <button type="button" class="action-button" data-mock-previous>Previous</button>
+      <button type="button" class="action-button" data-mock-next>Next</button>
+      <button type="button" class="action-button" data-mock-submit data-testid="mock-submit">
+        Submit and score
+      </button>
+    </div>
+  </div>
+</section>
+
+<script>
+  import {
+    announceRemaining,
+    assembleMock,
+    buildReport,
+    createAttempt,
+    formatRemaining,
+    isExpired,
+    remainingMs,
+    retainReports,
+    unansweredItemIds,
+    type MockData
+  } from "../lib/attempt";
+  import { scoreAttempt } from "../lib/scoring";
+  import { checkStorageAvailability, createProgressStorage } from "../lib/storage";
+  import type { MockAttempt } from "../lib/storage";
+  import type { PracticeItem } from "../lib/items";
+
+  interface BankPayload {
+    mock: MockData;
+    bank: PracticeItem[];
+    available: Record<string, number>;
+    domainNames: string[];
+  }
+
+  const root = document.querySelector<HTMLElement>("[data-mock-runner]");
+  if (root !== null) {
+    setUpRunner(root);
+  }
+
+  function setUpRunner(root: HTMLElement): void {
+    const payloadElement = root.querySelector<HTMLScriptElement>("[data-mock-bank]");
+    if (payloadElement === null) {
+      return;
+    }
+    const payload = JSON.parse(payloadElement.textContent ?? "{}") as BankPayload;
+    const reportUrl = root.dataset.reportUrl ?? "";
+
+    const panels = {
+      start: root.querySelector<HTMLElement>('[data-mock-panel="start"]'),
+      expired: root.querySelector<HTMLElement>('[data-mock-panel="expired"]'),
+      running: root.querySelector<HTMLElement>('[data-mock-panel="running"]')
+    };
+    const timer = root.querySelector<HTMLElement>("[data-mock-timer]");
+    const timerAnnounce = root.querySelector<HTMLElement>("[data-mock-timer-announce]");
+    const progress = root.querySelector<HTMLElement>("[data-mock-progress]");
+    const itemList = root.querySelector<HTMLOListElement>("[data-mock-item-list]");
+    const heading = root.querySelector<HTMLElement>("[data-mock-item-heading]");
+    const domainLabel = root.querySelector<HTMLElement>("[data-mock-item-domain]");
+    const stem = root.querySelector<HTMLElement>("[data-mock-item-stem]");
+    const legend = root.querySelector<HTMLElement>("[data-mock-item-legend]");
+    const optionsHost = root.querySelector<HTMLElement>("[data-mock-item-options]");
+    const storageNotice = root.querySelector<HTMLElement>("[data-mock-storage-notice]");
+
+    const storageState = checkStorageAvailability();
+    // FR-052: an unavailable store must not make the mock unusable. The attempt lives in memory
+    // and stays answerable to the end; only its persistence is lost, and the page says so.
+    const storage = storageState === "available" ? createProgressStorage() : null;
+    if (storageState !== "available" && storageNotice !== null) {
+      storageNotice.hidden = false;
+      storageNotice.textContent =
+        storageState === "full"
+          ? "Browser storage is full. You can sit this mock and see its report, but neither the attempt nor the report will be kept."
+          : "Browser storage is unavailable here. You can sit this mock and see its report, but neither the attempt nor the report will be kept.";
+    }
+
+    let attempt: MockAttempt | null = storage?.mockProgress()?.current ?? null;
+    let currentIndex = 0;
+    let lastAnnouncedMinute = -1;
+    let tick: number | null = null;
+
+    function show(panel: keyof typeof panels): void {
+      for (const [name, element] of Object.entries(panels)) {
+        if (element !== null) {
+          element.hidden = name !== panel;
+        }
+      }
+    }
+
+    function persistAttempt(): void {
+      if (attempt !== null) {
+        storage?.setMockAttempt(attempt);
+      }
+    }
+
+    function submit(timeRanOut: boolean): void {
+      if (attempt === null) {
+        return;
+      }
+      stopClock();
+      const submittedAt = new Date();
+      const outcome = scoreAttempt(attempt.items, attempt.answers, payload.domainNames, {
+        minimum: payload.mock.scaleMinimum,
+        maximum: payload.mock.scaleMaximum,
+        passingScore: payload.mock.passingScore
+      });
+      const report = buildReport(attempt, outcome, submittedAt, timeRanOut);
+      storage?.saveReport(report, retainReports);
+      // The report page reads from storage; when storage is gone it is handed the one report in
+      // the session so a candidate still sees the result they just earned.
+      try {
+        sessionStorage.setItem("ccdv-f:last-report", JSON.stringify(report));
+      } catch {
+        // A session-storage failure costs nothing the stored report does not already cover.
+      }
+      attempt = null;
+      window.location.href = reportUrl;
+    }
+
+    function stopClock(): void {
+      if (tick !== null) {
+        window.clearInterval(tick);
+        tick = null;
+      }
+    }
+
+    function startClock(): void {
+      stopClock();
+      updateClock();
+      tick = window.setInterval(updateClock, 1000);
+    }
+
+    function updateClock(): void {
+      if (attempt === null) {
+        return;
+      }
+      const left = remainingMs(attempt, new Date());
+      if (timer !== null) {
+        timer.textContent = `${formatRemaining(left)} left`;
+      }
+      // FR-025: announced at intervals, not continuously — every five minutes, then every minute
+      // inside the last five, so a screen reader is informed rather than flooded.
+      const minutes = Math.floor(left / 60_000);
+      const shouldAnnounce = minutes !== lastAnnouncedMinute && (minutes % 5 === 0 || minutes < 5);
+      if (shouldAnnounce && timerAnnounce !== null) {
+        lastAnnouncedMinute = minutes;
+        timerAnnounce.textContent = announceRemaining(left);
+      }
+      if (left === 0) {
+        // FR-029: expiring on screen submits and scores what stands, and the report says so.
+        submit(true);
+      }
+    }
+
+    function renderItemList(): void {
+      if (attempt === null || itemList === null) {
+        return;
+      }
+      itemList.innerHTML = "";
+      const unanswered = new Set(unansweredItemIds(attempt));
+      attempt.items.forEach((item, index) => {
+        const entry = document.createElement("li");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = String(index + 1);
+        button.dataset.mockGoto = String(index);
+        button.setAttribute(
+          "aria-label",
+          `Item ${index + 1}${unanswered.has(item.id) ? ", not yet answered" : ", answered"}`
+        );
+        button.setAttribute("aria-current", index === currentIndex ? "true" : "false");
+        button.className = unanswered.has(item.id)
+          ? "mock-runner__chip mock-runner__chip--unanswered"
+          : "mock-runner__chip";
+        button.addEventListener("click", () => {
+          currentIndex = index;
+          renderCurrentItem();
+          renderItemList();
+        });
+        entry.appendChild(button);
+        itemList.appendChild(entry);
+      });
+
+      if (progress !== null) {
+        progress.textContent = `${attempt.items.length - unanswered.size} of ${attempt.items.length} answered. ${unanswered.size} left.`;
+      }
+    }
+
+    function renderCurrentItem(): void {
+      if (attempt === null || optionsHost === null) {
+        return;
+      }
+      const item = attempt.items[currentIndex];
+      if (item === undefined) {
+        return;
+      }
+      if (heading !== null) {
+        heading.textContent = `Item ${currentIndex + 1} of ${attempt.items.length}`;
+      }
+      if (domainLabel !== null) {
+        domainLabel.textContent = item.domain;
+      }
+      if (stem !== null) {
+        stem.textContent = item.stem;
+      }
+      if (legend !== null) {
+        legend.textContent =
+          item.select === 1 ? "Select one option." : `Select ${item.select} options.`;
+      }
+
+      const selected = new Set(attempt.answers[item.id] ?? []);
+      optionsHost.innerHTML = "";
+      for (const option of item.options) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "mock-runner__option";
+        const input = document.createElement("input");
+        // Checkboxes throughout: an item asking for two answers and an item asking for one behave
+        // the same way, so nothing about the control implies how many are wanted.
+        input.type = "checkbox";
+        input.id = `mock-option-${item.id}-${option.id}`;
+        input.value = option.id;
+        input.checked = selected.has(option.id);
+        input.addEventListener("change", () => {
+          if (attempt === null) {
+            return;
+          }
+          const next = new Set(attempt.answers[item.id] ?? []);
+          if (input.checked) {
+            next.add(option.id);
+          } else {
+            next.delete(option.id);
+          }
+          const ordered = item.options
+            .map((candidate) => candidate.id)
+            .filter((id) => next.has(id));
+          attempt.answers[item.id] = ordered;
+          storage?.recordAnswer(item.id, ordered);
+          renderItemList();
+        });
+        const label = document.createElement("label");
+        label.htmlFor = input.id;
+        label.textContent = option.text;
+        wrapper.append(input, label);
+        optionsHost.appendChild(wrapper);
+      }
+    }
+
+    function resume(): void {
+      show("running");
+      currentIndex = 0;
+      renderItemList();
+      renderCurrentItem();
+      startClock();
+    }
+
+    root.querySelector<HTMLButtonElement>("[data-mock-start]")?.addEventListener("click", () => {
+      const assembled = assembleMock(payload.bank, payload.mock.quotas);
+      attempt = createAttempt(
+        assembled.items,
+        payload.mock.timeLimitMinutes,
+        new Date(),
+        `mock-${Date.now()}`
+      );
+      persistAttempt();
+      resume();
+    });
+
+    root
+      .querySelector<HTMLButtonElement>("[data-mock-score-expired]")
+      ?.addEventListener("click", () => submit(true));
+
+    root
+      .querySelector<HTMLButtonElement>("[data-mock-discard-expired]")
+      ?.addEventListener("click", () => {
+        attempt = null;
+        storage?.setMockAttempt(null);
+        show("start");
+      });
+
+    root.querySelector<HTMLButtonElement>("[data-mock-previous]")?.addEventListener("click", () => {
+      currentIndex = Math.max(0, currentIndex - 1);
+      renderCurrentItem();
+      renderItemList();
+    });
+
+    root.querySelector<HTMLButtonElement>("[data-mock-next]")?.addEventListener("click", () => {
+      if (attempt !== null) {
+        currentIndex = Math.min(attempt.items.length - 1, currentIndex + 1);
+      }
+      renderCurrentItem();
+      renderItemList();
+    });
+
+    root
+      .querySelector<HTMLButtonElement>("[data-mock-submit]")
+      ?.addEventListener("click", () => submit(false));
+
+    if (attempt === null) {
+      show("start");
+    } else if (isExpired(attempt, new Date())) {
+      // FR-028: an attempt that ran out while the candidate was away is neither scored, kept, nor
+      // resumed on its own. It waits here for a decision.
+      show("expired");
+    } else {
+      resume();
+    }
+  }
+</script>
+
+<style>
+  .mock-runner__bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: baseline;
+    justify-content: space-between;
+    border-block-end: 1px solid currentColor;
+    padding-block-end: 0.5rem;
+  }
+
+  .mock-runner__timer {
+    font-variant-numeric: tabular-nums;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .mock-runner__nav ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    list-style: none;
+    padding: 0;
+    margin-block: 0.75rem;
+  }
+
+  .mock-runner__chip {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    border: 1px solid currentColor;
+    border-radius: 0.25rem;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .mock-runner__chip[aria-current="true"] {
+    outline: 2px solid currentColor;
+    outline-offset: 1px;
+    font-weight: 700;
+  }
+
+  .mock-runner__chip--unanswered {
+    border-style: dashed;
+  }
+
+  .mock-runner__stem {
+    max-width: 70ch;
+  }
+
+  .mock-runner__options {
+    border: 1px solid currentColor;
+    border-radius: 0.25rem;
+    padding: 0.75rem;
+    max-width: 70ch;
+  }
+
+  .mock-runner__option {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    margin-block: 0.5rem;
+  }
+
+  .mock-runner__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-block: 1rem;
+  }
+
+  .mock-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+
+  .mock-facts dt {
+    font-weight: 600;
+  }
+
+  .mock-facts dd {
+    margin: 0;
+  }
+</style>

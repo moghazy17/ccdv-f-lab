@@ -1,0 +1,65 @@
+id: structured-output-schema-vs-free-text-trust
+domain: Applications and Integration
+sub_skill: Claude Application Design
+difficulty: analysis
+select: 2
+stem: >-
+  A triage service asks Claude for a JSON classification and pipes the response to a downstream
+  queue. The team is hardening the response-handling boundary. Which two of the following are
+  structurally sound design choices for that boundary?
+options:
+  - id: a
+    text: >-
+      Request output_config.format as a json_schema with the required fields, their types, and
+      additionalProperties set to false, so Claude's decoding is constrained to that schema
+      instead of generating free text.
+    correct: true
+    rationale: >-
+      Structured output constrains decoding to the requested schema, giving the boundary a
+      request-time contract for the response's shape instead of relying on free-text phrasing
+      that a downstream parser has to guess at.
+  - id: b
+    text: >-
+      Route to a human whenever schema validation fails or the model's own needs_human field is
+      true, rather than deciding solely from the model's self-reported confidence score.
+    correct: true
+    rationale: >-
+      Treating a failed validation or an explicit needs_human signal as the routing trigger,
+      rather than trusting a confidence number alone, builds skepticism toward confident-looking
+      output that might still be wrong into the boundary.
+  - id: c
+    text: >-
+      Treat the schema guarantee as covering every response, including one with
+      stop_reason: "max_tokens", so skip checking stop_reason and parse the response text
+      directly.
+    correct: false
+    rationale: >-
+      The schema guarantee applies to a response that completes normally; a response cut off by
+      the max_tokens limit is incomplete text that never finished constrained decoding, so
+      treating the guarantee as covering that case too claims more than the feature provides.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Ask the model, in the system prompt, to double-check its own JSON for correctness before
+      returning it, and skip schema validation on receipt to save latency.
+    correct: false
+    rationale: >-
+      An instruction asking the model to self-check is not an enforceable boundary; the response
+      can still be incomplete or malformed, and removing the validation step trades away the one
+      structural check available to catch it.
+    trap_type: unenforceable-politeness
+  - id: e
+    text: >-
+      Switch to a larger model so the returned JSON is less likely to need validation.
+    correct: false
+    rationale: >-
+      No model tier removes the need to validate structured output before it reaches a downstream
+      parser; validation is a boundary control independent of which model produced the text.
+    trap_type: bigger-model
+sources:
+  - title: Structured outputs — Anthropic (Claude Platform docs)
+    url: https://platform.claude.com/docs/en/build-with-claude/structured-outputs
+    verified_on: "2026-09-09"
+  - title: Messages API reference — Anthropic
+    url: https://platform.claude.com/docs/en/api/messages
+    verified_on: "2026-09-09"

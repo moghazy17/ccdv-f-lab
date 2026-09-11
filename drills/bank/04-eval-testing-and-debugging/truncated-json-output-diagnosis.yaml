@@ -1,0 +1,67 @@
+id: truncated-json-output-diagnosis
+domain: Eval, Testing, and Debugging
+sub_skill: Debugging and Error Handling
+difficulty: analysis
+select: 1
+stem: >-
+  A production integration sends a Messages API request and expects a JSON summary back, which a
+  downstream service parses. Once in a while the JSON arrives with a value cut off partway through
+  a string, and the parser throws. The HTTP status on every one of these calls is 200, not 429,
+  500, or 529, so the on-call engineer's existing exponential-backoff retry logic (built for those
+  transport-layer errors) never triggers, and simply resubmitting the same request does not
+  reliably fix it. What is the correct first step to isolate the problem?
+options:
+  - id: a
+    text: >-
+      Check the response's `stop_reason`. A value of `max_tokens` means the model's output itself
+      was cut off because the request's token limit was hit, which points at the request
+      configuration rather than a transport failure.
+    correct: true
+    rationale: >-
+      A 200 status with a truncated body is not a transport-layer failure at all; `stop_reason:
+      "max_tokens"` is the documented signal that the response is incomplete because generation
+      stopped at the token limit, which correctly isolates the problem to the request's `max_tokens`
+      setting rather than to the network or server layer.
+  - id: b
+    text: >-
+      Apply the same exponential-backoff retry logic used for 429 and 500 responses to these calls
+      as well, since retrying eventually produces a complete response.
+    correct: false
+    rationale: >-
+      Backoff-and-retry is a remedy for transient transport-layer failures like rate limits and
+      server errors. A `max_tokens` cutoff will recur on a retry with the same request, because the
+      output length problem lives in the request configuration, not in an intermittent server fault.
+    trap_type: wrong-layer
+  - id: c
+    text: >-
+      Move the integration to a larger model, on the assumption that it will avoid truncating its
+      answers.
+    correct: false
+    rationale: >-
+      A different model still stops generating once the request's `max_tokens` limit is reached;
+      model capability does not change the effect of an explicit token ceiling.
+    trap_type: bigger-model
+  - id: d
+    text: >-
+      Add a line to the prompt asking the model to always keep its JSON output complete and never
+      cut it off.
+    correct: false
+    rationale: >-
+      A truncation caused by hitting `max_tokens` is a hard stop imposed by the request parameter;
+      no instruction in the prompt can keep the model generating past a token ceiling it has already
+      reached.
+    trap_type: unenforceable-politeness
+  - id: e
+    text: Enable prompt caching on the request to reduce the chance of a truncated response.
+    correct: false
+    rationale: >-
+      Prompt caching reduces repeated input-token cost and latency; it has no effect on how many
+      output tokens a response is allowed to generate before it is cut off.
+    trap_type: irrelevant-knob
+sources:
+  - title: Claude API errors — Anthropic
+    url: https://platform.claude.com/docs/en/api/errors
+    verified_on: "2026-09-08"
+  - title: Messages API reference — Anthropic
+    url: https://platform.claude.com/docs/en/api/messages
+    verified_on: "2026-09-08"

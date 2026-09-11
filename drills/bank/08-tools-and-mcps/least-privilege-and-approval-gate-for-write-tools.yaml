@@ -1,0 +1,61 @@
+id: least-privilege-and-approval-gate-for-write-tools
+domain: Tools and MCPs
+sub_skill: Tool Implementation
+difficulty: analysis
+select: 2
+stem: >-
+  A triage dispatcher exposes two read-only tools and two write tools (creating a follow-up and
+  escalating a ticket). Ticket text is untrusted end-user input, and a successful prompt injection
+  in that text could try to trigger a write tool. Before a write-tool call from an untrusted ticket
+  is ever executed, which two dispatcher-side checks should gate it?
+options:
+  - id: a
+    text: >-
+      Confirm the tool is in the capability set exposed to this ticket's trust level, denying it
+      outright for an untrusted ticket regardless of what the model requested.
+    correct: true
+    rationale: >-
+      Applying least privilege by binding a ticket's trust level to the exact tools it may use
+      limits what a successful injection can accomplish; an untrusted ticket should not have a
+      write tool available to call in the first place.
+  - id: b
+    text: >-
+      Require an explicit recorded human approval decision for that specific tool_use_id before
+      executing the write tool, and refuse to execute it if approval is missing or denied.
+    correct: true
+    rationale: >-
+      Write tools should execute only after an explicit human approval; gating dispatch on a
+      recorded approval decision, rather than the model's own request, is what keeps an
+      unapproved write action from actually running.
+  - id: c
+    text: >-
+      Scan the ticket text for known injection phrases, and treat a call as safe to execute
+      whenever the scan finds nothing.
+    correct: false
+    rationale: >-
+      Pattern-based screening is a detection signal for logging and monitoring, not an enforcement
+      control; treating a clean scan as sufficient to execute a write action conflates input
+      screening with the least-privilege and approval checks that actually constrain the write
+      tool.
+    trap_type: wrong-layer
+  - id: d
+    text: >-
+      Add a system-prompt instruction telling Claude not to call a write tool unless a human has
+      approved it.
+    correct: false
+    rationale: >-
+      A prompt instruction is something Claude can fail to follow under a well-crafted injection
+      attempt; it is not an enforced precondition the dispatcher checks before running the write
+      tool.
+    trap_type: unenforceable-politeness
+  - id: e
+    text: Route the ticket to a larger model that is less likely to be misled by injected text.
+    correct: false
+    rationale: >-
+      A more capable model can still be misled by an injection attempt; model capability is not a
+      substitute for the least-privilege exposure and approval checks that gate write execution.
+    trap_type: bigger-model
+sources:
+  - title: Mitigate jailbreaks and prompt injections — Anthropic (Claude Platform docs)
+    url: https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/mitigate-jailbreaks
+    verified_on: "2026-09-08"

@@ -1,0 +1,56 @@
+id: pretooluse-hook-scope-restriction
+domain: Agents and Workflows
+sub_skill: Agent Construction with Claude
+difficulty: application
+select: 1
+stem: >-
+  A team is building a coding agent on the Agent SDK that should only ever edit files inside the
+  repository's `src/` directory. They need this guaranteed regardless of what path the model's
+  edit tool call names, including a request the model constructs from a misread instruction.
+  Which change actually guarantees that?
+options:
+  - id: a
+    text: >-
+      Register a PreToolUse hook that inspects the target path on every write or edit tool call
+      and denies any call whose path falls outside `src/`.
+    correct: true
+    rationale: >-
+      A PreToolUse hook runs in the harness's own process before the tool executes and can block
+      dangerous or out-of-scope operations before they run, independent of what the model decided
+      to call; this is the documented way to enforce a hard boundary on tool execution.
+  - id: b
+    text: Rewrite the edit tool's description to state that it must only be used inside `src/`.
+    correct: false
+    rationale: >-
+      A tool description shapes when the model chooses to call the tool, but it does not stop the
+      tool from executing against a path outside `src/` if the model calls it that way anyway; the
+      right instinct (restrict the tool) needs an enforcement mechanism, not a description change.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: Add a paragraph to the system prompt telling the agent to stay within `src/`.
+    correct: false
+    rationale: >-
+      This is a request the model can fail to follow under a misread instruction; nothing in the
+      system prompt prevents the edit tool from executing against a path outside `src/`.
+    trap_type: unenforceable-politeness
+  - id: d
+    text: Give the agent a more capable model, on the theory that it will better respect the scope.
+    correct: false
+    rationale: >-
+      A more capable model can still misread an instruction and call the edit tool outside the
+      intended directory; model capability does not substitute for a control that blocks the call.
+    trap_type: bigger-model
+  - id: e
+    text: Require every file edit to be logged so the scope violation can be reviewed afterward.
+    correct: false
+    rationale: >-
+      Logging is a detective control that records what already happened; it does not prevent the
+      out-of-scope edit from executing in the first place, which is what the requirement needs.
+    trap_type: wrong-layer
+sources:
+  - title: Control execution with hooks — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/agent-sdk/hooks
+    verified_on: "2026-09-08"
+  - title: How the agent loop works — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/agent-sdk/agent-loop
+    verified_on: "2026-09-08"

@@ -6,6 +6,11 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import ContentLayout from "../../layouts/ContentLayout.astro";
 import { domains, domainBySlug } from "../../lib/blueprint";
 import { buildDomainContent } from "../../lib/domain-content";
+import itemsData from "../../data/items.json";
+import mockData from "../../data/mock.json";
+import type { MockData } from "../../lib/attempt";
+import type { PracticeItem } from "../../lib/items";
+import { quizAvailability } from "../../lib/quiz";
 
 export function getStaticPaths() {
   return domains.map((domain) => ({ params: { domain: domain.slug } }));
@@ -21,6 +26,12 @@ const content = buildDomainContent(domain, noteEntries);
 const outstandingSubSkills = content.subSkills.filter((subSkill) => subSkill.status === "scaffold");
 const itemLabel = `${domain.approximateItems} ${domain.approximateItems === 1 ? "item" : "items"}`;
 const base = import.meta.env.BASE_URL;
+
+const mock = mockData as MockData;
+const quizFigures = quizAvailability(itemsData.items as PracticeItem[], mock.quotas, domain.name);
+const quizAsked = quizFigures.asked;
+const quizAvailable = quizFigures.available;
+const mockSize = mock.fullMockSize;
 ---
 
 <BaseLayout
@@ -136,6 +147,20 @@ const base = import.meta.env.BASE_URL;
     aria-labelledby="domain-practice-title"
   >
     <h2 id="domain-practice-title">Practice</h2>
-    <p>This region is reserved for the domain self-check and drill count.</p>
+    <p>
+      This domain's self-check has two halves. Its recall prompts come from the notes and you grade
+      yourself on them. Its quiz asks {quizAsked}{" "}
+      {quizAsked === 1 ? "item" : "items"} — this domain's share of a {mockSize}-item mock — and is
+      scored by the same rule the mock uses. <strong>Only the scored quiz feeds a readiness
+      signal.</strong>
+    </p>
+    <p data-testid="domain-practice-availability">
+      {
+        quizAsked === 0
+          ? "A full mock draws no item from this domain, so there is no quiz to sit."
+          : `The bank holds ${quizAvailable} of the ${quizAsked} ${quizAsked === 1 ? "item" : "items"} the quiz asks for.`
+      }
+    </p>
+    <p><a href={`${base}domains/${domain.slug}/quiz/`}>Open this domain's self-check</a></p>
   </section>
 </BaseLayout>

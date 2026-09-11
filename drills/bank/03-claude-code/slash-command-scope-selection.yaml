@@ -1,0 +1,57 @@
+id: slash-command-scope-selection
+domain: Claude Code
+sub_skill: Claude Code Operation
+difficulty: application
+select: 1
+stem: >-
+  A backend engineer writes a `/deploy` custom slash command that runs the team's staging deploy
+  checklist. Every teammate who checks out the repository should get the same `/deploy` command
+  the moment they clone it, without any manual setup on their own machine, and the command should
+  stay versioned alongside the code it deploys. Where should the command file be placed?
+options:
+  - id: a
+    text: In the repository at `.claude/commands/deploy.md` (or `.claude/skills/deploy/SKILL.md`).
+    correct: true
+    rationale: >-
+      A command placed at the project level lives in the repository and is shared with teammates
+      through source control, so anyone who clones the repo gets it automatically and it stays
+      versioned with the code.
+  - id: b
+    text: In the engineer's home directory at `~/.claude/commands/deploy.md`.
+    correct: false
+    rationale: >-
+      A personal command is available across all of that one engineer's projects on their own
+      machine, but it never reaches a teammate's machine or gets checked into the repository.
+    trap_type: wrong-layer
+  - id: c
+    text: >-
+      Pasted as a block of instructions in the top-level project `CLAUDE.md` instead of a
+      command file.
+    correct: false
+    rationale: >-
+      This loads the checklist text into every session's context, but it does not create an
+      invocable `/deploy` command, and it makes the standing instructions larger for a workflow
+      that should only run on demand.
+    trap_type: right-idea-wrong-mechanism
+  - id: d
+    text: In an organization-managed policy directory deployed to every machine by IT.
+    correct: false
+    rationale: >-
+      A managed/enterprise-level command is distributed to every user on machines the organization
+      controls, independent of which repository is checked out; it is disproportionate for a
+      command that only needs to travel with one project's source control.
+    trap_type: overkill
+  - id: e
+    text: As a `CLAUDE.local.md` entry at the project root.
+    correct: false
+    rationale: >-
+      `CLAUDE.local.md` is meant for personal, gitignored, project-specific notes for the one
+      engineer using it; it is not shared with teammates and is not a command definition at all.
+    trap_type: wrong-layer
+sources:
+  - title: Custom slash commands — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/slash-commands
+    verified_on: "2026-09-08"
+  - title: How Claude remembers your project — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/memory
+    verified_on: "2026-09-08"

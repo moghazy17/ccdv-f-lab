@@ -1,0 +1,65 @@
+id: cache-breakpoint-limit-and-silent-invalidator
+domain: Applications and Integration
+sub_skill: Claude API Mechanics
+difficulty: analysis
+select: 2
+stem: >-
+  A triage integration's cache-read tokens report zero on every call even though the tools list,
+  system prompt, and a large policy document are byte-for-byte identical between requests. A
+  per-request block containing the current timestamp sits immediately before the final cache
+  breakpoint. Which two statements are correct about diagnosing and fixing this?
+options:
+  - id: a
+    text: >-
+      The API permits at most 4 explicit cache breakpoints per request; confirming the request's
+      breakpoint count is within that ceiling is a correct step before assuming a missing
+      breakpoint, rather than an unrelated one, is the cause.
+    correct: true
+    rationale: >-
+      The documented ceiling of 4 explicit breakpoints per request is a hard constraint on how
+      many prefix positions can be marked at all, so checking the request against that ceiling is
+      a correct diagnostic step when a caching failure needs isolating.
+  - id: b
+    text: >-
+      The timestamp placed immediately before the breakpoint changes the exact content the prefix
+      hash is computed over on every request, so the hash never matches a prior entry; moving the
+      volatile timestamp to after the final breakpoint, or dropping it from the cached prefix,
+      fixes the miss.
+    correct: true
+    rationale: >-
+      Prompt caching is a byte-for-byte prefix match; non-deterministic content such as a
+      timestamp placed at or before the breakpoint changes the hash on every call and silently
+      prevents any match, which is exactly the documented cause of a repeated-prefix cache miss
+      that returns no error.
+  - id: c
+    text: >-
+      Enable automatic caching in addition to the 4 explicit breakpoints already in the request,
+      since more breakpoints always improve the hit rate.
+    correct: false
+    rationale: >-
+      Adding a breakpoint beyond the documented ceiling of 4 explicit breakpoints returns a 400
+      error rather than improving anything, and it does not address the actual cause, which is
+      volatile content changing the hash at the existing breakpoint.
+    trap_type: irrelevant-knob
+  - id: d
+    text: >-
+      Retry the same request with exponential backoff until a cache read is eventually reported.
+    correct: false
+    rationale: >-
+      A cache miss caused by non-deterministic content in the prefix is not a transient transport
+      failure; retrying the identical request with the same timestamp-bearing prefix keeps
+      producing a new hash and keeps missing, because retries do not change the request's content.
+    trap_type: wrong-layer
+  - id: e
+    text: >-
+      Switch to a larger model, since a more capable model caches its own context more effectively
+      regardless of prefix content.
+    correct: false
+    rationale: >-
+      Prompt caching is a request-shape mechanism independent of which model receives the request;
+      no model tier changes whether a byte-for-byte prefix hash matches a prior entry.
+    trap_type: bigger-model
+sources:
+  - title: Prompt caching — Anthropic (Claude Platform docs)
+    url: https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+    verified_on: "2026-09-09"

@@ -19,6 +19,11 @@
       "name": "headings alone do not author a section",
       "markdown": "# First section\n\n## Nested heading\n\n### Another heading\n",
       "authoredHeadings": []
+    },
+    {
+      "name": "frontmatter is metadata rather than authored content",
+      "markdown": "---\ndomain_name: \"Example domain\"\n# a comment inside the frontmatter\nsub_skills:\n  - name: \"Example sub-skill\"\n---\n\n# Overview\n\nA written explanation.\n",
+      "authoredHeadings": ["Overview"]
     }
   ]
 }

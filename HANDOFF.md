@@ -6,25 +6,36 @@ work without rediscovering it.
 ## What this repository is
 
 An unofficial community study kit for the **Claude Certified Developer – Foundations (CCDV-F)**
-exam. Python 3.11+, standard-library-first, runs with no API key. It now also publishes a static
-website built from its own markdown.
+exam. Python 3.11+, standard-library-first, runs with no API key. It also publishes a static website
+built from its own markdown, with an in-browser Python runtime, a weighted mock exam, per-domain
+quizzes, and a flashcard deck.
 
 `BLUEPRINT.md` is the source of truth for the 8 domains, 25 sub-skills, and every weight.
 `AGENTS.md` is the house rulebook. Read both before changing anything.
 
 ## Current state
 
-Branch `001-study-site-foundation`, **unpushed**. Feature 001 is complete: all 245 tasks across ten
-phases, spec through deployment, in `specs/001-study-site-foundation/`.
+Branch `002-blueprint-guard-and-frontmatter`, **nine commits ahead of its remote and unpushed**.
+Feature 002 is complete: all 113 tasks across ten phases, in `specs/002-lab-runner-mock-exam/`.
+Feature 001 is merged to `main`.
 
-All gates green: `ruff check .`, `ruff format --check .`, `pytest -q` (85), blueprint consistency,
-single-source, link check, drills validate, evals 16/16, plus the site's `typecheck`, `lint`,
-`build` (54 pages, 23 indexed), `test:unit` (46), `test:e2e` (169).
+All gates green: `ruff check .`, `ruff format --check .`, `pytest -q` (119), blueprint consistency,
+single-source, link check, `python -m drills.engine validate` (54 items), `python -m lab.evals run`,
+plus the site's `typecheck` (two programs), `lint`, `build` (57 pages, 47 indexed), `check:payload`
+(6.62 MiB against an 8 MiB ceiling), `test:unit` (117), `test:e2e` (215).
 
-The site is Astro 7.3.1 + TypeScript in `site/`, every dependency pinned exactly, `npm audit` clean.
-It renders `notes/`, `guide/`, `study-plans/` and `cheatsheets/` **in place** — copying study prose
-into `site/` fails the build. Exam figures come from `site/src/data/blueprint.json`, generated from
-`BLUEPRINT.md` by `tools/export_site_data.py`.
+What feature 002 added, in one line each:
+
+- **Labs.** Thirteen pages over `lab/`: twelve run this repository's real Python in a Web Worker,
+  one shows its source. Which is which comes from probing imports against the vendored
+  `pyodide-lock.json`, never from a list.
+- **Mock exam.** 53 items under a 120-minute wall-clock countdown, per-domain quotas computed by
+  the repository's own `drills.engine.mock.apportion_items` at build time.
+- **Quizzes.** Per-domain recall prompts parsed from each `self-check.md`, plus a scored quiz sized
+  to that domain's share of a full mock.
+- **Flashcards.** The generated deck with a stable `Card:` identity and five Leitner boxes.
+- **Item bank.** 54 files in `drills/bank/`: 53 original items reaching learners, one format
+  demonstration excluded from every surface.
 
 **Content status: 1 of 8 domains authored.** Domain 5, Model Selection and Optimization, is written
 and sourced. The other seven are scaffolds, and the site says so honestly on every page.
@@ -47,17 +58,28 @@ prefill returns a 400, sampling parameters are removed, `output_format` became
 `output_config.format`. Verify against live documentation and add a dated row to `SOURCES.md` for
 every factual claim — that is a hard rule in `AGENTS.md`.
 
+Writing notes is now worth more than any code: the flashcard deck draws all 30 of its cards from
+Domain 5 because that is the only domain with notes, and `self-check.md` is the only source of a
+domain's recall prompts. Every note written grows three surfaces at once with no site change.
+
 ### Known follow-ups
 
-- **Push and enable Pages.** `git push -u origin 001-study-site-foundation`, then in GitHub repo
-  settings set **Pages → Source: GitHub Actions**, or `pages.yml` fails on the first push to `main`.
-- **Repo-relative links do not survive rendering.** Note prose currently names `SOURCES.md` and
+- **Push the branch and open a pull request.**
+  `git push -u origin 002-blueprint-guard-and-frontmatter`. Pages needs no setup: it is already on
+  **Source: GitHub Actions** (`build_type: workflow`) and `pages.yml` deployed successfully from
+  `main` on the feature 001 merge, so merging this branch publishes it. Verify with
+  `gh api repos/moghazy17/ccdv-f-lab/pages` rather than assuming either way.
+- **Repo-relative links do not survive rendering.** Note prose still names `SOURCES.md` and
   `lab/*.py` in code spans rather than linking them, because `/domains/<slug>/` has no such route.
   `AGENTS.md` wants those links. The fix is a small remark plugin rewriting repo-relative links to
-  GitHub blob URLs at render time — cheaper to do before more notes are written.
-- **`drills/bank/` holds one item**, flagged `format_demonstration` and excluded from every
-  learner-facing surface. Feature 002's mock exam needs a real item bank before it is worth
-  building.
+  GitHub blob URLs at render time — cheaper to do before more notes are written. Lab *pages* already
+  link their source on GitHub; this is about note prose.
+- **Intermediate commits on this branch are not individually gate-verified.** Only the tip is.
+  Whole-file staging meant a few files carry a later phase's content — `site/package.json`,
+  `site/src/lib/storage.ts`, and `tools/check_content_single_source.py` most notably. Bisecting
+  through the middle of the series may not build.
+- **The bank holds no surplus.** Every domain is filled to exactly its quota, so repeated mock
+  attempts draw the same items, and the mock page says so. More items per domain is the fix.
 
 ## Working rules that are easy to get wrong
 
@@ -68,51 +90,65 @@ every factual claim — that is a hard rule in `AGENTS.md`.
   shell's directory makes every subsequent tool call fail closed. Use `npm run --prefix site
   <script>` and `git -C`.
 - **`rm` is blocked** by the same hook. Delete with `python -c "import pathlib;
-  pathlib.Path(p).unlink()"`.
-- **`AGENTS.md` and `BLUEPRINT.md` are write-protected** by the hook. `SOURCES.md` is not, anymore.
+  pathlib.Path(p).unlink()"`, or `shutil.rmtree` for a directory.
+- **`AGENTS.md` and `BLUEPRINT.md` are write-protected** by the hook. `SOURCES.md` is not.
 - **Do not generate source files through a shell heredoc.** Escape sequences get eaten a level and
-  produce broken literals. Use the Write tool for anything containing `\n` or quotes.
+  produce broken literals — `\n` inside a Python heredoc becomes a real newline and breaks the
+  string it was in. Use the Write tool for anything containing `\n` or quotes.
 - **Wrap prose at 100 columns.** Table rows are exempt. `AGENTS.md` also bans time-anchored phrasing
   ("for now", "recently"), commented-out code, and unowned TODOs.
+- **Derive every exam figure.** Item counts, quotas, the mock's size and time limit all come from
+  `BLUEPRINT.md` through generated data. Never type one into a page or a component.
+- **`site/src/data/mock.json` and `items.json` are generated and git-ignored**; `blueprint.json` is
+  generated and committed. None may be hand-edited.
 
-## Delegating implementation to Antigravity
+## Running the end-to-end suite
 
-Implementation work goes to the **Google Antigravity CLI (`agy`)** through the `agy-delegate` skill.
-The orchestrator writes the brief, reviews the result, and commits; `agy` only writes code.
+Two things about `npm run test:e2e` will waste an hour if you do not know them.
 
-Invoke the skill with the Skill tool (`agy-delegate`), then dispatch:
+- **`astro preview --ignore-lock` refuses to start** when the shell has `AI_AGENT`, `CLAUDECODE`, or
+  `CLAUDE_CODE_ENTRYPOINT` set, because Astro auto-detects an agent environment and runs preview in
+  the background, which needs the lock. Run the command with those unset:
+  `env -u AI_AGENT -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT npm run --prefix site test:e2e`.
+- **The suite is memory-sensitive, not flaky.** Seven specs each build the whole site behind one
+  lock while the lab specs run a real CPython in WebAssembly. On a machine with headroom the full
+  215 tests take about two minutes; on one that is swapping, a single fixture spec consumed fifteen.
+  If `source-plans.spec.ts` appears to hang, check free memory before touching a timeout — that spec
+  runs in under eight seconds on its own. `playwright.config.ts` pins `workers: 2` and those specs
+  carry a 900-second ceiling deliberately; the lock helper's own wait ceiling is ten minutes, so a
+  shorter test timeout is inconsistent with its design.
+- **An interrupted run leaves `site/.us2-*` directories behind.** The gates now skip that prefix, so
+  they no longer report hundreds of false duplications, but delete the directories anyway.
+
+## Delegating implementation
+
+Implementation work can go to a separate CLI through one of the `*-delegate` skills. The
+orchestrator writes the brief, reviews the result, and commits; the implementer only writes code.
+Feature 002's Phases 7–10 went to the **OpenAI Codex CLI** through `codex-delegate`; feature 001
+used the **Google Antigravity CLI** through `agy-delegate`. Both follow the same loop.
 
 ```bash
-node "C:/Users/ahmed/.claude/skills/agy-delegate/scripts/relay.mjs" \
-  --brief "<path to brief file>" \
-  --cd "D:/Projects/claude-courses/ccdv-f" \
-  --effort high --print-timeout 90m --timeout 95m \
-  --dangerously-skip-permissions
+node "C:/Users/ahmed/.claude/skills/codex-delegate/scripts/relay.mjs" \
+  --brief <path> --cd "D:/Projects/claude-courses/ccdv-f" \
+  --model gpt-5.6-terra --effort high --timeout 2h
 ```
-
-Run it in the background and wait for the completion notification.
 
 Points that matter:
 
-- **`--dangerously-skip-permissions` is required and the maintainer has approved it.** In headless
-  `--print` mode Antigravity cannot prompt, so without the flag it auto-denies its own first command
-  and the run fails having done nothing. The flag auto-approves every tool request, which is
-  acceptable here only because the work is committed at every phase boundary.
-- **Model.** `agy`'s configured default resolves to `gemini-3.7-flash-high`. It produced five phases
-  with one defect, so it is not the weak link, but `agy models` also lists `gemini-3.1-pro-high`,
-  `claude-opus-4-6-thinking`, and `claude-sonnet-4-6` if a task warrants more. Pass `--model
-  <label>`.
-- **No network in its sandbox.** It cannot run `npm install`. If a brief needs a new package, tell
-  it to add a pinned entry to `site/package.json`, leave the task unmarked, and report — the
-  orchestrator installs.
-- **Never trust the self-report.** Re-run every gate independently and read the diff. Across the ten
-  phases, review caught a critical advisory, an unfixable Astro major version, cp1252 mojibake, a
-  broken string literal, a gate that passed without guarding anything, and hard-coded values that
-  should have been derived. A green self-report is a claim, not evidence.
-- **Two runs were killed for host memory.** The work usually survives; re-verify from the working
-  tree rather than re-dispatching blindly.
-
-Every brief should carry the accumulated traps: navigate relatively in Playwright
-(`page.goto("./x/")`, never `"/x/"`, which discards the `/ccdv-f-lab/` base); `astro preview` needs
-`--ignore-lock`; write files as UTF-8; verify a file still parses after editing it; and derive
-anything derivable instead of hard-coding it.
+- **Model names resolve through Codex's own list.** "terra" is `gpt-5.6-terra`; the configured
+  default is `gpt-5.6-sol` at low effort. `~/.codex/models_cache.json` holds the roster.
+- **Rework goes to the same session.** `--session <threadId>` from the prior `result.json` continues
+  the exact conversation, so a delta brief needs only the defects, not the whole context again.
+- **This machine kills long runs for memory.** Two of three Codex runs were terminated part-way. The
+  edits survived each time — re-verify from the working tree rather than re-dispatching blindly.
+  Freeing memory before a long run is worth the minute it costs.
+- **Never trust the self-report.** Re-run every gate independently and read the diff. Across feature
+  002, review caught a sandbox that did not actually seal (deleting `fetch` from the worker global
+  removed nothing, because `fetch` lives on `WorkerGlobalScope.prototype`), a keyboard handler that
+  broke the space bar on focused buttons, every flashcard printing its tags twice, and a run
+  reporting "gates passed" while one spec had timed out. A green self-report is a claim, not
+  evidence.
+- **Write the brief as if the implementer has no memory, because it does not.** Include the repo's
+  real gate commands, the house rules, an explicit "you do not commit", and a report contract. Say
+  what a "verify" task means: establish the property and leave behind something that fails if it
+  stops holding, not read the code and tick a box.

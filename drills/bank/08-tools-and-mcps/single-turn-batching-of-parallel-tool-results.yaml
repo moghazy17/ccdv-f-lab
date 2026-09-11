@@ -1,0 +1,59 @@
+id: single-turn-batching-of-parallel-tool-results
+domain: Tools and MCPs
+sub_skill: Tool Implementation
+difficulty: application
+select: 1
+stem: >-
+  An assistant turn contains three tool_use blocks issued in parallel: two knowledge-base searches
+  and one customer lookup. The dispatcher executes all three handlers, then sends each tool_result
+  back to Claude in its own separate user message, one right after another, in the order the
+  handlers finished. Claude's next response is degraded, and later turns stop issuing parallel
+  tool calls at all. What is the most direct fix?
+options:
+  - id: a
+    text: >-
+      Place every tool_result for that assistant turn into the single user message that
+      immediately follows it, each one correlated to its tool_use block by tool_use_id.
+    correct: true
+    rationale: >-
+      Every tool_use block from one assistant turn must be answered by tool_result blocks in the
+      single immediately following user message, correlated by tool_use_id, with no messages in
+      between; splitting them into several user messages breaks that expected shape and teaches
+      the model that parallel calls do not get answered together.
+  - id: b
+    text: >-
+      Keep the results in separate user messages, but add a system-prompt note asking Claude to
+      treat consecutive tool-result messages as belonging to the same turn.
+    correct: false
+    rationale: >-
+      This asks Claude to work around a request shape that does not match how tool results are
+      meant to be returned, rather than fixing the shape; it is not a guaranteed substitute for
+      correlating results by tool_use_id in one message.
+    trap_type: unenforceable-politeness
+  - id: c
+    text: Change the three tools to run one at a time instead of in parallel.
+    correct: false
+    rationale: >-
+      Serializing the tool calls avoids the batching problem by giving up parallel tool use
+      entirely, which is a larger change than fixing how the existing parallel results are
+      returned.
+    trap_type: overkill
+  - id: d
+    text: Switch the dispatcher to a larger model that can better interpret split tool results.
+    correct: false
+    rationale: >-
+      No model choice changes the API-level requirement that tool results from one assistant turn
+      belong together in the single following user message; the request shape itself is the
+      problem.
+    trap_type: bigger-model
+  - id: e
+    text: Increase the number of prompt-caching breakpoints used for the tool definitions.
+    correct: false
+    rationale: >-
+      Caching breakpoints affect which prefix is reused for cost and latency; they have no bearing
+      on how tool_result blocks from one assistant turn must be grouped in the following message.
+    trap_type: irrelevant-knob
+sources:
+  - title: Handle tool calls — Anthropic (Claude Platform docs)
+    url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls
+    verified_on: "2026-09-08"

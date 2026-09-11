@@ -193,4 +193,84 @@ def test_flashcard_generator_preserves_exact_blueprint_labels(tmp_path: Path) ->
     assert row.count("\t") == 1
     assert "Domain: Agents and Workflows" in row
     assert "Sub-skill: Agent Construction with Claude" in row
+    assert "Card: 01-agent-construction-with-claude-authored-1" in row
     assert counts["Agents and Workflows"] == 1
+
+
+def test_flashcard_generator_uses_stable_source_position_identifiers(tmp_path: Path) -> None:
+    """Thirty cards retain unique identities even where the visible fields collide four ways."""
+    output = tmp_path / "ccdv-f.tsv"
+
+    build_flashcards(ROOT / "notes", output)
+    rows = [line.split("\t") for line in output.read_text(encoding="utf-8").splitlines()]
+    identifiers = [row[1].split("Card: ")[-1] for row in rows]
+
+    assert len(rows) == 30
+    assert all(len(row) == 2 for row in rows)
+    assert len(set(identifiers)) == 30
+
+    technical = [
+        identifier
+        for front, back in rows
+        if front == "Technical Fundamentals"
+        and "Domain: Model Selection and Optimization" in back
+        and "Sub-skill: Technical Fundamentals" in back
+        for identifier in [back.split("Card: ")[-1]]
+    ]
+    # Compared as a set, not a sequence: what matters is that four cards sharing a front, a
+    # domain, and a sub-skill get four distinct identities. Which one the deck lists first is a
+    # property of note ordering, pinned separately below.
+    assert sorted(technical) == [
+        "05-technical-fundamentals-decision-tables-1",
+        "05-technical-fundamentals-pitfalls-1",
+        "05-technical-fundamentals-readme-1",
+        "05-technical-fundamentals-self-check-1",
+    ]
+
+    rewritten_notes = tmp_path / "notes"
+    rewritten_notes.mkdir()
+    for source in (ROOT / "notes").rglob("*.md"):
+        target = rewritten_notes / source.relative_to(ROOT / "notes")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(
+            source.read_text(encoding="utf-8").replace("ordinary", "everyday"), encoding="utf-8"
+        )
+    rewritten = tmp_path / "rewritten.tsv"
+    build_flashcards(rewritten_notes, rewritten)
+    rewritten_ids = [
+        row.split("\t", 1)[1].split("Card: ")[-1]
+        for row in rewritten.read_text(encoding="utf-8").splitlines()
+    ]
+    assert rewritten_ids == identifiers
+
+
+def test_flashcard_generation_is_deterministic_and_platform_independent(tmp_path: Path) -> None:
+    """The committed deck must not depend on which machine generated it.
+
+    ``sorted()`` over ``Path`` objects compares case-folded on Windows and by code point on POSIX,
+    so note order - and therefore every row's position in the deck - once differed by platform.
+    A regenerated deck would then churn against the committed one depending on who rebuilt it.
+    """
+    first = tmp_path / "first.tsv"
+    second = tmp_path / "second.tsv"
+
+    build_flashcards(ROOT / "notes", first)
+    build_flashcards(ROOT / "notes", second)
+
+    assert first.read_bytes() == second.read_bytes()
+    # Uppercase sorts before lowercase by code point, which is the order both platforms now take.
+    assert (
+        first.read_text(encoding="utf-8")
+        .splitlines()[0]
+        .split("\t")[1]
+        .endswith("Card: 05-technical-fundamentals-readme-1")
+    )
+
+
+def test_committed_flashcard_deck_matches_a_fresh_generation(tmp_path: Path) -> None:
+    """A rebuild is a no-op: the deck in the tree is what the notes currently produce."""
+    regenerated = tmp_path / "regenerated.tsv"
+    build_flashcards(ROOT / "notes", regenerated)
+
+    committed = (ROOT / "flashcards" / "ccdv-f.tsv").read_text(encoding="utf-8")
+    assert regenerated.read_text(encoding="utf-8") == committed

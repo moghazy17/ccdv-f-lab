@@ -1,0 +1,64 @@
+id: sampling-parameters-removed-not-relocated
+domain: Model Selection and Optimization
+sub_skill: LLM Fundamentals
+difficulty: application
+select: 1
+stem: >-
+  A team notices that identical prompts sent to Claude Sonnet 5 sometimes produce different
+  wording, and remembers using `temperature` on an older model to reduce that kind of variation.
+  They send `temperature: 0.2` on the current model and the request returns a 400 error. What
+  should they do?
+options:
+  - id: a
+    text: >-
+      Remove the sampling parameters from the request. Current models do not accept `temperature`,
+      `top_p`, or `top_k`; run-to-run variation still exists but is no longer something tuned with
+      a sampling dial, so consistency has to be enforced downstream through validation instead.
+    correct: true
+    rationale: >-
+      `temperature`, `top_p`, and `top_k` are removed on current models and return a 400 rather
+      than being silently ignored; non-determinism has not gone away, but there is no longer a
+      sampling parameter that controls it.
+  - id: b
+    text: >-
+      Resend the request with `temperature` set to exactly `0` or `1`, since those boundary values
+      are still accepted even though intermediate values are not.
+    correct: false
+    rationale: >-
+      No value of `temperature` is accepted on current models; the parameter was removed entirely,
+      not restricted to its boundary values.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      Switch this route to Claude Haiku 4.5, which still accepts `temperature` even though the
+      other current models do not.
+    correct: false
+    rationale: >-
+      Sampling parameters are removed on current models generally; there is no current-lineup
+      exception that keeps `temperature` working, unlike the genuine Claude Haiku 4.5 exception
+      for extended thinking.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Lower the effort level, since a lower-effort response should vary less between runs.
+    correct: false
+    rationale: >-
+      Effort steers how much the model reasons before answering; it is not a substitute control
+      for output-sampling variability and does not address why wording differs across identical
+      prompts.
+    trap_type: irrelevant-knob
+  - id: e
+    text: >-
+      Enable prompt caching on the request so repeated calls return the identical cached answer.
+    correct: false
+    rationale: >-
+      Prompt caching reuses a matched input prefix to cut cost and latency; it does not cache or
+      replay the generated output, so it has no effect on output variability.
+    trap_type: irrelevant-knob
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-05"
+  - title: Steering thinking — Anthropic
+    url: https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost
+    verified_on: "2026-09-05"
