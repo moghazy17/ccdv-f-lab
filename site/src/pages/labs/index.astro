@@ -1,5 +1,89 @@
 ---
-import ReservedPage from "../../components/ReservedPage.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { domains } from "../../lib/blueprint";
+import { labs } from "../../lib/runtime/labs";
+
+const base = import.meta.env.BASE_URL;
+const domainByNumber = new Map(domains.map((domain) => [domain.number, domain]));
+const runnableCount = labs.filter((lab) => lab.runnable).length;
+
+// Ordered by domain so the index reads in blueprint order rather than in directory order.
+const orderedLabs = [...labs].sort(
+  (left, right) => left.domainNumber - right.domainNumber || left.slug.localeCompare(right.slug)
+);
+
+const domainName = (number: number) => {
+  const domain = domainByNumber.get(number);
+  if (domain === undefined) {
+    throw new Error(`labs/index.astro: no blueprint domain numbered ${number}.`);
+  }
+  return domain;
+};
 ---
 
-<ReservedPage title="Labs" capability="runnable lab modules" />
+<BaseLayout
+  title="Labs | CCDV-F community study kit"
+  description="Run this repository's reference application in your browser, with no key and no install."
+  searchRecord={{ type: "lab" }}
+>
+  <header>
+    <h1>Labs</h1>
+    <p class="page-introduction">
+      Every lab below is a module of this repository's reference application, run unmodified. The
+      Python is fetched from the repository at publication time, not copied here, and it executes in
+      your own browser: no account, no install, and no API key. The transport is the repository's
+      mock transport, so a lab that asks for a live one fails with a message saying why.
+    </p>
+    <p data-testid="labs-runnable-summary">
+      {runnableCount} of {labs.length} labs run in the browser. The rest show their source and say
+      what the browser runtime cannot supply.
+    </p>
+    <p>
+      The runtime is about 6 MiB and is downloaded the first time you press Run on a lab page —
+      never before, and never on any other page.
+    </p>
+  </header>
+
+  <div class="table-scroll" tabindex="0" aria-label="Lab catalogue">
+    <table data-testid="labs-catalogue">
+      <thead>
+        <tr>
+          <th scope="col">Lab</th>
+          <th scope="col">Concept</th>
+          <th scope="col">Domain</th>
+          <th scope="col">In the browser</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          orderedLabs.map((lab) => (
+            <tr>
+              <th scope="row">
+                <a href={`${base}labs/${lab.slug}/`}>{lab.slug}</a>
+              </th>
+              <td>{lab.concept}</td>
+              <td>
+                Domain {lab.domainNumber}: {domainName(lab.domainNumber).name}
+              </td>
+              <td>{lab.runnable ? "Runs" : "Source only"}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <section aria-labelledby="labs-contribute-title">
+    <h2 id="labs-contribute-title">Add a lab or a practice item</h2>
+    <p>
+      A lab is a module in <code>lab/</code>; whether it runs here is decided by probing its imports
+      against the vendored runtime, so nothing has to be added to a roster. Practice items live in
+      <code>drills/bank/</code> and must be original and validated.
+    </p>
+    <p>
+      <a data-testid="practice-item-contribution" href="https://github.com/moghazy17/ccdv-f-lab/tree/main/drills/bank">
+        Read how to contribute a practice item on GitHub
+      </a>.
+    </p>
+  </section>
+</BaseLayout>

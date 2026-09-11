@@ -1,0 +1,257 @@
+---
+/**
+ * The editable code pane for one runnable lab: a textarea, Run, Stop, Restore, and the output of
+ * the last run (FR-010, FR-006, FR-007).
+ *
+ * The runtime is not imported at module scope. `./runtime` is pulled in by a dynamic import inside
+ * the Run handler, so a lab page renders and becomes interactive without the browser ever asking
+ * for the 6 MiB payload — the property SC-002 tests and FR-002 requires.
+ */
+
+interface Props {
+  /** The lab's slug, which is also the key its edit is stored under. */
+  slug: string;
+  /** The seeded demonstration: imports the module and exercises its real API (FR-010). */
+  entrySource: string;
+}
+
+const { entrySource, slug } = Astro.props;
+---
+
+<section class="code-pane" data-code-pane data-lab-slug={slug} aria-labelledby={`code-pane-title-${slug}`}>
+  <h2 id={`code-pane-title-${slug}`}>Run this lab</h2>
+  <p class="code-pane__intro">
+    This runs in your browser against this repository's own Python. Nothing is sent anywhere, and
+    the transport is the repository's mock transport, so no key is needed or accepted.
+  </p>
+  <p class="code-pane__storage-notice" data-code-pane-storage-notice hidden></p>
+
+  <label class="code-pane__label" for={`code-pane-source-${slug}`}>
+    Python to run
+    <span class="code-pane__hint">
+      Press Tab to move out of the editor; it does not capture the key.
+    </span>
+  </label>
+  <textarea
+    id={`code-pane-source-${slug}`}
+    class="code-pane__source"
+    data-code-pane-source
+    data-pagefind-ignore
+    spellcheck="false"
+    autocomplete="off"
+    autocapitalize="off"
+    autocorrect="off"
+    rows="16"
+    wrap="off">{entrySource}</textarea>
+
+  <div class="code-pane__actions">
+    <button type="button" class="action-button" data-code-pane-run>Run</button>
+    <button type="button" class="action-button" data-code-pane-stop disabled>Stop</button>
+    <button type="button" class="action-button" data-code-pane-restore>Restore original</button>
+  </div>
+
+  <p class="code-pane__status" data-code-pane-status role="status" aria-live="polite">
+    The runtime has not been downloaded. It is fetched the first time you press Run.
+  </p>
+
+  <h3 class="code-pane__output-title" id={`code-pane-output-title-${slug}`}>Output</h3>
+  <pre
+    class="code-pane__output"
+    data-code-pane-output
+    data-pagefind-ignore
+    tabindex="0"
+    aria-labelledby={`code-pane-output-title-${slug}`}><code data-code-pane-output-text>No run yet.</code></pre>
+</section>
+
+<script>
+  import { checkStorageAvailability, createProgressStorage } from "../lib/storage";
+  import type { OutputChunk, RuntimeStatus } from "../lib/runtime";
+
+  type RuntimeModule = typeof import("../lib/runtime");
+
+  const panes = document.querySelectorAll<HTMLElement>("[data-code-pane]");
+
+  for (const pane of panes) {
+    setUpPane(pane);
+  }
+
+  function setUpPane(pane: HTMLElement): void {
+    const slug = pane.dataset.labSlug ?? "";
+    const source = pane.querySelector<HTMLTextAreaElement>("[data-code-pane-source]");
+    const runButton = pane.querySelector<HTMLButtonElement>("[data-code-pane-run]");
+    const stopButton = pane.querySelector<HTMLButtonElement>("[data-code-pane-stop]");
+    const restoreButton = pane.querySelector<HTMLButtonElement>("[data-code-pane-restore]");
+    const status = pane.querySelector<HTMLElement>("[data-code-pane-status]");
+    const storageNotice = pane.querySelector<HTMLElement>("[data-code-pane-storage-notice]");
+    const outputText = pane.querySelector<HTMLElement>("[data-code-pane-output-text]");
+    if (
+      source === null ||
+      runButton === null ||
+      stopButton === null ||
+      restoreButton === null ||
+      status === null ||
+      outputText === null
+    ) {
+      return;
+    }
+
+    // The server-rendered value is the repository's demonstration; Restore returns to exactly this.
+    const originalSource = source.defaultValue;
+    const storageState = checkStorageAvailability();
+    const storage = storageState === "available" ? createProgressStorage() : null;
+    let runtime: RuntimeModule | null = null;
+
+    const storedEdit = storage?.labEdit(slug) ?? null;
+    if (storedEdit !== null) {
+      source.value = storedEdit;
+    }
+    if (storageState !== "available" && storageNotice !== null) {
+      storageNotice.hidden = false;
+      storageNotice.textContent =
+        storageState === "full"
+          ? "Browser storage is full, so edits to this lab will not be kept between visits. The lab still runs."
+          : "Browser storage is unavailable, so edits to this lab will not be kept between visits. The lab still runs.";
+    }
+
+    const setRunning = (running: boolean): void => {
+      runButton.disabled = running;
+      stopButton.disabled = !running;
+    };
+
+    const runOnce = async (): Promise<void> => {
+      setRunning(true);
+      outputText.textContent = "";
+      status.textContent = "Preparing the runtime.";
+      try {
+        // Imported here rather than at module scope: this is the act that makes the runtime a
+        // cost the candidate chose to pay.
+        runtime ??= await import("../lib/runtime");
+      } catch {
+        status.textContent = "The runtime could not be loaded. Check your connection and try again.";
+        setRunning(false);
+        return;
+      }
+
+      const unsubscribeStatus = runtime.subscribeStatus((next: RuntimeStatus) => {
+        if (next === "loading") {
+          status.textContent = "Downloading the runtime. This happens once per browser.";
+        } else if (next === "running") {
+          status.textContent = "Running.";
+        }
+      });
+      const unsubscribeProgress = runtime.subscribeProgress((progress) => {
+        status.textContent =
+          progress.total > 0
+            ? `Downloading the runtime: ${progress.stage} (${progress.loaded} of ${progress.total}).`
+            : `Downloading the runtime: ${progress.stage}.`;
+      });
+
+      try {
+        const result = await runtime.run(source.value, (output: OutputChunk) => {
+          outputText.textContent = `${outputText.textContent ?? ""}${output.chunk}`;
+        });
+        if (result.traceback !== null) {
+          outputText.textContent = `${outputText.textContent ?? ""}\n${result.traceback}`;
+        }
+        if (result.truncated) {
+          outputText.textContent = `${outputText.textContent ?? ""}\n[Output stopped here: this run produced more than the pane keeps.]`;
+        }
+        if ((outputText.textContent ?? "").length === 0) {
+          outputText.textContent = "The run finished and printed nothing.";
+        }
+        status.textContent = result.stopped
+          ? "Stopped before the run finished."
+          : `Finished in ${Math.round(result.durationMs)} ms.`;
+      } catch {
+        status.textContent = "The run could not be started. Reload the page and try again.";
+      } finally {
+        unsubscribeStatus();
+        unsubscribeProgress();
+        setRunning(false);
+      }
+    };
+
+    source.addEventListener("input", () => {
+      storage?.setLabEdit(slug, source.value);
+    });
+
+    restoreButton.addEventListener("click", () => {
+      source.value = originalSource;
+      storage?.clearLabEdit(slug);
+      status.textContent = "The pane has been restored to the demonstration this lab ships with.";
+      source.focus();
+    });
+
+    runButton.addEventListener("click", () => {
+      void runOnce();
+    });
+
+    stopButton.addEventListener("click", () => {
+      runtime?.stop();
+      status.textContent = "Stopped. The next Run reloads the runtime from your browser's cache.";
+      setRunning(false);
+    });
+  }
+</script>
+
+<style>
+  .code-pane {
+    margin-block: 2rem;
+  }
+
+  .code-pane__intro {
+    max-width: 65ch;
+  }
+
+  .code-pane__label {
+    display: block;
+    font-weight: 600;
+    margin-block-end: 0.25rem;
+  }
+
+  .code-pane__hint {
+    display: block;
+    font-weight: 400;
+    font-size: 0.875rem;
+  }
+
+  .code-pane__source {
+    width: 100%;
+    min-height: 18rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    padding: 0.75rem;
+    border: 1px solid currentColor;
+    border-radius: 0.25rem;
+    background: transparent;
+    color: inherit;
+    resize: vertical;
+  }
+
+  .code-pane__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-block: 0.75rem;
+  }
+
+  .code-pane__status {
+    max-width: 65ch;
+  }
+
+  .code-pane__storage-notice {
+    max-width: 65ch;
+  }
+
+  .code-pane__output {
+    max-height: 24rem;
+    overflow: auto;
+    padding: 0.75rem;
+    border: 1px solid currentColor;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+</style>

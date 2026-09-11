@@ -1,0 +1,70 @@
+---
+/**
+ * A lab the vendored runtime cannot satisfy, shown read-only (FR-011).
+ *
+ * It is a page like any other lab, names its concept, states plainly why it does not run here, and
+ * says how to run it locally. It deliberately offers no Run control, because a control that always
+ * fails teaches the wrong thing. Which labs land here is decided by the import probe in
+ * `runtime/labs.ts`, never by a maintained roster (FR-012).
+ */
+
+interface Props {
+  /** The lab's slug, used to key the region's headings. */
+  slug: string;
+  /** Repository-relative path of the source shown below. */
+  sourcePath: string;
+  /** The probe's own explanation of what is missing from the distribution. */
+  unrunnableReason: string;
+  /** The source text, read from the repository at build time. */
+  entrySource: string;
+}
+
+const { entrySource, slug, sourcePath, unrunnableReason } = Astro.props;
+
+// Derive the local command from the repository path rather than from the slug, so it names the
+// module Python actually imports (`lab.mcp_server`, not `mcp-server`).
+const localCommand = sourcePath.replace(/\/$/, "").replace(/\.py$/, "").replaceAll("/", ".");
+---
+
+<section class="lab-source" data-testid="lab-source" aria-labelledby={`lab-source-title-${slug}`}>
+  <h2 id={`lab-source-title-${slug}`}>This lab does not run in the browser</h2>
+  <p class="lab-source__reason" data-testid="lab-unrunnable-reason">{unrunnableReason}</p>
+  <p>
+    Vendoring the missing package would mean shipping a web-server stack to run a server that has no
+    transport inside a browser tab, which would teach something untrue about how MCP is deployed. The
+    source is below, and it runs locally with no key:
+  </p>
+  <pre class="lab-source__how" data-pagefind-ignore><code>python -m pip install -e .[dev]
+python -m {localCommand}</code></pre>
+
+  <h3 id={`lab-source-code-title-${slug}`}>{sourcePath}</h3>
+  <pre
+    class="lab-source__code"
+    data-pagefind-ignore
+    tabindex="0"
+    aria-labelledby={`lab-source-code-title-${slug}`}><code>{entrySource}</code></pre>
+</section>
+
+<style>
+  .lab-source {
+    margin-block: 2rem;
+  }
+
+  .lab-source__reason {
+    font-weight: 600;
+    max-width: 65ch;
+  }
+
+  .lab-source__how,
+  .lab-source__code {
+    padding: 0.75rem;
+    border: 1px solid currentColor;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+    overflow: auto;
+  }
+
+  .lab-source__code {
+    max-height: 32rem;
+  }
+</style>
