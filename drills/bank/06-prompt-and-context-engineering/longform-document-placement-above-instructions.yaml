@@ -1,0 +1,55 @@
+id: longform-document-placement-above-instructions
+domain: Prompt and Context Engineering
+sub_skill: Prompt Engineering
+difficulty: application
+select: 1
+stem: >-
+  A prompt pastes a lengthy contract as plain text, followed by the instructions, a few examples,
+  and finally the specific question about one clause. Answer quality on this prompt is worse than
+  on shorter prompts that ask about a short paragraph. The contract text itself is not the
+  problem. Which restructuring of the same prompt content is most likely to help?
+options:
+  - id: a
+    text: >-
+      Move the full contract text to the top of the prompt, above the instructions, examples, and
+      question, leaving the question last.
+    correct: true
+    rationale: >-
+      Placing long documents and other lengthy input near the top of the prompt, above the query,
+      instructions, and examples, improves performance across models compared with putting the
+      long input after those components.
+  - id: b
+    text: Ask Claude, in the instructions, to pay very close attention to the contract text.
+    correct: false
+    rationale: >-
+      This adds a request that Claude can fail to satisfy; it does not change where the contract
+      sits relative to the instructions and question, which is the structural factor at issue.
+    trap_type: unenforceable-politeness
+  - id: c
+    text: Summarize the contract with a separate call and pass only the summary to the final prompt.
+    correct: false
+    rationale: >-
+      Summarizing before answering a question about one specific clause risks losing exactly the
+      detail the question depends on; the underlying problem is the arrangement of the existing
+      content, not its length, so removing content is a disproportionate fix.
+    trap_type: overkill
+  - id: d
+    text: >-
+      Keep the same ordering, but switch to a model with a larger context window so the contract
+      fits more comfortably.
+    correct: false
+    rationale: >-
+      The contract already fits in context; a larger window does not change where within the
+      prompt the long document sits relative to the instructions and question.
+    trap_type: bigger-model
+  - id: e
+    text: Increase max_tokens so Claude has more room to reason about the contract before answering.
+    correct: false
+    rationale: >-
+      max_tokens bounds how much output a response can contain; it has no effect on how a long
+      document is positioned relative to the instructions and question earlier in the same prompt.
+    trap_type: irrelevant-knob
+sources:
+  - title: Prompting best practices — Anthropic (Claude Platform docs)
+    url: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+    verified_on: "2026-09-09"

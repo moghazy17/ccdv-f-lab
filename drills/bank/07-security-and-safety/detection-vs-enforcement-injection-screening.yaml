@@ -1,0 +1,58 @@
+id: detection-vs-enforcement-injection-screening
+domain: Security and Safety
+sub_skill: AI Application Security
+difficulty: analysis
+select: 1
+stem: >-
+  A ticket-triage system runs pattern matching over every incoming ticket that flags phrases like
+  "ignore previous instructions" and records a finding, but does not stop the ticket from being
+  processed. A reviewer argues this is a bug: "if we already detect the injection attempt, we
+  should block the ticket immediately." What is the correct characterization of this component,
+  and what should actually keep an undetected injection attempt from causing harm?
+options:
+  - id: a
+    text: >-
+      Free-form pattern matching is a monitoring signal, not a reliable blocking mechanism, since
+      the same intent can be phrased in effectively unlimited ways; what actually keeps every
+      ticket safe to process is the structural content encoding and the least-privilege tool
+      policy applied to it regardless of whether a pattern matched.
+    correct: true
+    rationale: >-
+      A keyword or regex match cannot cover every phrasing an attacker could use, so it is suited
+      to recording findings for review, not to enforcement; the boundary that holds even when
+      nothing matches is the structural encoding of untrusted content plus scoping the ticket to
+      least-privilege tools, both of which apply unconditionally.
+  - id: b
+    text: >-
+      The pattern match should immediately refuse the ticket, since a detected keyword sequence
+      reliably proves malicious intent with no false positives to worry about.
+    correct: false
+    rationale: >-
+      Ordinary tickets can legitimately contain phrases that overlap with injection-style wording,
+      and attackers can rephrase to avoid any fixed pattern; treating a keyword match as reliable
+      proof of intent overstates what pattern matching can actually guarantee.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      Keep expanding the keyword pattern list until every possible phrasing of "ignore previous
+      instructions" is covered, and rely on that expanded list as the sole safeguard.
+    correct: false
+    rationale: >-
+      Chasing every possible phrasing is an open-ended effort that can never reach completeness,
+      and using it as the sole safeguard abandons the structural defenses that hold regardless of
+      wording, for a disproportionate amount of pattern-list maintenance.
+    trap_type: overkill
+  - id: d
+    text: >-
+      Route only pattern-flagged tickets through a larger, more careful model, and process the
+      rest of the tickets normally.
+    correct: false
+    rationale: >-
+      This still leaves every ticket that the pattern match missed processed without the
+      structural safeguards the scenario needs; a bigger model for the flagged subset does not
+      address unflagged injection attempts.
+    trap_type: bigger-model
+sources:
+  - title: Mitigate jailbreaks and prompt injections — Anthropic (Claude Platform docs)
+    url: https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/mitigate-jailbreaks
+    verified_on: "2026-09-08"

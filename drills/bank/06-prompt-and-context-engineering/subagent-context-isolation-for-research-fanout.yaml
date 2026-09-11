@@ -1,0 +1,62 @@
+id: subagent-context-isolation-for-research-fanout
+domain: Prompt and Context Engineering
+sub_skill: Context Engineering
+difficulty: analysis
+select: 1
+stem: >-
+  A main agent needs to explore five unrelated knowledge-base categories before deciding how to
+  route a support ticket. Exploring each category involves several search calls and reading long
+  excerpts, but the main agent only ever needs one short conclusion per category, not the search
+  trail that produced it. Doing all of this directly in the main conversation is filling it with
+  exploration detail the later routing decision does not need. Which approach fits this best?
+options:
+  - id: a
+    text: >-
+      Dispatch one subagent per category to do the exploration in its own separate context, and
+      have each return only its short conclusion to the main conversation.
+    correct: true
+    rationale: >-
+      A subagent runs in its own separate context window and returns only a summary to the main
+      conversation, which keeps the intermediate search calls and long excerpts for each category
+      out of the main agent's context while still surfacing the conclusion it needs.
+  - id: b
+    text: >-
+      Do all the exploration directly in the main conversation, then compact the older turns into
+      one summary once the token estimate is high.
+    correct: false
+    rationale: >-
+      Compaction only helps after the exploration detail has already accumulated in the main
+      context; it does not prevent that detail from entering the shared conversation in the first
+      place, which isolation through a subagent does directly.
+    trap_type: wrong-layer
+  - id: c
+    text: >-
+      Do all the exploration directly in the main conversation, but prune each individual search
+      result to a fixed character limit as it is inserted.
+    correct: false
+    rationale: >-
+      Pruning shrinks individual oversized results but still leaves every category's exploration
+      turns, tool calls, and reasoning mixed into the one context the routing decision has to read
+      through; isolating each category's work is a better fit than shrinking it in place.
+    trap_type: overkill
+  - id: d
+    text: Move the whole exploration task to a model with a larger context window.
+    correct: false
+    rationale: >-
+      A larger window can hold more exploration detail without erroring, but it does not keep that
+      detail out of the main conversation the routing decision has to reason over.
+    trap_type: bigger-model
+  - id: e
+    text: >-
+      Add a system-prompt instruction asking the agent to summarize its own findings briefly after
+      each category before moving to the next.
+    correct: false
+    rationale: >-
+      A prose instruction to self-summarize is not enforced; the underlying search calls and
+      excerpts the agent read still remain in the same shared context regardless of whether the
+      agent also adds a summary.
+    trap_type: unenforceable-politeness
+sources:
+  - title: Subagents — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/sub-agents
+    verified_on: "2026-09-08"

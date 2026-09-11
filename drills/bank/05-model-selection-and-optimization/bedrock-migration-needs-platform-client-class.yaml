@@ -1,0 +1,59 @@
+id: bedrock-migration-needs-platform-client-class
+domain: Model Selection and Optimization
+sub_skill: Technical Fundamentals
+difficulty: application
+select: 1
+stem: >-
+  A team currently calls the Claude API through the first-party SDK's default client and is moving
+  the workload onto Amazon Bedrock so it can bill through an existing AWS account. A developer
+  proposes changing only the client's `base_url` to point at a Bedrock endpoint while keeping the
+  same model ID strings and the same default client class. What is wrong with that plan?
+options:
+  - id: a
+    text: >-
+      Bedrock is reached through the SDK's dedicated Bedrock client class, not a base-URL override
+      of the default client, and Bedrock model IDs carry an `anthropic.` provider prefix that the
+      existing model ID strings do not have.
+    correct: true
+    rationale: >-
+      The SDK ships separate client classes for Bedrock, Vertex AI, Claude Platform on AWS, and
+      Foundry specifically because request shape, authentication, and model identifiers differ per
+      platform; a base-URL override on the default client does not reproduce that and Bedrock
+      model IDs need the `anthropic.` prefix the plan omits.
+  - id: b
+    text: >-
+      Nothing is wrong; a base-URL override is functionally equivalent to using the dedicated
+      Bedrock client class as long as the API key is valid for the Bedrock account.
+    correct: false
+    rationale: >-
+      Bedrock authenticates with AWS credentials rather than an API key and uses its own request
+      signing and model ID scheme; treating it as a base-URL swap on the default client ignores
+      those platform-specific differences and produces confusing failures, not a working
+      integration.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      The plan is fine once the workload is moved to a more capable model, because a stronger
+      model can tolerate a mismatched client configuration.
+    correct: false
+    rationale: >-
+      Which client class and model ID a platform requires has nothing to do with the model's
+      capability; a more capable model sent through a misconfigured client fails the same way a
+      less capable one does.
+    trap_type: bigger-model
+  - id: d
+    text: >-
+      The plan is fine as long as the system prompt tells the model it is now running on Bedrock.
+    correct: false
+    rationale: >-
+      Platform routing, authentication, and model ID formatting are handled by the client and
+      request layer before the model ever sees a prompt; no instruction inside the prompt can
+      substitute for using the correct client class and model ID string.
+    trap_type: wrong-layer
+sources:
+  - title: Python SDK — Claude Platform Docs
+    url: https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/python
+    verified_on: "2026-09-09"
+  - title: Claude in Amazon Bedrock (Opus 4.7 and later) — Claude Platform Docs
+    url: https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock
+    verified_on: "2026-09-09"

@@ -1,0 +1,60 @@
+id: deriving-batch-vs-realtime-infra-requirement-from-sla
+domain: Applications and Integration
+sub_skill: Understanding Requirements
+difficulty: application
+select: 1
+stem: >-
+  A business stakeholder states the requirement as "Support agents should be able to
+  bulk-classify a 10,000-ticket backlog overnight, and the live chat widget must still show a
+  classification to the customer before they finish reading the reply." From that business
+  requirement, what is the correct infrastructure requirement to derive for the two workloads?
+options:
+  - id: a
+    text: >-
+      The backlog workload has multiple independent requests and can tolerate delay, which maps
+      to the batch processing path; the live chat workload is a single request that needs an
+      immediate response, which maps to the realtime path — two different infrastructure
+      requirements from one business statement, not one architecture for both.
+    correct: true
+    rationale: >-
+      The business requirement names two different latency tolerances (overnight versus before the
+      customer finishes reading) for two different workload shapes (bulk versus single request);
+      deriving one infrastructure requirement per workload, rather than one shared design,
+      correctly reflects what the business statement actually specifies.
+  - id: b
+    text: >-
+      Derive a single infrastructure requirement — realtime processing for both — because the
+      customer-facing case has the stricter latency need and one processing path is simpler to
+      build and operate.
+    correct: false
+    rationale: >-
+      Simplicity of the integration is an implementation preference, not something the stated
+      business requirement asked for; the requirement explicitly tolerates overnight delay for the
+      backlog, and collapsing both cases into the stricter one ignores half of what was specified.
+    trap_type: wrong-layer
+  - id: c
+    text: >-
+      Derive the infrastructure requirement that both workloads need the largest available model,
+      since that is the safest way to satisfy any classification requirement.
+    correct: false
+    rationale: >-
+      Model tier does not address either latency constraint named in the business requirement; the
+      requirement is about when a result is needed, not which model produces it.
+    trap_type: bigger-model
+  - id: d
+    text: >-
+      Treat the requirement as already satisfied by any implementation, since the stakeholder did
+      not specify particular API endpoints or infrastructure.
+    correct: false
+    rationale: >-
+      Not specifying implementation details does not mean no infrastructure requirement can be
+      derived; the stated tolerances for delay and immediacy are exactly the input a
+      requirements-derivation step is supposed to translate into a processing-path decision.
+    trap_type: false-capability
+sources:
+  - title: Batch processing — Anthropic (Claude Platform docs)
+    url: https://platform.claude.com/docs/en/build-with-claude/batch-processing
+    verified_on: "2026-09-09"
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-09"

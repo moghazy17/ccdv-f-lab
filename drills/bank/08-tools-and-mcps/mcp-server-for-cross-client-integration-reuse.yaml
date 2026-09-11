@@ -1,0 +1,56 @@
+id: mcp-server-for-cross-client-integration-reuse
+domain: Tools and MCPs
+sub_skill: Agentic Customization
+difficulty: application
+select: 1
+stem: >-
+  A team's knowledge-base search and customer lookup need to be reachable from several separate
+  client applications: an internal Claude-based triage assistant, a different internal chat tool
+  built on a separate agent harness, and a support dashboard maintained by another team. Each
+  client should be able to connect to the same integration without that integration's code being
+  copied into every client. Which way of exposing the capability fits best?
+options:
+  - id: a
+    text: >-
+      Build one MCP server that exposes the search and lookup as tools and resources, and have each
+      client connect to it as an MCP client.
+    correct: true
+    rationale: >-
+      MCP is a standardized protocol for exposing tools, resources, and prompts to any compliant
+      client; one server reused by several separate client applications, rather than reimplemented
+      inside each one, is exactly the integration pattern MCP is built for.
+  - id: b
+    text: >-
+      Define the search and lookup as a custom tool inside each client application's own codebase.
+    correct: false
+    rationale: >-
+      A custom tool is executed by the specific application that defines it; duplicating the same
+      tool's code into every separate client is the maintenance burden a single shared integration
+      is meant to avoid.
+    trap_type: wrong-layer
+  - id: c
+    text: >-
+      Package the capability as a Skill so any of the client applications can load it when
+      relevant.
+    correct: false
+    rationale: >-
+      A Skill is a bundle of prompt-based instructions loaded by a specific agent harness, not a
+      protocol other, unrelated client applications can connect to as a shared integration.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Use one of Anthropic's built-in tools, since built-in tools are already available to any
+      client without extra integration work.
+    correct: false
+    rationale: >-
+      Built-in, Anthropic-schema tools cover general capabilities such as web search or code
+      execution; none of them reach into this team's own knowledge base and customer records, so
+      no built-in tool provides this integration.
+    trap_type: false-capability
+sources:
+  - title: Resources — Model Context Protocol specification
+    url: https://modelcontextprotocol.io/docs/concepts/resources
+    verified_on: "2026-09-09"
+  - title: Agent Skills — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/skills
+    verified_on: "2026-09-09"

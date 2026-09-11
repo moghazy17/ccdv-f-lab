@@ -1,0 +1,54 @@
+id: isolated-research-subagent-context-boundary
+domain: Agents and Workflows
+sub_skill: Agent Architecture
+difficulty: analysis
+select: 1
+stem: >-
+  A manager agent delegates a broad knowledge-base research task to a subagent specifically so
+  that dozens of intermediate search results do not flood the manager's own context window. The
+  subagent runs its research in a separate context window with its own transcript. What should
+  the manager receive back from the subagent when it finishes?
+options:
+  - id: a
+    text: Only the subagent's final summary, added to the manager's context as a single result.
+    correct: true
+    rationale: >-
+      A subagent runs its work in its own context window and returns only a summary to the parent;
+      this is exactly the isolation the delegation was meant to achieve, keeping the intermediate
+      search results out of the manager's transcript entirely.
+  - id: b
+    text: >-
+      The subagent's full intermediate transcript, so the manager can review every search call it
+      made.
+    correct: false
+    rationale: >-
+      Returning the entire transcript reintroduces the exact volume of intermediate results the
+      isolation was meant to keep out of the manager's context, defeating the reason for
+      delegating the task to a subagent in the first place.
+    trap_type: overkill
+  - id: c
+    text: >-
+      Nothing from the subagent; the manager should independently repeat the same research itself
+      in its own context to confirm the findings.
+    correct: false
+    rationale: >-
+      Redoing the same research in the manager's own context spends the same tokens the delegation
+      was meant to avoid and adds no verification the subagent's summary did not already provide.
+    trap_type: cost-theater
+  - id: d
+    text: >-
+      Give the manager a larger context window so it can hold the subagent's entire transcript
+      without running out of space.
+    correct: false
+    rationale: >-
+      A bigger window changes how much the manager could hold, not whether the subagent's
+      intermediate results should be sent to it at all; the isolation the task called for is a
+      design choice, not a capacity limit to work around.
+    trap_type: bigger-model
+sources:
+  - title: Subagents — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/sub-agents
+    verified_on: "2026-09-08"
+  - title: How the agent loop works — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/agent-sdk/agent-loop
+    verified_on: "2026-09-08"

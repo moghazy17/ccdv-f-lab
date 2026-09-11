@@ -1,0 +1,64 @@
+id: thinking-tokens-count-toward-max-tokens
+domain: Model Selection and Optimization
+sub_skill: Cost and Token Management
+difficulty: analysis
+select: 1
+stem: >-
+  A Claude Opus 5 response comes back with `stop_reason: "max_tokens"` before the final answer is
+  complete. The response includes visible reasoning ahead of the cut-off answer. Before changing
+  anything about the request, what should the team check first to decide the correct fix?
+options:
+  - id: a
+    text: >-
+      Read `usage.output_tokens_details.thinking_tokens` and compare it against `max_tokens`, to
+      see how much of the token ceiling the reasoning consumed. That determines whether to raise
+      `max_tokens` (if the reasoning was needed) or lower effort (if the model was overthinking).
+    correct: true
+    rationale: >-
+      Thinking tokens are billed as output tokens and count toward `max_tokens`, so a ceiling sized
+      for the answer alone will truncate once the model reasons; the `usage` field that reports how
+      much of the billed output was reasoning is exactly what decides between the two remedies.
+  - id: b
+    text: >-
+      Raise `max_tokens` immediately by a large margin without checking `usage`, since a bigger
+      ceiling will always resolve a truncation.
+    correct: false
+    rationale: >-
+      Raising the ceiling without checking where the tokens went pays for more output on every
+      future request even when the real problem is that the model is overthinking; it is a
+      superficial fix that misses whether effort, not the ceiling, is the actual driver.
+    trap_type: cost-theater
+  - id: c
+    text: >-
+      Set `display: "omitted"` on the thinking configuration so the reasoning is hidden, since
+      hidden reasoning will no longer count against `max_tokens`.
+    correct: false
+    rationale: >-
+      The `display` setting controls what the caller sees, not what is generated or billed; the
+      full reasoning is still produced and still counts toward `max_tokens` whether or not it is
+      shown.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Move the request to Claude Fable 5.1, on the assumption that a more capable model will not
+      truncate its answer.
+    correct: false
+    rationale: >-
+      Every current model stops generating once `max_tokens` is reached, thinking tokens included;
+      model capability does not change the effect of a fixed token ceiling.
+    trap_type: bigger-model
+  - id: e
+    text: >-
+      Enable prompt caching on the request to reduce the chance of hitting `max_tokens`.
+    correct: false
+    rationale: >-
+      Prompt caching reduces the cost and latency of repeated input tokens; it has no effect on how
+      many output tokens, thinking included, a response is allowed to generate before it is cut off.
+    trap_type: irrelevant-knob
+sources:
+  - title: Steering thinking — Anthropic
+    url: https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost
+    verified_on: "2026-09-05"
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-05"

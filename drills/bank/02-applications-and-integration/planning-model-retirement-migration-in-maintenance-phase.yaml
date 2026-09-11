@@ -1,0 +1,53 @@
+id: planning-model-retirement-migration-in-maintenance-phase
+domain: Applications and Integration
+sub_skill: Systems Life Cycle
+difficulty: application
+select: 1
+stem: >-
+  An integration has run in production for over a year on a pinned model ID. Anthropic publishes
+  that model's retirement date several months out. During the operate-and-maintain phase of this
+  system's life cycle, what is the correct response to that published retirement date?
+options:
+  - id: a
+    text: >-
+      Treat the published retirement date as a planned maintenance milestone: schedule evaluation
+      and migration to a supported pinned model ID well before that date, rather than waiting
+      until requests against the retired ID start failing.
+    correct: true
+    rationale: >-
+      Retirement commitments are published in advance precisely so operating teams can plan a
+      migration during the maintain phase; treating the date as a future milestone to plan around,
+      rather than an emergency to react to later, is what that published lead time is for.
+  - id: b
+    text: >-
+      Ignore the retirement date until requests actually start failing, since the system works
+      correctly today and nothing needs to change while it still functions.
+    correct: false
+    rationale: >-
+      This treats a scheduled life-cycle event as only a runtime error-handling problem to react
+      to after the fact, rather than a maintenance-phase planning task the published date exists
+      to support; by the time requests fail, the planned lead time has already been discarded.
+    trap_type: wrong-layer
+  - id: c
+    text: >-
+      Switch immediately to the largest available current model without evaluation, since a
+      bigger model is guaranteed to be a safe replacement for any retired pinned ID.
+    correct: false
+    rationale: >-
+      Model size does not guarantee compatible behavior with the retiring pin; a migration in the
+      maintain phase still needs evaluation against the system's own requirements, not just a
+      larger tier chosen without that evaluation.
+    trap_type: bigger-model
+  - id: d
+    text: >-
+      Add a comment in the codebase noting the retirement date, and consider the maintenance
+      obligation satisfied once the comment is committed.
+    correct: false
+    rationale: >-
+      A comment records the date but performs none of the evaluation or migration work the
+      maintain phase requires before the pinned model actually stops being available.
+    trap_type: cost-theater
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-09"

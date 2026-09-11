@@ -1,0 +1,59 @@
+id: deriving-schema-validation-requirement-from-business-rule
+domain: Applications and Integration
+sub_skill: Understanding Requirements
+difficulty: application
+select: 1
+stem: >-
+  A business rule states "A ticket must never be auto-closed unless its classification is
+  complete and unambiguous; anything else goes to a human." Translating that rule into a
+  functional requirement for the triage integration, what should the integration require before
+  it is allowed to auto-close a ticket?
+options:
+  - id: a
+    text: >-
+      Require that the model's response both passes validation against the expected
+      classification schema, so no required field is missing or malformed, and does not set an
+      explicit needs_human flag to true, before it is functionally permitted to auto-close a
+      ticket; failing either condition routes to a human instead.
+    correct: true
+    rationale: >-
+      "Complete" translates to schema-valid, and "unambiguous" translates to the model's own
+      explicit needs_human signal being false; deriving a functional requirement that checks both
+      conditions, rather than either alone, is what actually implements the business rule's
+      "never unless" condition.
+  - id: b
+    text: >-
+      Require only that the model's confidence score exceeds a threshold, since a high confidence
+      number is the same thing as a complete and unambiguous classification.
+    correct: false
+    rationale: >-
+      A self-reported confidence number is not the same signal as passing schema validation or an
+      explicit needs_human flag; treating a high confidence score alone as satisfying "complete
+      and unambiguous" assumes a guarantee the score does not provide.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      Require that the response arrived with any stop_reason other than a network error, since
+      anything other than a network failure means the ticket was classified.
+    correct: false
+    rationale: >-
+      A response that arrives with stop_reason "max_tokens" or "refusal" is not a completed
+      classification even though no network error occurred; treating "no network error" as
+      equivalent to "complete and unambiguous" misses exactly the cases the business rule is meant
+      to catch.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Require running the same ticket through a larger model as a second opinion before
+      auto-closing, since two models agreeing is inherently more unambiguous than the schema and
+      needs_human check.
+    correct: false
+    rationale: >-
+      Running a second, larger-model pass adds cost and latency without directly implementing
+      either half of the stated rule; the rule is satisfied by checking completeness and the
+      model's own ambiguity signal, not by adding a second model call.
+    trap_type: overkill
+sources:
+  - title: ccdv-f-lab reference app — lab/output.py TriageValidation.should_route_to_human
+    url: https://github.com/moghazy17/ccdv-f-lab/blob/main/lab/output.py
+    verified_on: "2026-09-09"

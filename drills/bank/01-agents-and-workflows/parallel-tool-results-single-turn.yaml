@@ -1,0 +1,52 @@
+id: parallel-tool-results-single-turn
+domain: Agents and Workflows
+sub_skill: Agent Patterns and Frameworks
+difficulty: analysis
+select: 1
+stem: >-
+  A support-triage agent's assistant turn contains three parallel `tool_use` blocks: two calls to
+  a knowledge-base search tool and one customer lookup. The engineer implementing the dispatch
+  layer must decide how to return the three results to the model. What is the correct approach?
+options:
+  - id: a
+    text: >-
+      Execute all three tool calls, then send one following user message whose content array
+      holds all three `tool_result` blocks, each correlated to its `tool_use_id`.
+    correct: true
+    rationale: >-
+      Every tool use from one assistant turn must be answered together; putting all three results
+      in the single following user message, each tied to its own `tool_use_id`, is the documented
+      shape for parallel tool calls and keeps the model calling tools in parallel on later turns.
+  - id: b
+    text: >-
+      Execute the three tool calls, then send three separate user messages, one result per
+      message, so each result gets its own turn.
+    correct: false
+    rationale: >-
+      Splitting results across multiple user messages breaks the required message shape, since
+      tool results for one assistant turn belong together in the single following user turn; it
+      also teaches the model to stop issuing calls in parallel, the opposite of the goal.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: >-
+      Execute only the first tool call, return that single `tool_result`, and let the model
+      re-request the other two tools on a later turn if it still needs them.
+    correct: false
+    rationale: >-
+      This silently drops two tool uses that need a result and adds turns and cost to recover
+      the same information the model already asked for once, without addressing why all three
+      results should have been returned together.
+    trap_type: cost-theater
+  - id: d
+    text: >-
+      Switch to a larger model on the assumption that it would not have issued three tool calls in
+      parallel in the first place.
+    correct: false
+    rationale: >-
+      Parallel tool calls in one turn are a normal, supported pattern; a different model does not
+      change the requirement that every tool use in a turn receives a correlated result.
+    trap_type: bigger-model
+sources:
+  - title: Handle tool calls — Anthropic (Claude Platform docs)
+    url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls
+    verified_on: "2026-09-08"
