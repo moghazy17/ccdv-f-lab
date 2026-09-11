@@ -1,10 +1,65 @@
 ---
-import ReservedPage from "../../../../components/ReservedPage.astro";
-import { domains } from "../../../../lib/blueprint";
+import { getCollection } from "astro:content";
+
+import DomainQuiz from "../../../../components/DomainQuiz.astro";
+import RecallPrompts from "../../../../components/RecallPrompts.astro";
+import BaseLayout from "../../../../layouts/BaseLayout.astro";
+import itemsData from "../../../../data/items.json";
+import mockData from "../../../../data/mock.json";
+import type { MockData } from "../../../../lib/attempt";
+import { domainBySlug, domains } from "../../../../lib/blueprint";
+import type { PracticeItem } from "../../../../lib/items";
+import { itemsForDomain, parseRecallPrompts, quizAvailability } from "../../../../lib/quiz";
 
 export function getStaticPaths() {
   return domains.map((domain) => ({ params: { domain: domain.slug } }));
 }
+
+const domain = domainBySlug(Astro.params.domain ?? "");
+if (domain === undefined) {
+  throw new Error("The requested domain is not present in the generated blueprint data.");
+}
+
+const mock = mockData as MockData;
+const bank = itemsData.items as PracticeItem[];
+const scale = {
+  minimum: mock.scaleMinimum,
+  maximum: mock.scaleMaximum,
+  passingScore: mock.passingScore
+};
+
+const noteEntries = await getCollection("notes");
+const selfCheck = noteEntries.find(
+  (entry: { id: string; body?: string }) => entry.id === `${domain.slug}/self-check`
+);
+const prompts = parseRecallPrompts(selfCheck?.body ?? "");
+const availability = quizAvailability(bank, mock.quotas, domain.name);
+const base = import.meta.env.BASE_URL;
 ---
 
-<ReservedPage title="Domain quiz" capability="this domain self-check quiz" />
+<BaseLayout
+  title={`Self-check: ${domain.name} | CCDV-F community study kit`}
+  description={`Recall prompts and a scored quiz for ${domain.name}, sized to its exam weight.`}
+  searchRecord={{ type: "quiz", domain: domain.slug, weight: String(domain.weight) }}
+>
+  <header>
+    <p><a href={`${base}domains/${domain.slug}/`}>Domain {domain.number}: {domain.name}</a></p>
+    <h1>Self-check: {domain.name}</h1>
+    <p class="page-introduction">
+      Two separate things. The recall prompts come from this domain's notes and you grade yourself
+      on them; the quiz below is scored against original bank items by the same rule the mock uses.
+      Only the quiz feeds a readiness signal.
+    </p>
+  </header>
+
+  <RecallPrompts domainSlug={domain.slug} domainName={domain.name} prompts={prompts} />
+
+  <DomainQuiz
+    domainSlug={domain.slug}
+    domainName={domain.name}
+    items={itemsForDomain(bank, domain.name)}
+    availability={availability}
+    mockSize={mock.fullMockSize}
+    scale={scale}
+  />
+</BaseLayout>

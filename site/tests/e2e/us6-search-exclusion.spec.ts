@@ -59,7 +59,19 @@ test.describe("User Story 6: Format demonstration exclusion from search", () => 
     const count = await results.count();
     expect(count).toBeGreaterThan(0);
 
-    const allowedTypes = new Set(["note", "guide", "plan", "cheatsheet", "blueprint"]);
+    // Feature 002 added its own surfaces to the index. Their item text is not indexed — it travels
+    // in `data-pagefind-ignore` script payloads — so a practice item still cannot be searched.
+    const allowedTypes = new Set([
+      "note",
+      "guide",
+      "plan",
+      "cheatsheet",
+      "blueprint",
+      "lab",
+      "mock",
+      "quiz",
+      "flashcard"
+    ]);
 
     for (let i = 0; i < count; i++) {
       const item = results.nth(i);
@@ -102,7 +114,19 @@ test.describe("User Story 6: Format demonstration exclusion from search", () => 
     const count = await results.count();
     expect(count).toBeGreaterThan(0);
 
-    const allowedTypes = new Set(["note", "guide", "plan", "cheatsheet", "blueprint"]);
+    // Feature 002 added its own surfaces to the index. Their item text is not indexed — it travels
+    // in `data-pagefind-ignore` script payloads — so a practice item still cannot be searched.
+    const allowedTypes = new Set([
+      "note",
+      "guide",
+      "plan",
+      "cheatsheet",
+      "blueprint",
+      "lab",
+      "mock",
+      "quiz",
+      "flashcard"
+    ]);
 
     for (let i = 0; i < count; i++) {
       const item = results.nth(i);

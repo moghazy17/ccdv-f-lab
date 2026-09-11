@@ -46,6 +46,45 @@ const href = (path: string) => `${base}${path}`;
     </div>
   </section>
 
+  <section class="progress-section" aria-labelledby="practice-title">
+    <h2 id="practice-title">Practice results</h2>
+    <p>
+      Lab edits, mock attempts, domain quizzes, and flashcard scheduling are kept beside your plan
+      marks. Clearing them here leaves your theme, plan marks, and diagnostic outcome alone.
+    </p>
+
+    <h3>Per-domain quizzes</h3>
+    <p data-testid="quiz-results-empty" data-quiz-results-empty>
+      No domain quiz has been scored on this device yet.
+    </p>
+    <div class="table-scroll" tabindex="0" aria-label="Domain quiz results" data-quiz-results-wrapper hidden>
+      <table data-testid="quiz-results">
+        <thead>
+          <tr>
+            <th scope="col">Domain</th>
+            <th scope="col">Correct</th>
+            <th scope="col">Items</th>
+            <th scope="col">Taken</th>
+          </tr>
+        </thead>
+        <tbody data-quiz-results-body></tbody>
+      </table>
+    </div>
+
+    <h3>Mock attempts</h3>
+    <p data-testid="mock-results" data-mock-results>No mock attempt has been scored on this device yet.</p>
+
+    <button
+      type="button"
+      class="action-button"
+      data-testid="clear-practice-button"
+      data-clear-practice
+    >
+      Clear practice results
+    </button>
+    <p data-testid="clear-practice-status" data-clear-practice-status role="status" aria-live="polite"></p>
+  </section>
+
   <section class="progress-section" aria-labelledby="export-title">
     <h2 id="export-title">Export progress</h2>
     <p>
@@ -168,6 +207,63 @@ const href = (path: string) => `${base}${path}`;
   } from "../lib/transfer";
 
   const storage = createProgressStorage();
+
+  renderPracticeResults();
+
+  document
+    .querySelector<HTMLButtonElement>("[data-clear-practice]")
+    ?.addEventListener("click", () => {
+      // Clears only what feature 002 owns; `foundation` — theme, plan marks, diagnostic — stays.
+      const result = storage.clearPracticeResults();
+      const status = document.querySelector<HTMLElement>("[data-clear-practice-status]");
+      if (status !== null) {
+        status.textContent =
+          result.kind === "ok"
+            ? "Practice results cleared. Your plan marks, theme, and diagnostic outcome are untouched."
+            : "Practice results could not be cleared, because browser storage is unavailable here.";
+      }
+      renderPracticeResults();
+    });
+
+  function renderPracticeResults(): void {
+    const current = storage.read();
+    const namespaces = current.kind === "ok" ? current.value?.namespaces : undefined;
+
+    const emptyEl = document.querySelector<HTMLElement>("[data-quiz-results-empty]");
+    const wrapperEl = document.querySelector<HTMLElement>("[data-quiz-results-wrapper]");
+    const bodyEl = document.querySelector<HTMLElement>("[data-quiz-results-body]");
+    const mockEl = document.querySelector<HTMLElement>("[data-mock-results]");
+
+    const results = Object.entries(namespaces?.quiz.results ?? {});
+    if (bodyEl !== null && wrapperEl !== null && emptyEl !== null) {
+      bodyEl.innerHTML = "";
+      emptyEl.hidden = results.length > 0;
+      wrapperEl.hidden = results.length === 0;
+      for (const [domainSlug, result] of results) {
+        const row = document.createElement("tr");
+        const name = document.createElement("th");
+        name.scope = "row";
+        name.textContent = domainSlug;
+        const correct = document.createElement("td");
+        correct.textContent = String(result.correct);
+        const count = document.createElement("td");
+        count.textContent = String(result.itemCount);
+        const taken = document.createElement("td");
+        taken.textContent = result.takenAt.slice(0, 10);
+        row.append(name, correct, count, taken);
+        bodyEl.appendChild(row);
+      }
+    }
+
+    if (mockEl !== null) {
+      const mock = namespaces?.mock;
+      const kept = (mock?.reports.length ?? 0) + (mock?.summaries.length ?? 0);
+      mockEl.textContent =
+        kept === 0
+          ? "No mock attempt has been scored on this device yet."
+          : `${kept} scored ${kept === 1 ? "attempt" : "attempts"} kept, of which ${mock?.reports.length ?? 0} still hold their item detail.`;
+    }
+  }
 
   const warningEl = document.getElementById("browser-only-warning");
   const summaryEl = document.getElementById("current-progress-summary");

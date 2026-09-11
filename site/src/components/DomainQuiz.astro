@@ -1,0 +1,292 @@
+---
+/**
+ * One domain's scored quiz.
+ *
+ * It asks for that domain's share of a full mock — the same number the mock would draw from this
+ * domain, read from the exported quotas (FR-040) — and scores by the same exact-set rule the mock
+ * uses, through `scoring.ts`. This is the half of a domain's self-check that counts.
+ */
+
+import type { PracticeItem } from "../lib/items";
+import type { QuizAvailability } from "../lib/quiz";
+
+interface Props {
+  domainSlug: string;
+  domainName: string;
+  items: PracticeItem[];
+  availability: QuizAvailability;
+  /** The full mock's size, from the exported blueprint data — never typed into this component. */
+  mockSize: number;
+  /** The published scale, so even the unshown scoring inputs come from `BLUEPRINT.md`. */
+  scale: { minimum: number; maximum: number; passingScore: number };
+}
+
+const { availability, domainName, domainSlug, items, mockSize, scale } = Astro.props;
+const base = import.meta.env.BASE_URL;
+---
+
+<section
+  class="domain-quiz"
+  data-domain-quiz
+  data-domain-slug={domainSlug}
+  data-domain-name={domainName}
+  data-asked={availability.asked}
+  data-scale-minimum={scale.minimum}
+  data-scale-maximum={scale.maximum}
+  data-passing-score={scale.passingScore}
+  aria-labelledby="domain-quiz-title"
+>
+  <script
+    is:inline
+    type="application/json"
+    data-quiz-items
+    data-pagefind-ignore
+    set:html={JSON.stringify(items)}
+  />
+
+  <h2 id="domain-quiz-title">Scored quiz</h2>
+  <p data-quiz-storage-notice hidden></p>
+
+  {
+    availability.asked === 0 ? (
+      <p data-testid="quiz-empty">
+        A full mock draws no item from {domainName}, so there is no quiz to sit here.
+      </p>
+    ) : availability.available === 0 ? (
+      <p data-testid="quiz-empty">
+        {domainName}'s bank holds no items yet, so this quiz cannot be offered. It asks for{" "}
+        {availability.asked}, which is this domain's share of a full mock.
+        {" "}<a href={`${base}labs/#labs-contribute-title`}>Contribute an original item</a> to add
+        coverage.
+      </p>
+    ) : (
+      <>
+        <p data-testid="quiz-length">
+          This quiz asks {availability.asked}{" "}
+          {availability.asked === 1 ? "item" : "items"} — {domainName}'s share of a{" "}
+          {mockSize}-item mock. Domains carry different weights, so quizzes are different lengths.
+        </p>
+        {availability.short && (
+          <p data-testid="quiz-shortfall">
+            The bank holds {availability.available} of the {availability.asked} items this quiz
+            asks for, so it is offered short rather than padded from another domain.
+          </p>
+        )}
+        <p>
+          Scored by the same rule as the mock: an item is right only when your selection is exactly
+          the correct set. This is the only part of this page that feeds a readiness signal.
+        </p>
+
+        <button type="button" class="action-button" data-quiz-start data-testid="quiz-start">
+          Start the quiz
+        </button>
+
+        <form data-quiz-form hidden>
+          <ol class="domain-quiz__items" data-quiz-list />
+          <button type="button" class="action-button" data-quiz-submit data-testid="quiz-submit">
+            Submit and score
+          </button>
+        </form>
+
+        <div data-quiz-result hidden>
+          <h3>Result</h3>
+          <p class="domain-quiz__headline" data-testid="quiz-score" data-quiz-score />
+          <h4>What went wrong</h4>
+          <p data-testid="quiz-all-correct" data-quiz-all-correct hidden>
+            Every item was answered correctly, so there is nothing to explain.
+          </p>
+          <ol data-testid="quiz-wrong" data-quiz-wrong />
+        </div>
+      </>
+    )
+  }
+</section>
+
+<script>
+  import { scoreAttempt } from "../lib/scoring";
+  import { checkStorageAvailability, createProgressStorage } from "../lib/storage";
+  import type { PracticeItem } from "../lib/items";
+  import type { QuizWrongAnswer } from "../lib/storage";
+
+  const root = document.querySelector<HTMLElement>("[data-domain-quiz]");
+  if (root !== null) {
+    setUpQuiz(root);
+  }
+
+  function setUpQuiz(root: HTMLElement): void {
+    const payload = root.querySelector<HTMLScriptElement>("[data-quiz-items]");
+    const form = root.querySelector<HTMLFormElement>("[data-quiz-form]");
+    const list = root.querySelector<HTMLElement>("[data-quiz-list]");
+    const startButton = root.querySelector<HTMLButtonElement>("[data-quiz-start]");
+    const submitButton = root.querySelector<HTMLButtonElement>("[data-quiz-submit]");
+    const result = root.querySelector<HTMLElement>("[data-quiz-result]");
+    const score = root.querySelector<HTMLElement>("[data-quiz-score]");
+    const wrongList = root.querySelector<HTMLElement>("[data-quiz-wrong]");
+    const allCorrect = root.querySelector<HTMLElement>("[data-quiz-all-correct]");
+    const storageNotice = root.querySelector<HTMLElement>("[data-quiz-storage-notice]");
+    if (
+      payload === null ||
+      form === null ||
+      list === null ||
+      startButton === null ||
+      submitButton === null ||
+      result === null ||
+      score === null ||
+      wrongList === null
+    ) {
+      return;
+    }
+
+    const domainSlug = root.dataset.domainSlug ?? "";
+    const domainName = root.dataset.domainName ?? "";
+    const asked = Number(root.dataset.asked ?? 0);
+    const bank = JSON.parse(payload.textContent ?? "[]") as PracticeItem[];
+    const storageState = checkStorageAvailability();
+    const storage = storageState === "available" ? createProgressStorage() : null;
+    if (storage === null && storageNotice !== null) {
+      storageNotice.hidden = false;
+      storageNotice.textContent =
+        storageState === "full"
+          ? "Browser storage is full, so this quiz is answerable and scorable but its result is not kept."
+          : "Browser storage is unavailable here, so this quiz is answerable and scorable but its result is not kept.";
+    }
+
+    let askedItems: PracticeItem[] = [];
+
+    startButton.addEventListener("click", () => {
+      askedItems = drawWithoutReplacement(bank, Math.min(asked, bank.length));
+      list.innerHTML = "";
+      askedItems.forEach((item, index) => {
+        const entry = document.createElement("li");
+        const stem = document.createElement("p");
+        stem.textContent = item.stem;
+        const fieldset = document.createElement("fieldset");
+        const legend = document.createElement("legend");
+        legend.textContent =
+          item.select === 1 ? "Select one option." : `Select ${item.select} options.`;
+        fieldset.appendChild(legend);
+        for (const option of item.options) {
+          const wrapper = document.createElement("div");
+          wrapper.className = "domain-quiz__option";
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.id = `quiz-${index}-${item.id}-${option.id}`;
+          input.name = item.id;
+          input.value = option.id;
+          const label = document.createElement("label");
+          label.htmlFor = input.id;
+          label.textContent = option.text;
+          wrapper.append(input, label);
+          fieldset.appendChild(wrapper);
+        }
+        entry.append(stem, fieldset);
+        list.appendChild(entry);
+      });
+      form.hidden = false;
+      result.hidden = true;
+      startButton.textContent = "Start again";
+    });
+
+    submitButton.addEventListener("click", () => {
+      const selections: Record<string, string[]> = {};
+      for (const item of askedItems) {
+        selections[item.id] = [...form.querySelectorAll<HTMLInputElement>(`input[name="${item.id}"]`)]
+          .filter((input) => input.checked)
+          .map((input) => input.value);
+      }
+
+      // Scored against this one domain, so the outcome speaks only to it. The scale comes from
+      // the exported blueprint data even though this surface shows no scaled figure.
+      const outcome = scoreAttempt(askedItems, selections, [domainName], {
+        minimum: Number(root.dataset.scaleMinimum ?? 0),
+        maximum: Number(root.dataset.scaleMaximum ?? 0),
+        passingScore: Number(root.dataset.passingScore ?? 0)
+      });
+
+      const wrongAnswers: QuizWrongAnswer[] = askedItems
+        .map((item) => ({
+          itemId: item.id,
+          selected: selections[item.id] ?? [],
+          correct: item.options.filter((option) => option.correct).map((option) => option.id),
+          rationale: item.options.map((option) => `${option.id}. ${option.rationale}`).join("\n")
+        }))
+        .filter((entry) => {
+          const chosen = [...entry.selected].sort();
+          const right = [...entry.correct].sort();
+          return chosen.length !== right.length || chosen.some((id, index) => id !== right[index]);
+        });
+
+      score.textContent = `${outcome.correct} of ${outcome.itemCount} correct.`;
+      wrongList.innerHTML = "";
+      if (allCorrect !== null) {
+        allCorrect.hidden = wrongAnswers.length > 0;
+      }
+      for (const entry of wrongAnswers) {
+        const listItem = document.createElement("li");
+        const chosen = document.createElement("p");
+        chosen.textContent = `You selected: ${entry.selected.length === 0 ? "nothing" : entry.selected.join(", ")}. Correct: ${entry.correct.join(", ")}.`;
+        const explanation = document.createElement("pre");
+        explanation.className = "domain-quiz__rationale";
+        explanation.textContent = entry.rationale;
+        listItem.append(chosen, explanation);
+        wrongList.appendChild(listItem);
+      }
+      result.hidden = false;
+
+      if (storage === null) {
+        return;
+      }
+      storage.setQuizResult(domainSlug, {
+        correct: outcome.correct,
+        itemCount: outcome.itemCount,
+        takenAt: new Date().toISOString(),
+        wrongAnswers
+      });
+    });
+  }
+
+  function drawWithoutReplacement(source: readonly PracticeItem[], count: number): PracticeItem[] {
+    const pool = [...source];
+    const drawn: PracticeItem[] = [];
+    while (drawn.length < count && pool.length > 0) {
+      drawn.push(...pool.splice(Math.floor(Math.random() * pool.length), 1));
+    }
+    return drawn;
+  }
+</script>
+
+<style>
+  .domain-quiz__items {
+    padding-inline-start: 1.25rem;
+  }
+
+  .domain-quiz__items li {
+    margin-block: 1.5rem;
+    max-width: 75ch;
+  }
+
+  .domain-quiz__items fieldset {
+    border: 0.0625rem solid currentColor;
+    border-radius: 0.25rem;
+    padding: 0.75rem;
+  }
+
+  .domain-quiz__option {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    margin-block: 0.5rem;
+  }
+
+  .domain-quiz__headline {
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  .domain-quiz__rationale {
+    white-space: pre-wrap;
+    font-family: inherit;
+    border-inline-start: 0.1875rem solid currentColor;
+    padding-inline-start: 0.75rem;
+  }
+</style>
