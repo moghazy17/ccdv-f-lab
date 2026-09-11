@@ -1,5 +1,57 @@
 ---
-import ReservedPage from "../../components/ReservedPage.astro";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
+import FlashcardDeck from "../../components/FlashcardDeck.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { domains } from "../../lib/blueprint";
+import { parseFlashcardDeck } from "../../lib/flashcards";
+
+const deckPath = fileURLToPath(new URL("../../../../flashcards/ccdv-f.tsv", import.meta.url));
+const cards = parseFlashcardDeck(readFileSync(deckPath, "utf8"));
+const coveredDomains = new Set(cards.map((card) => card.domain));
+const covered = domains.filter((domain) => coveredDomains.has(domain.name));
+const uncovered = domains.filter((domain) => !coveredDomains.has(domain.name));
 ---
 
-<ReservedPage title="Flashcards" capability="flashcard review" />
+<BaseLayout
+  title="Flashcards | CCDV-F community study kit"
+  description="A locally scheduled flashcard deck generated from the study notes."
+>
+  <header>
+    <h1>Flashcards</h1>
+    <p class="page-introduction">
+      Review the cards generated from the study notes. This deck grows only when authored notes add
+      cards; it is not a claim of complete exam coverage.
+    </p>
+  </header>
+
+  <section class="flashcards-coverage" aria-labelledby="flashcards-coverage-title">
+    <h2 id="flashcards-coverage-title">Deck coverage</h2>
+    <p>
+      Covers: {covered.length === 0
+        ? "no blueprint domains"
+        : covered.map((domain) => domain.name).join(", ")}.
+    </p>
+    <p>
+      Does not cover: {uncovered.length === 0
+        ? "no blueprint domains"
+        : uncovered.map((domain) => domain.name).join(", ")}.
+    </p>
+  </section>
+
+  <FlashcardDeck cards={cards} />
+</BaseLayout>
+
+<style>
+  .flashcards-coverage {
+    max-width: 72ch;
+    margin-block: 1.5rem;
+    padding: clamp(1rem, 3vw, 1.75rem);
+    border: 0.0625rem solid var(--rule);
+    border-left: 0.4rem solid var(--signal);
+    background: var(--panel);
+  }
+
+  .flashcards-coverage h2 { margin-block-start: 0; }
+</style>

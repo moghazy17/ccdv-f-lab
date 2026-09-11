@@ -193,4 +193,49 @@ def test_flashcard_generator_preserves_exact_blueprint_labels(tmp_path: Path) ->
     assert row.count("\t") == 1
     assert "Domain: Agents and Workflows" in row
     assert "Sub-skill: Agent Construction with Claude" in row
+    assert "Card: 01-agent-construction-with-claude-authored-1" in row
     assert counts["Agents and Workflows"] == 1
+
+
+def test_flashcard_generator_uses_stable_source_position_identifiers(tmp_path: Path) -> None:
+    """Thirty cards retain unique identities even where the visible fields collide four ways."""
+    output = tmp_path / "ccdv-f.tsv"
+
+    build_flashcards(ROOT / "notes", output)
+    rows = [line.split("\t") for line in output.read_text(encoding="utf-8").splitlines()]
+    identifiers = [row[1].split("Card: ")[-1] for row in rows]
+
+    assert len(rows) == 30
+    assert all(len(row) == 2 for row in rows)
+    assert len(set(identifiers)) == 30
+
+    technical = [
+        identifier
+        for front, back in rows
+        if front == "Technical Fundamentals"
+        and "Domain: Model Selection and Optimization" in back
+        and "Sub-skill: Technical Fundamentals" in back
+        for identifier in [back.split("Card: ")[-1]]
+    ]
+    assert technical == [
+        "05-technical-fundamentals-decision-tables-1",
+        "05-technical-fundamentals-pitfalls-1",
+        "05-technical-fundamentals-readme-1",
+        "05-technical-fundamentals-self-check-1",
+    ]
+
+    rewritten_notes = tmp_path / "notes"
+    rewritten_notes.mkdir()
+    for source in (ROOT / "notes").rglob("*.md"):
+        target = rewritten_notes / source.relative_to(ROOT / "notes")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(
+            source.read_text(encoding="utf-8").replace("ordinary", "everyday"), encoding="utf-8"
+        )
+    rewritten = tmp_path / "rewritten.tsv"
+    build_flashcards(rewritten_notes, rewritten)
+    rewritten_ids = [
+        row.split("\t", 1)[1].split("Card: ")[-1]
+        for row in rewritten.read_text(encoding="utf-8").splitlines()
+    ]
+    assert rewritten_ids == identifiers

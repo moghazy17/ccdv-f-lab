@@ -11,7 +11,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from drills.engine.blueprint import DEFAULT_BLUEPRINT_PATH, load_blueprint  # noqa: E402
+from drills.engine.blueprint import DEFAULT_BLUEPRINT_PATH, load_blueprint, slugify  # noqa: E402
 from tools.note_content import explicit_flashcards, load_notes  # noqa: E402
 
 DEFAULT_NOTES_PATH = REPOSITORY_ROOT / "notes"
@@ -25,6 +25,7 @@ def build_flashcards(
     blueprint = load_blueprint(blueprint_path)
     counts: Counter[str] = Counter({domain.name: 0 for domain in blueprint.domains})
     rows: list[str] = []
+    ordinals: Counter[tuple[Path, str]] = Counter()
 
     for note in load_notes(notes_path):
         domain_name = note.metadata.get("domain_name")
@@ -36,15 +37,19 @@ def build_flashcards(
         for front, back, sub_skill in explicit_flashcards(note):
             if sub_skill not in domain.sub_skills:
                 continue
-            rows.append(_tsv_row(front, _with_blueprint_tags(back, domain_name, sub_skill)))
+            card_id = _next_card_identifier(note.path, notes_path, sub_skill, ordinals)
+            rows.append(
+                _tsv_row(front, _with_blueprint_tags(back, domain_name, sub_skill, card_id))
+            )
             counts[domain_name] += 1
         for section in note.sections:
             if section.sub_skill not in domain.sub_skills:
                 continue
+            card_id = _next_card_identifier(note.path, notes_path, section.sub_skill, ordinals)
             rows.append(
                 _tsv_row(
                     section.heading,
-                    _with_blueprint_tags(section.body, domain_name, section.sub_skill),
+                    _with_blueprint_tags(section.body, domain_name, section.sub_skill, card_id),
                 )
             )
             counts[domain_name] += 1
@@ -54,9 +59,23 @@ def build_flashcards(
     return dict(counts)
 
 
-def _with_blueprint_tags(back: str, domain_name: str, sub_skill: str) -> str:
+def _next_card_identifier(
+    note_path: Path,
+    notes_path: Path,
+    sub_skill: str,
+    ordinals: Counter[tuple[Path, str]],
+) -> str:
+    """Return a source-position identity that survives prose edits and neighbouring cards."""
+    group = (note_path, sub_skill)
+    ordinals[group] += 1
+    relative = note_path.relative_to(notes_path)
+    directory = relative.parent.name.split("-", 1)[0]
+    return f"{directory}-{slugify(sub_skill)}-{slugify(note_path.stem)}-{ordinals[group]}"
+
+
+def _with_blueprint_tags(back: str, domain_name: str, sub_skill: str, card_id: str) -> str:
     """Append exact blueprint labels so every generated card remains machine-joinable."""
-    return f"{back}\n\nDomain: {domain_name}\nSub-skill: {sub_skill}"
+    return f"{back}\n\nDomain: {domain_name}\nSub-skill: {sub_skill}\nCard: {card_id}"
 
 
 def _tsv_row(front: str, back: str) -> str:

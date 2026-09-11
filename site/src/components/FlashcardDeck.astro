@@ -1,0 +1,285 @@
+---
+/**
+ * A locally scheduled review surface over the generated two-column flashcard deck.
+ *
+ * Card text and its `Card:` identity travel as ignored JSON so the component never becomes a
+ * second source of study prose. The schedule writes through `ProgressStorage`, which merges the
+ * flashcard namespace against the latest browser record.
+ */
+
+import type { Flashcard } from "../lib/flashcards";
+
+interface Props {
+  cards: Flashcard[];
+}
+
+const { cards } = Astro.props;
+---
+
+<section
+  class="flashcard-deck"
+  data-flashcard-deck
+  aria-labelledby="flashcard-deck-title"
+  aria-keyshortcuts="Space K U"
+  tabindex="0"
+>
+  <script
+    is:inline
+    type="application/json"
+    data-flashcard-payload
+    data-pagefind-ignore
+    set:html={JSON.stringify({ cards })}
+  />
+
+  <h2 id="flashcard-deck-title">Review the deck</h2>
+  <p>
+    Reveal a card before grading it. Known moves up one box; not known returns to box 1. The five
+    boxes schedule reviews for the same session, 1 day, 3 days, 7 days, and 21 days.
+  </p>
+  <p>
+    Keyboard shortcuts: <kbd>Space</kbd> reveals the answer, <kbd>K</kbd> marks known, and
+    <kbd>U</kbd> marks not known.
+  </p>
+  <p data-flashcard-storage-notice hidden></p>
+
+  <article class="flashcard-deck__card" data-flashcard-card>
+    <p class="flashcard-deck__position" data-flashcard-position></p>
+    <h3 data-flashcard-front></h3>
+    <div class="flashcard-deck__back" data-flashcard-back hidden>
+      <p class="flashcard-deck__answer" data-flashcard-answer></p>
+      <dl class="flashcard-deck__tags">
+        <div><dt>Domain</dt><dd data-flashcard-domain></dd></div>
+        <div><dt>Sub-skill</dt><dd data-flashcard-sub-skill></dd></div>
+        <div><dt>Card</dt><dd data-flashcard-id></dd></div>
+      </dl>
+    </div>
+    <div class="flashcard-deck__actions" data-flashcard-actions>
+      <button type="button" class="action-button" data-flashcard-reveal aria-keyshortcuts="Space">
+        Reveal answer
+      </button>
+      <button
+        type="button"
+        class="action-button"
+        data-flashcard-grade="known"
+        aria-keyshortcuts="K"
+      >
+        I knew it
+      </button>
+      <button
+        type="button"
+        class="action-button"
+        data-flashcard-grade="unknown"
+        aria-keyshortcuts="U"
+      >
+        I did not know it
+      </button>
+    </div>
+  </article>
+
+  <section class="flashcard-deck__exhausted" data-flashcard-exhausted hidden aria-live="polite">
+    <h3>Nothing else is due</h3>
+    <p data-flashcard-next-due></p>
+  </section>
+  <p class="visually-hidden" data-flashcard-status role="status" aria-live="polite"></p>
+</section>
+
+<script>
+  import {
+    dueFlashcards,
+    nextDueAt,
+    pruneFlashcardState,
+    reviewFlashcard,
+    type Flashcard
+  } from "../lib/flashcards";
+  import {
+    checkStorageAvailability,
+    createProgressStorage,
+    type FlashcardState
+  } from "../lib/storage";
+
+  interface DeckPayload {
+    cards: Flashcard[];
+  }
+
+  const root = document.querySelector<HTMLElement>("[data-flashcard-deck]");
+  if (root !== null) {
+    setUpDeck(root);
+  }
+
+  function setUpDeck(root: HTMLElement): void {
+    const payloadElement = root.querySelector<HTMLScriptElement>("[data-flashcard-payload]");
+    if (payloadElement === null) {
+      return;
+    }
+    const payload = JSON.parse(payloadElement.textContent ?? "{}") as DeckPayload;
+    const cards = payload.cards;
+    const card = root.querySelector<HTMLElement>("[data-flashcard-card]");
+    const front = root.querySelector<HTMLElement>("[data-flashcard-front]");
+    const back = root.querySelector<HTMLElement>("[data-flashcard-back]");
+    const answer = root.querySelector<HTMLElement>("[data-flashcard-answer]");
+    const domain = root.querySelector<HTMLElement>("[data-flashcard-domain]");
+    const subSkill = root.querySelector<HTMLElement>("[data-flashcard-sub-skill]");
+    const identifier = root.querySelector<HTMLElement>("[data-flashcard-id]");
+    const position = root.querySelector<HTMLElement>("[data-flashcard-position]");
+    const actions = root.querySelector<HTMLElement>("[data-flashcard-actions]");
+    const exhausted = root.querySelector<HTMLElement>("[data-flashcard-exhausted]");
+    const nextDue = root.querySelector<HTMLElement>("[data-flashcard-next-due]");
+    const status = root.querySelector<HTMLElement>("[data-flashcard-status]");
+    const storageNotice = root.querySelector<HTMLElement>("[data-flashcard-storage-notice]");
+    const availability = checkStorageAvailability();
+    const storage = availability === "available" ? createProgressStorage() : null;
+    const initial = storage?.read();
+    let state: Record<string, FlashcardState> =
+      initial?.kind === "ok" ? initial.value?.namespaces.flashcards.state ?? {} : {};
+
+    if (storage !== null) {
+      const pruned = storage.pruneFlashcardState(cards.map((entry) => entry.id));
+      if (pruned.kind === "ok") {
+        state = pruned.value?.namespaces.flashcards.state ?? state;
+      }
+      storage.subscribe((result) => {
+        if (result.kind === "ok") {
+          state = pruneFlashcardState(result.value?.namespaces.flashcards.state ?? {}, cards);
+          render();
+        }
+      });
+    } else if (storageNotice !== null) {
+      storageNotice.hidden = false;
+      storageNotice.textContent =
+        availability === "full"
+          ? "Browser storage is full. You can review cards, but scheduling does not advance."
+          : "Browser storage is unavailable here. You can review cards, but scheduling does not advance.";
+    }
+
+    let revealed = false;
+
+    function render(): void {
+      const due = dueFlashcards(cards, state, new Date());
+      const current = due[0];
+      if (current === undefined) {
+        card?.setAttribute("hidden", "");
+        actions?.setAttribute("hidden", "");
+        exhausted?.removeAttribute("hidden");
+        const next = nextDueAt(cards, state, new Date());
+        if (nextDue !== null) {
+          nextDue.textContent =
+            next === null
+              ? "No later review is scheduled."
+              : `The next cards are due ${formatDue(next)}.`;
+        }
+        return;
+      }
+      revealed = false;
+      card?.removeAttribute("hidden");
+      actions?.removeAttribute("hidden");
+      exhausted?.setAttribute("hidden", "");
+      if (front !== null) front.textContent = current.front;
+      if (answer !== null) answer.textContent = current.back;
+      if (domain !== null) domain.textContent = current.domain;
+      if (subSkill !== null) subSkill.textContent = current.subSkill;
+      if (identifier !== null) identifier.textContent = current.id;
+      if (position !== null) {
+        position.textContent = `${due.length} ${due.length === 1 ? "card" : "cards"} due`;
+      }
+      if (back !== null) back.hidden = true;
+    }
+
+    function reveal(): void {
+      if (back !== null) back.hidden = false;
+      revealed = true;
+      if (status !== null) status.textContent = "Answer revealed.";
+    }
+
+    function grade(outcome: "known" | "unknown"): void {
+      const current = dueFlashcards(cards, state, new Date())[0];
+      if (current === undefined) return;
+      if (!revealed) {
+        reveal();
+        if (status !== null) status.textContent = "Answer revealed. Grade the card when ready.";
+        return;
+      }
+      if (storage === null) {
+        if (status !== null) {
+          status.textContent = "Review recorded on screen; scheduling does not advance.";
+        }
+        return;
+      }
+      const next = reviewFlashcard(state[current.id], outcome, new Date());
+      state = { ...state, [current.id]: next };
+      storage.setFlashcardState(current.id, next, cards.map((entry) => entry.id));
+      if (status !== null) {
+        status.textContent = outcome === "known" ? "Marked known." : "Marked not known.";
+      }
+      render();
+    }
+
+    root
+      .querySelector<HTMLButtonElement>("[data-flashcard-reveal]")
+      ?.addEventListener("click", reveal);
+    for (const button of root.querySelectorAll<HTMLButtonElement>("[data-flashcard-grade]")) {
+      button.addEventListener("click", () =>
+        grade(button.dataset.flashcardGrade === "known" ? "known" : "unknown")
+      );
+    }
+    root.addEventListener("keydown", (event) => {
+      if (
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        isInteractiveTarget(event.target)
+      ) {
+        return;
+      }
+      if (event.key === " ") {
+        event.preventDefault();
+        reveal();
+      } else if (event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        grade("known");
+      } else if (event.key.toLowerCase() === "u") {
+        event.preventDefault();
+        grade("unknown");
+      }
+    });
+    render();
+  }
+
+  function formatDue(value: Date): string {
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short"
+    }).format(value);
+  }
+
+  function isInteractiveTarget(target: EventTarget | null): boolean {
+    return (
+      target instanceof Element &&
+      target.closest("button, a, input, textarea, select, [contenteditable]") !== null
+    );
+  }
+</script>
+
+<style>
+  .flashcard-deck__card,
+  .flashcard-deck__exhausted {
+    max-width: 72ch;
+    margin-block: 1.5rem;
+    padding: clamp(1rem, 3vw, 1.75rem);
+    border: 0.0625rem solid var(--rule);
+    border-left: 0.4rem solid var(--signal);
+    background: var(--panel);
+  }
+
+  .flashcard-deck__position { color: var(--muted); font-weight: 700; }
+  .flashcard-deck__back { margin-block: 1.5rem; }
+  .flashcard-deck__answer { white-space: pre-wrap; }
+  .flashcard-deck__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .flashcard-deck__tags { display: grid; gap: 0.5rem; margin: 1rem 0 0; }
+  .flashcard-deck__tags div {
+    display: grid;
+    grid-template-columns: minmax(6rem, auto) 1fr;
+    gap: 0.75rem;
+  }
+  .flashcard-deck__tags dt { color: var(--muted); font-weight: 700; }
+  .flashcard-deck__tags dd { margin: 0; overflow-wrap: anywhere; }
+</style>
