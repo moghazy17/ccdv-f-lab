@@ -12,7 +12,12 @@ describe("progress summary rendering", () => {
       plans: [{ planSlug, count: 1, domainNumbers: [1] }],
       totalMarks: 1,
       hasDiagnostic: false,
-      theme: "system"
+      theme: "system",
+      labsEditedCount: 0,
+      mockReportCount: 0,
+      mockHasInProgressAttempt: false,
+      quizResultCount: 0,
+      flashcardsTrackedCount: 0
     });
 
     expect(escapeHtml(updatedAt)).toContain("&lt;img");
