@@ -107,4 +107,28 @@
     color: #333333 !important;
     font-size: 9pt !important;
   }
+
+  /*
+   * The score report has to print as a study record: the per-domain table and the explanation for
+   * every wrong answer must survive, without the navigation, theme control, or search that the
+   * rules above already remove (FR-038). Its own controls go; its substance stays.
+   */
+  .score-report__wrong li {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .score-report__rationale {
+    white-space: pre-wrap !important;
+    border-inline-start: 1pt solid #777777 !important;
+    color: #000000 !important;
+  }
+
+  .score-report [hidden] {
+    display: none !important;
+  }
+
+  .mock-runner {
+    display: none !important;
+  }
 }

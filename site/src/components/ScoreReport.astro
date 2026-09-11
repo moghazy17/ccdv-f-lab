@@ -1,0 +1,247 @@
+---
+/**
+ * The score report for a stored attempt.
+ *
+ * Everything shown here is rendered in the browser from what the device stored, because a report
+ * belongs to one candidate and never leaves their machine. What the page states about that score —
+ * that per-domain figures are informational, that the scaled figure is an estimate resting on a
+ * stated assumption, and that the readiness bar is this project's advice rather than Anthropic's
+ * threshold — is server-rendered, so those qualifications exist whether or not a report does.
+ */
+
+import type { MockData } from "../lib/attempt";
+
+interface Props {
+  mock: MockData;
+  domainNames: string[];
+}
+
+const { domainNames, mock } = Astro.props;
+const scaleRange = mock.scaleMaximum - mock.scaleMinimum;
+const anchorPercent = ((mock.passingScore - mock.scaleMinimum) / scaleRange) * 100;
+---
+
+<section class="score-report" data-score-report data-domain-names={JSON.stringify(domainNames)}
+  data-scale-minimum={mock.scaleMinimum} data-scale-maximum={mock.scaleMaximum}
+  data-passing-score={mock.passingScore}>
+  <p data-testid="score-report-empty" data-score-report-empty>
+    No attempt has been scored on this device yet.
+  </p>
+
+  <div data-score-report-body hidden>
+    <p data-testid="score-report-expiry" data-score-report-expiry hidden>
+      The time limit ran out during this attempt. It was submitted and scored exactly as it stood.
+    </p>
+
+    <h2>Overall</h2>
+    <p class="score-report__headline" data-testid="score-overall" data-score-overall></p>
+
+    <h2>By domain</h2>
+    <p>
+      Per-domain figures are informational. The real exam reports them the same way: they show where
+      to spend study time, not a per-domain pass or fail.
+    </p>
+    <div class="table-scroll" tabindex="0" aria-label="Per-domain results">
+      <table data-testid="score-domains">
+        <thead>
+          <tr>
+            <th scope="col">Domain</th>
+            <th scope="col">Correct</th>
+            <th scope="col">Items</th>
+            <th scope="col">Percent</th>
+          </tr>
+        </thead>
+        <tbody data-score-domains></tbody>
+      </table>
+    </div>
+
+    <h2>Estimated scaled score</h2>
+    <p class="score-report__headline" data-testid="score-estimate" data-score-estimate></p>
+    <p data-testid="score-estimate-assumption">
+      This is an <strong>estimate</strong>, produced by a linear study model:
+      {mock.scaleMinimum} + {scaleRange} × fraction correct. On that model the published passing
+      score of {mock.passingScore} corresponds to {anchorPercent.toFixed(1)}% correct. The real exam
+      is criterion-referenced and scaled by a method Anthropic does not publish, so treat this as a
+      study signal and not a prediction of your result.
+    </p>
+
+    <h2>Readiness</h2>
+    <p data-testid="score-readiness" data-score-readiness></p>
+    <p>
+      This bar — at least 85% overall and at least 70% in every domain — is this project's own
+      advice, not an official threshold. It is deliberately stricter than the published passing
+      score.
+    </p>
+
+    <h2>What went wrong</h2>
+    <p data-testid="score-detail-dropped" data-score-detail-dropped hidden>
+      This attempt is old enough that its item detail was dropped to keep the record on this device
+      small. Its overall and per-domain figures above are unchanged.
+    </p>
+    <p data-testid="score-all-correct" data-score-all-correct hidden>
+      Every item in this attempt was answered correctly, so there is nothing to explain.
+    </p>
+    <ol class="score-report__wrong" data-testid="score-wrong-answers" data-score-wrong></ol>
+  </div>
+</section>
+
+<script>
+  import type { ScoreReport, ScoreSummary } from "../lib/storage";
+  import { createProgressStorage } from "../lib/storage";
+
+  const root = document.querySelector<HTMLElement>("[data-score-report]");
+  if (root !== null) {
+    render(root);
+  }
+
+  function render(root: HTMLElement): void {
+    const empty = root.querySelector<HTMLElement>("[data-score-report-empty]");
+    const body = root.querySelector<HTMLElement>("[data-score-report-body]");
+    const overall = root.querySelector<HTMLElement>("[data-score-overall]");
+    const domainRows = root.querySelector<HTMLElement>("[data-score-domains]");
+    const estimate = root.querySelector<HTMLElement>("[data-score-estimate]");
+    const readiness = root.querySelector<HTMLElement>("[data-score-readiness]");
+    const wrongList = root.querySelector<HTMLElement>("[data-score-wrong]");
+    const expiryNotice = root.querySelector<HTMLElement>("[data-score-report-expiry]");
+    const detailDropped = root.querySelector<HTMLElement>("[data-score-detail-dropped]");
+    const allCorrect = root.querySelector<HTMLElement>("[data-score-all-correct]");
+    if (
+      empty === null ||
+      body === null ||
+      overall === null ||
+      domainRows === null ||
+      estimate === null ||
+      readiness === null ||
+      wrongList === null
+    ) {
+      return;
+    }
+
+    const domainNames = JSON.parse(root.dataset.domainNames ?? "[]") as string[];
+    const scaleMinimum = Number(root.dataset.scaleMinimum ?? 0);
+    const scaleMaximum = Number(root.dataset.scaleMaximum ?? 0);
+
+    const report = latestReport();
+    if (report === null) {
+      return;
+    }
+    empty.hidden = true;
+    body.hidden = false;
+
+    if (report.timeRanOut && expiryNotice !== null) {
+      expiryNotice.hidden = false;
+    }
+
+    const percent = report.itemCount === 0 ? 0 : (report.correct / report.itemCount) * 100;
+    overall.textContent = `${report.correct} of ${report.itemCount} correct (${percent.toFixed(1)}%).`;
+
+    for (const name of domainNames) {
+      const score = report.domainScores[name] ?? { correct: 0, itemCount: 0 };
+      const row = document.createElement("tr");
+      const nameCell = document.createElement("th");
+      nameCell.scope = "row";
+      nameCell.textContent = name;
+      const correctCell = document.createElement("td");
+      correctCell.textContent = String(score.correct);
+      const countCell = document.createElement("td");
+      countCell.textContent = String(score.itemCount);
+      const percentCell = document.createElement("td");
+      percentCell.textContent =
+        score.itemCount === 0
+          ? "Not assessed"
+          : `${((score.correct / score.itemCount) * 100).toFixed(1)}%`;
+      row.append(nameCell, correctCell, countCell, percentCell);
+      domainRows.appendChild(row);
+    }
+
+    const fraction = report.itemCount === 0 ? 0 : report.correct / report.itemCount;
+    const scaled = Math.round(scaleMinimum + (scaleMaximum - scaleMinimum) * fraction);
+    estimate.textContent = `Estimated ${scaled} out of ${scaleMaximum}.`;
+
+    if (report.ready) {
+      readiness.textContent =
+        "Ready by this project's bar: at least 85% overall, and at least 70% in every domain.";
+    } else if (report.unassessedDomains.length > 0) {
+      readiness.textContent = `Readiness is withheld: ${report.unassessedDomains.join(", ")} had no item in this attempt, so this attempt cannot speak to ${report.unassessedDomains.length === 1 ? "it" : "them"}.`;
+    } else {
+      const shortfall =
+        report.lowDomains.length > 0
+          ? ` Below 70% in ${report.lowDomains.join(", ")}.`
+          : " Below 85% overall.";
+      readiness.textContent = `Not ready by this project's bar.${shortfall}`;
+    }
+
+    // FR-037: a report reduced to a summary states that, rather than rendering an empty list.
+    if (!("items" in report)) {
+      if (detailDropped !== null) {
+        detailDropped.hidden = false;
+      }
+      return;
+    }
+
+    const wrong = report.items.filter((entry) => !entry.isCorrect);
+    if (wrong.length === 0) {
+      if (allCorrect !== null) {
+        allCorrect.hidden = false;
+      }
+      return;
+    }
+    for (const entry of wrong) {
+      const listItem = document.createElement("li");
+      const identity = document.createElement("p");
+      identity.className = "score-report__item-id";
+      identity.textContent = `Item ${entry.itemId}`;
+      const chosen = document.createElement("p");
+      chosen.textContent = `You selected: ${entry.selected.length === 0 ? "nothing" : entry.selected.join(", ")}. Correct: ${entry.correct.join(", ")}.`;
+      const explanation = document.createElement("pre");
+      explanation.className = "score-report__rationale";
+      explanation.textContent = entry.rationale;
+      listItem.append(identity, chosen, explanation);
+      wrongList.appendChild(listItem);
+    }
+  }
+
+  /** The newest stored report, falling back to one held only for this session. */
+  function latestReport(): ScoreReport | ScoreSummary | null {
+    const stored = createProgressStorage().mockProgress();
+    const newest = stored?.reports[0] ?? stored?.summaries[0] ?? null;
+    if (newest !== null) {
+      return newest;
+    }
+    try {
+      const raw = sessionStorage.getItem("ccdv-f:last-report");
+      return raw === null ? null : (JSON.parse(raw) as ScoreReport);
+    } catch {
+      return null;
+    }
+  }
+</script>
+
+<style>
+  .score-report__headline {
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  .score-report__wrong {
+    padding-inline-start: 1.25rem;
+  }
+
+  .score-report__wrong li {
+    margin-block: 1.25rem;
+    max-width: 75ch;
+  }
+
+  .score-report__item-id {
+    font-weight: 600;
+    margin-block-end: 0.25rem;
+  }
+
+  .score-report__rationale {
+    white-space: pre-wrap;
+    font-family: inherit;
+    border-inline-start: 0.1875rem solid currentColor;
+    padding-inline-start: 0.75rem;
+    margin: 0;
+  }
+</style>
