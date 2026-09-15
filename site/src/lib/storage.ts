@@ -2,6 +2,12 @@ import type { PracticeItem } from "./items";
 
 export const PROGRESS_STORAGE_KEY = "ccdv-f:progress";
 export const LAST_REPORT_SESSION_KEY = "ccdv-f:last-report";
+/**
+ * When practice results were last cleared. It lives beside the progress record rather than inside
+ * it because the clear empties the record itself, and in browser storage rather than session
+ * storage because a clear in one tab has to outrank the session handoff every other tab holds.
+ */
+export const PRACTICE_CLEARED_AT_KEY = "ccdv-f:practice-cleared-at";
 export const CURRENT_SCHEMA_VERSION = 1;
 const WRITE_MERGE_RETRIES = 1;
 
@@ -364,8 +370,23 @@ export class ProgressStorage {
       } catch {
         // Practice progress is still cleared when session storage is unavailable.
       }
+      try {
+        // Session storage reaches only this tab, so record the clear where every tab can see it.
+        this.storage?.setItem(PRACTICE_CLEARED_AT_KEY, this.now());
+      } catch {
+        // A report held in another tab outliving the clear is better than failing the clear.
+      }
     }
     return result;
+  }
+
+  /** When practice results were last cleared on this device, or null if they never were. */
+  practiceClearedAt(): string | null {
+    try {
+      return this.storage?.getItem(PRACTICE_CLEARED_AT_KEY) ?? null;
+    } catch {
+      return null;
+    }
   }
 
   setRecallOutcome(promptKey: string, outcome: RecallOutcome): StorageResult {

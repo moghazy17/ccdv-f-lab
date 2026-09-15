@@ -69,12 +69,17 @@ const base = import.meta.env.BASE_URL;
   </div>
 
   <div data-mock-panel="unscoreable" hidden>
-    <h2>This attempt cannot be scored</h2>
+    <h2 data-testid="mock-unscoreable-title">This attempt cannot be scored</h2>
     <p>
       Its saved items no longer match the current blueprint. Discard this attempt, then start a new
       mock built from the current blueprint.
     </p>
-    <button type="button" class="action-button" data-mock-discard-unscoreable>
+    <button
+      type="button"
+      class="action-button"
+      data-mock-discard-unscoreable
+      data-testid="mock-discard-unscoreable"
+    >
       Discard this attempt
     </button>
   </div>
@@ -107,6 +112,8 @@ const base = import.meta.env.BASE_URL;
         Submit and score
       </button>
     </div>
+
+    <p role="alert" data-testid="mock-submit-error" data-mock-submit-error hidden></p>
   </div>
 </section>
 
@@ -123,7 +130,7 @@ const base = import.meta.env.BASE_URL;
     unansweredItemIds,
     type MockData
   } from "../lib/attempt";
-  import { scoreAttempt } from "../lib/scoring";
+  import { isBlueprintDriftError, scoreAttempt } from "../lib/scoring";
   import {
     LAST_REPORT_SESSION_KEY,
     checkStorageAvailability,
@@ -159,6 +166,7 @@ const base = import.meta.env.BASE_URL;
       unscoreable: root.querySelector<HTMLElement>('[data-mock-panel="unscoreable"]'),
       running: root.querySelector<HTMLElement>('[data-mock-panel="running"]')
     };
+    const submitError = root.querySelector<HTMLElement>("[data-mock-submit-error]");
     const timer = root.querySelector<HTMLElement>("[data-mock-timer]");
     const timerAnnounce = root.querySelector<HTMLElement>("[data-mock-timer-announce]");
     const progress = root.querySelector<HTMLElement>("[data-mock-progress]");
@@ -220,6 +228,9 @@ const base = import.meta.env.BASE_URL;
         return;
       }
       const submittedAt = new Date();
+      if (submitError !== null) {
+        submitError.hidden = true;
+      }
       let outcome;
       try {
         outcome = scoreAttempt(attempt.items, attempt.answers, payload.domainNames, {
@@ -227,9 +238,25 @@ const base = import.meta.env.BASE_URL;
           maximum: payload.mock.scaleMaximum,
           passingScore: payload.mock.passingScore
         });
-      } catch {
-        stopClock();
-        show("unscoreable");
+      } catch (error) {
+        if (isBlueprintDriftError(error)) {
+          // The attempt itself outlived its blueprint, so discarding it is the way forward.
+          stopClock();
+          show("unscoreable");
+          return;
+        }
+        // The countdown keeps running so a failed submission does not hand out extra time, but an
+        // expiry that cannot be scored must stop it, or the clock resubmits every second.
+        if (timeRanOut) {
+          stopClock();
+        }
+        // Anything else is a fault in the exam's own data, not in this attempt. Say so without
+        // inviting the candidate to throw away answers that are still perfectly good.
+        if (submitError !== null) {
+          submitError.hidden = false;
+          submitError.textContent =
+            "This attempt could not be scored because of a problem with the exam's settings. Your answers are still here. Try again, and report this if it keeps happening.";
+        }
         return;
       }
       stopClock();

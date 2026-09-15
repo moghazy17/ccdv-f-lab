@@ -242,6 +242,58 @@ test.describe("Sit a full weighted mock (US2)", () => {
     expect(stored.summaries[0].items).toBeUndefined();
   });
 
+  test("a report cleared in another tab does not come back in the tab that earned it", async ({
+    page,
+    context
+  }) => {
+    await page.getByRole("button", { name: "Start the mock" }).click();
+    await page.locator("[data-mock-item-options] input").first().check();
+    await page.getByTestId("mock-submit").click();
+    await expect(page.getByTestId("score-overall")).toBeVisible();
+
+    // The clear happens in a second tab. It empties browser storage, which both tabs share, but
+    // cannot reach the session handoff the first tab is still holding.
+    const other = await context.newPage();
+    await other.goto("./progress/");
+    await other.getByRole("button", { name: "Clear practice results" }).click();
+    await expect(other.locator("[data-clear-practice-status]")).toContainText(
+      "Practice results cleared"
+    );
+    await other.close();
+
+    await page.goto("./mock/report/");
+    await expect(page.getByTestId("score-report-empty")).toBeVisible();
+    await expect(page.getByTestId("score-overall")).toBeHidden();
+  });
+
+  test("an attempt whose domain left the blueprint offers a way out instead of wedging", async ({
+    page
+  }) => {
+    await page.getByRole("button", { name: "Start the mock" }).click();
+    await expect(page.getByTestId("mock-item-list")).toBeVisible();
+
+    // A redeploy that renames or drops a domain leaves a stored attempt holding items the current
+    // blueprint cannot score. Rewriting one item's domain is exactly that state.
+    await page.evaluate((key) => {
+      const record = JSON.parse(localStorage.getItem(key) ?? "{}");
+      record.namespaces.mock.current.items[0].domain = "A domain the blueprint no longer has";
+      localStorage.setItem(key, JSON.stringify(record));
+    }, STORAGE_KEY);
+    await page.reload();
+
+    await page.getByTestId("mock-submit").click();
+    await expect(page.getByTestId("mock-unscoreable-title")).toBeVisible();
+    await expect(page).toHaveURL(/\/mock\/$/);
+
+    await page.getByTestId("mock-discard-unscoreable").click();
+    await expect(page.getByRole("button", { name: "Start the mock" })).toBeVisible();
+    const current = await page.evaluate((key) => {
+      const record = JSON.parse(localStorage.getItem(key) ?? "{}");
+      return record.namespaces.mock.current;
+    }, STORAGE_KEY);
+    expect(current).toBeNull();
+  });
+
   test("the bank holds no surplus, so the page says repeated attempts repeat items", async ({
     page
   }) => {

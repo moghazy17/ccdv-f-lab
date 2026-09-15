@@ -212,17 +212,26 @@ const anchorPercent = ((mock.passingScore - mock.scaleMinimum) / scaleRange) * 1
     }
   }
 
-  /** The newest stored report, falling back to one held only for this session. */
+  /**
+   * The report this tab just earned, falling back to the newest in stored history. The session
+   * handoff comes first so a report that failed to store is still the one shown; a clear in any
+   * tab outranks it, because session storage reaches only the tab that holds it.
+   */
   function latestReport(): ScoreReport | ScoreSummary | null {
+    const progress = createProgressStorage();
     try {
       const raw = sessionStorage.getItem(LAST_REPORT_SESSION_KEY);
       if (raw !== null) {
-        return JSON.parse(raw) as ScoreReport;
+        const held = JSON.parse(raw) as ScoreReport;
+        const clearedAt = progress.practiceClearedAt();
+        if (clearedAt === null || held.submittedAt > clearedAt) {
+          return held;
+        }
       }
     } catch {
       // Fall through to persistent history when the session handoff is unavailable.
     }
-    const stored = createProgressStorage().mockProgress();
+    const stored = progress.mockProgress();
     return stored?.reports[0] ?? stored?.summaries[0] ?? null;
   }
 </script>

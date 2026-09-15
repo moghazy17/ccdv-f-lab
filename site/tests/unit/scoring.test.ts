@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import fixture from "../fixtures/scoring-cases.json";
 import {
+  BlueprintDriftError,
   READINESS_DOMAIN_FRACTION,
   READINESS_OVERALL_FRACTION,
+  isBlueprintDriftError,
   isCorrect,
   roundHalfToEven,
   scoreAttempt,
@@ -136,5 +138,22 @@ describe("guards", () => {
     expect(() => scoreAttempt([], {}, domainNames, scale, scale.maximum + 1)).toThrow(
       /Score anchor/
     );
+  });
+
+  it("names blueprint drift apart from a fault in the exam's own data", () => {
+    // Only drift is the candidate's attempt outliving its blueprint, and only drift is worth
+    // offering to discard an attempt over. A bad anchor is the site's fault, not the attempt's.
+    const drift = (): unknown =>
+      scoreAttempt(
+        [{ id: "x", domain: "Not A Domain", options: [{ id: "a", correct: true }] }],
+        {},
+        domainNames,
+        scale
+      );
+    const badAnchor = (): unknown => scoreAttempt([], {}, domainNames, scale, scale.maximum + 1);
+
+    expect(drift).toThrow(BlueprintDriftError);
+    expect(badAnchor).not.toThrow(BlueprintDriftError);
+    expect(isBlueprintDriftError(new Error("plain"))).toBe(false);
   });
 });

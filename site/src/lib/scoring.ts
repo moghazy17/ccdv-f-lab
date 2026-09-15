@@ -104,6 +104,24 @@ export function isCorrect(item: ScorableItem, selected: readonly string[] | unde
 }
 
 /**
+ * An attempt holds an item whose domain the blueprint no longer has. This is the one scoring
+ * failure a candidate can act on — their stored attempt outlived the blueprint it was built from —
+ * and it is named so the runner can offer to discard that attempt without mistaking a fault in the
+ * site's own exam data for one in the attempt.
+ */
+export class BlueprintDriftError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BlueprintDriftError";
+  }
+}
+
+/** Whether a scoring failure is blueprint drift rather than a fault in the exam's own data. */
+export function isBlueprintDriftError(error: unknown): error is BlueprintDriftError {
+  return error instanceof BlueprintDriftError;
+}
+
+/**
  * Score one attempt against every blueprint domain.
  *
  * `domainNames` comes from the exported blueprint data, so a domain with no item in this mock
@@ -127,7 +145,9 @@ export function scoreAttempt(
 
   for (const item of items) {
     if (!countByDomain.has(item.domain)) {
-      throw new Error(`Item ${item.id} has a domain absent from the blueprint: ${item.domain}.`);
+      throw new BlueprintDriftError(
+        `Item ${item.id} has a domain absent from the blueprint: ${item.domain}.`
+      );
     }
     itemCount += 1;
     countByDomain.set(item.domain, (countByDomain.get(item.domain) ?? 0) + 1);

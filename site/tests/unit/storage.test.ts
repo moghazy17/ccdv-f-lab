@@ -315,6 +315,17 @@ describe("practice namespaces", () => {
     expect(cleared?.flashcards).toEqual({ state: {} });
   });
 
+  test("records when practice results were cleared, where every tab can read it", () => {
+    const browser = new MemoryStorage();
+    const progress = createProgressStorage(browser, () => "2026-02-03T04:05:06.000Z");
+
+    expect(progress.practiceClearedAt()).toBeNull();
+    expect(progress.clearPracticeResults().kind).toBe("ok");
+    // Session storage reaches only the tab that holds it, so the mark belongs in browser storage:
+    // a report earned before this instant is one another tab must no longer show.
+    expect(progress.practiceClearedAt()).toBe("2026-02-03T04:05:06.000Z");
+  });
+
   test("clears the session report after practice results are cleared", () => {
     const originalSessionStorage = Object.getOwnPropertyDescriptor(globalThis, "sessionStorage");
     const session = new MemoryStorage();
