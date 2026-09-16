@@ -7,6 +7,7 @@
  * flashcard namespace against the latest browser record.
  */
 
+import { embedJson } from "../lib/embed";
 import type { Flashcard } from "../lib/flashcards";
 
 interface Props {
@@ -28,7 +29,7 @@ const { cards } = Astro.props;
     type="application/json"
     data-flashcard-payload
     data-pagefind-ignore
-    set:html={JSON.stringify({ cards })}
+    set:html={embedJson({ cards })}
   />
 
   <h2 id="flashcard-deck-title">Review the deck</h2>

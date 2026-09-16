@@ -15,14 +15,14 @@ quizzes, and a flashcard deck.
 
 ## Current state
 
-Branch `002-blueprint-guard-and-frontmatter`, **nine commits ahead of its remote and unpushed**.
+Branch `002-blueprint-guard-and-frontmatter`, pushed, with pull request #2 open against `main`.
 Feature 002 is complete: all 113 tasks across ten phases, in `specs/002-lab-runner-mock-exam/`.
 Feature 001 is merged to `main`.
 
-All gates green: `ruff check .`, `ruff format --check .`, `pytest -q` (119), blueprint consistency,
+All gates green: `ruff check .`, `ruff format --check .`, `pytest -q` (121), blueprint consistency,
 single-source, link check, `python -m drills.engine validate` (54 items), `python -m lab.evals run`,
 plus the site's `typecheck` (two programs), `lint`, `build` (57 pages, 47 indexed), `check:payload`
-(6.62 MiB against an 8 MiB ceiling), `test:unit` (117), `test:e2e` (215).
+(6.62 MiB against an 8 MiB ceiling), `test:unit` (126), `test:e2e` (217).
 
 What feature 002 added, in one line each:
 
@@ -64,11 +64,11 @@ domain's recall prompts. Every note written grows three surfaces at once with no
 
 ### Known follow-ups
 
-- **Push the branch and open a pull request.**
-  `git push -u origin 002-blueprint-guard-and-frontmatter`. Pages needs no setup: it is already on
-  **Source: GitHub Actions** (`build_type: workflow`) and `pages.yml` deployed successfully from
-  `main` on the feature 001 merge, so merging this branch publishes it. Verify with
-  `gh api repos/moghazy17/ccdv-f-lab/pages` rather than assuming either way.
+- **The branch is pushed and its pull request is open: #2, against `main`, CI green on the tip.**
+  Pages needs no setup — `gh api repos/moghazy17/ccdv-f-lab/pages` returned `build_type: workflow`
+  on 2026-09-16 — so merging publishes the site. What remains is the merge itself. Squash it: see
+  the bisect note below. After merging, confirm the deploy actually ran rather than assuming
+  it, with `gh run list --workflow pages.yml`.
 - **Repo-relative links do not survive rendering.** Note prose still names `SOURCES.md` and
   `lab/*.py` in code spans rather than linking them, because `/domains/<slug>/` has no such route.
   `AGENTS.md` wants those links. The fix is a small remark plugin rewriting repo-relative links to
@@ -77,7 +77,16 @@ domain's recall prompts. Every note written grows three surfaces at once with no
 - **Intermediate commits on this branch are not individually gate-verified.** Only the tip is.
   Whole-file staging meant a few files carry a later phase's content — `site/package.json`,
   `site/src/lib/storage.ts`, and `tools/check_content_single_source.py` most notably. Bisecting
-  through the middle of the series may not build.
+  through the middle of the series may not build, which is the reason to squash this branch into
+  `main` rather than preserve the series. Squashing ends this concern; a merge commit keeps it.
+- **The flashcard deck is a notes viewer, not a deck.** All 30 cards come from Domain 5, the only
+  domain with real notes. Worse, `tools/build_flashcards.py` falls back to emitting one card per
+  note *section*, so the front is a markdown heading: nine distinct fronts across 30 cards, with
+  "Scope" appearing four times over four different backs, one of which is a decision table. The
+  authored path — a `flashcards:` list of front/back pairs in a note's frontmatter, already built
+  and tested in `tools/note_content.py` — is used by no note in the repo. Writing notes fixes the
+  coverage; deciding whether the section fallback should stay is a separate call, and it currently
+  makes an unfinished deck look finished.
 - **The bank holds no surplus.** Every domain is filled to exactly its quota, so repeated mock
   attempts draw the same items, and the mock page says so. More items per domain is the fix.
 
@@ -104,12 +113,15 @@ domain's recall prompts. Every note written grows three surfaces at once with no
 
 ## Running the end-to-end suite
 
-Two things about `npm run test:e2e` will waste an hour if you do not know them.
+One thing about `npm run test:e2e` will waste an hour if you do not know it. A second used to, and
+no longer does.
 
-- **`astro preview --ignore-lock` refuses to start** when the shell has `AI_AGENT`, `CLAUDECODE`, or
-  `CLAUDE_CODE_ENTRYPOINT` set, because Astro auto-detects an agent environment and runs preview in
-  the background, which needs the lock. Run the command with those unset:
-  `env -u AI_AGENT -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT npm run --prefix site test:e2e`.
+- **The agent-environment workaround is no longer needed.** Astro auto-detects an agent environment
+  and moves `preview` to the background, where it refuses `--ignore-lock`; the suite's own server
+  uses that flag, so the run died before the first test. `playwright.config.ts` now sets
+  `ASTRO_PREVIEW_BACKGROUND` in its `webServer.env`, which turns the detection off and keeps the
+  server in the foreground. `npm run --prefix site test:e2e` is the whole command again — no
+  `env -u` prefix, from any shell.
 - **The suite is memory-sensitive, not flaky.** Seven specs each build the whole site behind one
   lock while the lab specs run a real CPython in WebAssembly. On a machine with headroom the full
   215 tests take about two minutes; on one that is swapping, a single fixture spec consumed fifteen.

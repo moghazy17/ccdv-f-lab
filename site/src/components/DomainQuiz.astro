@@ -7,6 +7,7 @@
  * uses, through `scoring.ts`. This is the half of a domain's self-check that counts.
  */
 
+import { embedJson } from "../lib/embed";
 import type { PracticeItem } from "../lib/items";
 import type { QuizAvailability } from "../lib/quiz";
 
@@ -41,7 +42,7 @@ const base = import.meta.env.BASE_URL;
     type="application/json"
     data-quiz-items
     data-pagefind-ignore
-    set:html={JSON.stringify(items)}
+    set:html={embedJson(items)}
   />
 
   <h2 id="domain-quiz-title">Scored quiz</h2>

@@ -11,6 +11,7 @@
  * runtime on this page by design: the mock is the surface that can least afford a 6 MiB download.
  */
 
+import { embedJson } from "../lib/embed";
 import type { PracticeItem } from "../lib/items";
 import type { MockData } from "../lib/attempt";
 
@@ -31,7 +32,7 @@ const base = import.meta.env.BASE_URL;
     type="application/json"
     data-mock-bank
     data-pagefind-ignore
-    set:html={JSON.stringify({ mock, bank, available, domainNames })}
+    set:html={embedJson({ mock, bank, available, domainNames })}
   />
   <p data-mock-storage-notice hidden></p>
 
