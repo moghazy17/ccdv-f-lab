@@ -8,12 +8,20 @@
   },
   "scripts": {
     "dev": "astro dev",
+    "export:data": "python ../tools/export_site_data.py && python ../tools/export_mock_data.py && python ../tools/export_item_bank.py",
+    "export:runtime": "python ../tools/export_runtime_bundle.py && node scripts/vendor-runtime.mjs",
+    "export:all": "npm run export:data && npm run export:runtime",
+    "predev": "npm run export:all",
+    "prebuild": "npm run export:all",
     "preview": "astro preview",
-    "typecheck": "astro check",
+    "pretypecheck": "npm run export:data",
+    "typecheck": "astro check && tsc --noEmit --project tsconfig.worker.json",
     "lint": "eslint .",
     "build": "astro build && pagefind --site dist",
+    "pretest:unit": "npm run export:all",
     "test:unit": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "check:payload": "node scripts/check-payload.mjs"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
@@ -28,6 +36,7 @@
     "eslint-plugin-astro": "1.7.0",
     "pagefind": "1.4.0",
     "playwright": "1.59.1",
+    "pyodide": "314.0.6",
     "tailwindcss": "4.1.13",
     "typescript": "5.9.2",
     "typescript-eslint": "8.42.0",

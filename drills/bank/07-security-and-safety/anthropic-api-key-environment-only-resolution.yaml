@@ -1,0 +1,64 @@
+id: anthropic-api-key-environment-only-resolution
+domain: Security and Safety
+sub_skill: Identity, Secrets, and Key Management
+difficulty: application
+select: 1
+stem: >-
+  A developer proposes committing a shared default Anthropic API key into a repository config
+  file, so teammates without their own key set locally can still run live-transport tests. A
+  teammate objects. What is the correct practice, and why should the committed default be
+  rejected?
+options:
+  - id: a
+    text: >-
+      Resolve the API key only from a process-environment variable at runtime, raising an error if
+      it is unset, and never store it in a repository file; keyless tests should use a mock
+      transport instead of a shared committed key.
+    correct: true
+    rationale: >-
+      Anthropic's own key-handling guidance is to use environment variables rather than hardcoding
+      or committing a key, since committing plaintext keys to a repository is one of the most
+      common causes of key leaks; a mock transport, not a shared credential, is what should make
+      tests runnable without one.
+  - id: b
+    text: >-
+      A committed default key is fine as long as the file holding it is added to `.gitignore` for
+      extra caution.
+    correct: false
+    rationale: >-
+      A file meant to be shared and committed cannot simultaneously be excluded by `.gitignore`;
+      this asserts a protection that the described setup does not actually provide, since the key
+      would already be committed and visible in history.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      Store the key in the repository, but ask contributors in the README never to copy it outside
+      the project.
+    correct: false
+    rationale: >-
+      This relies on every contributor following a request rather than on the key simply not being
+      committed; a written request is not an enforced control over how the file is used or shared.
+    trap_type: unenforceable-politeness
+  - id: d
+    text: >-
+      Avoid the problem by moving to a larger model that needs fewer live-transport calls during
+      testing.
+    correct: false
+    rationale: >-
+      Model choice does not change whether a shared key sits in the repository; the exposure risk
+      is about where the credential is stored, not how many live calls the tests make.
+    trap_type: bigger-model
+  - id: e
+    text: >-
+      Log the resolved key value alongside each request, so any leakage can be traced back to its
+      source later.
+    correct: false
+    rationale: >-
+      Recording the credential value itself in a log creates a new place it can leak from; the
+      documented practice is to record the requesting identity, scope, and decision for an
+      auditable trail while never writing the secret's value anywhere, including logs.
+    trap_type: wrong-layer
+sources:
+  - title: API Key Best Practices — Anthropic (Claude Help Center)
+    url: https://support.claude.com/en/articles/9767949-api-key-best-practices-keeping-your-keys-safe-and-secure
+    verified_on: "2026-09-08"

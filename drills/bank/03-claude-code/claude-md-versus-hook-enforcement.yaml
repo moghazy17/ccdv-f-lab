@@ -1,0 +1,55 @@
+id: claude-md-versus-hook-enforcement
+domain: Claude Code
+sub_skill: Claude Code Operation
+difficulty: analysis
+select: 1
+stem: >-
+  A team's project `CLAUDE.md` says "never run `git push --force`," and it has worked in every
+  session the author tested. During a live demo, a session under time pressure runs `git push
+  --force` anyway to unblock a rebase. The team wants a change that guarantees the command cannot
+  run again, in every future session, regardless of what the model decides mid-task. Which change
+  actually guarantees that?
+options:
+  - id: a
+    text: >-
+      Add a PreToolUse hook (or an equivalent `permissions.deny` rule in `settings.json`) that
+      blocks the `git push --force` command before it runs.
+    correct: true
+    rationale: >-
+      CLAUDE.md is loaded as context, not enforced configuration, so Claude tries to follow it but
+      compliance is not guaranteed. A hook or a settings-level permission rule is enforced by the
+      client itself, independent of what the model decides, which is the only way to guarantee the
+      command is blocked every time.
+  - id: b
+    text: Move the same sentence from the project `CLAUDE.md` into `~/.claude/CLAUDE.md` instead.
+    correct: false
+    rationale: >-
+      This only changes which files load the instruction into context; it stays an instruction the
+      model reads and tries to follow, not an enforced control, so it does not close the gap.
+    trap_type: wrong-layer
+  - id: c
+    text: >-
+      Reword the instruction as: IMPORTANT, absolutely never, under any circumstances, force push.
+    correct: false
+    rationale: >-
+      Stronger wording can improve adherence to a written instruction, but it is still a request the
+      model can fail to follow under pressure, not an enforced block.
+    trap_type: unenforceable-politeness
+  - id: d
+    text: Switch the session to a higher-tier model so it better understands the rule's importance.
+    correct: false
+    rationale: >-
+      A more capable model can still choose to run the command; model capability is not a substitute
+      for an enforced control on which commands are allowed to execute.
+    trap_type: bigger-model
+  - id: e
+    text: Duplicate the instruction into every subdirectory `CLAUDE.md` in the repository.
+    correct: false
+    rationale: >-
+      Repeating the same unenforced instruction in more files increases how often it is read, but
+      every copy is still context the model can override, not a guarantee.
+    trap_type: overkill
+sources:
+  - title: How Claude remembers your project — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/memory
+    verified_on: "2026-09-08"

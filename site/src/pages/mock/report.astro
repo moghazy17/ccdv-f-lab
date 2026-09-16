@@ -1,5 +1,32 @@
 ---
-import ReservedPage from "../../components/ReservedPage.astro";
+import ScoreReport from "../../components/ScoreReport.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import mockData from "../../data/mock.json";
+import type { MockData } from "../../lib/attempt";
+import { domains } from "../../lib/blueprint";
+
+const mock = mockData as MockData;
+const domainNames = domains.map((domain) => domain.name);
+const base = import.meta.env.BASE_URL;
 ---
 
-<ReservedPage title="Mock report" capability="the mock-exam report" />
+<BaseLayout
+  title="Score report | CCDV-F community study kit"
+  description="The report for the most recent mock attempt scored on this device."
+  searchRecord={{ type: "mock" }}
+>
+  <header>
+    <h1>Score report</h1>
+    <p class="page-introduction">
+      This report was scored on your device and stayed there. Nothing about it was sent anywhere,
+      and it is readable only in this browser unless you export your progress.
+    </p>
+  </header>
+
+  <ScoreReport mock={mock} domainNames={domainNames} />
+
+  <p class="no-print">
+    <a href={`${base}mock/`}>Back to the mock exam</a> ·
+    <a href={`${base}progress/`}>See all stored progress</a>
+  </p>
+</BaseLayout>

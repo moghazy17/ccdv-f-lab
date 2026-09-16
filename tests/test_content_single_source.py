@@ -4,7 +4,38 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tools.check_content_single_source import find_duplicate_prose
+from tools.check_content_single_source import find_copied_runtime_source, find_duplicate_prose
+
+PROSE = "This source paragraph is deliberately long enough to trigger the duplication gate."
+
+
+def test_single_source_gate_ignores_a_test_fixture_content_copy(tmp_path: Path) -> None:
+    """A propagation spec's temporary copy of protected prose is scaffolding, not a duplication.
+
+    The end-to-end specs copy notes, guide, cheatsheets, and study plans into ``site/.us2-*``
+    directories so they can build the site against edited content. A run killed part-way leaves
+    them behind, and before they were skipped this gate reported every copied paragraph as a
+    violation of a rule nobody had broken.
+    """
+    (tmp_path / "notes").mkdir()
+    fixture = tmp_path / "site" / ".us2-src-plans-propagation-abc123"
+    fixture.mkdir(parents=True)
+    (tmp_path / "notes" / "source.md").write_text(f"# Source\n\n{PROSE}\n", encoding="utf-8")
+    (fixture / "source.md").write_text(f"# Source\n\n{PROSE}\n", encoding="utf-8")
+
+    assert find_duplicate_prose(tmp_path) == []
+
+
+def test_single_source_gate_still_rejects_a_copy_outside_a_fixture_directory(
+    tmp_path: Path,
+) -> None:
+    """The prefix skip is narrow: an ordinary directory under ``site/`` is still checked."""
+    (tmp_path / "notes").mkdir()
+    (tmp_path / "site" / "src").mkdir(parents=True)
+    (tmp_path / "notes" / "source.md").write_text(f"# Source\n\n{PROSE}\n", encoding="utf-8")
+    (tmp_path / "site" / "src" / "page.astro").write_text(f"<p>{PROSE}</p>\n", encoding="utf-8")
+
+    assert len(find_duplicate_prose(tmp_path)) == 1
 
 
 def test_single_source_gate_allows_presentation_code_without_study_prose(tmp_path: Path) -> None:
@@ -72,3 +103,28 @@ def test_single_source_gate_rejects_copied_decision_table_cells(tmp_path: Path) 
 
     assert len(errors) == 1
     assert "notes/source.md" in errors[0].replace("\\", "/")
+
+
+def test_single_source_gate_rejects_lab_source_copied_under_site(tmp_path: Path) -> None:
+    """A lab/ module copied into site/src, rather than served from the archive, is caught."""
+    (tmp_path / "lab").mkdir()
+    (tmp_path / "site" / "src" / "runtime").mkdir(parents=True)
+    module_source = "def run() -> None:\n    return None\n"
+    (tmp_path / "lab" / "loop.py").write_text(module_source, encoding="utf-8")
+    (tmp_path / "site" / "src" / "runtime" / "loop.py").write_text(module_source, encoding="utf-8")
+
+    errors = find_copied_runtime_source(tmp_path)
+
+    assert len(errors) == 1
+    assert "lab/loop.py" in errors[0].replace("\\", "/")
+
+
+def test_single_source_gate_ignores_the_generated_runtime_archive(tmp_path: Path) -> None:
+    """The build's own generated archive under site/public/runtime is never flagged."""
+    (tmp_path / "lab").mkdir()
+    (tmp_path / "site" / "public" / "runtime").mkdir(parents=True)
+    module_source = "def run() -> None:\n    return None\n"
+    (tmp_path / "lab" / "loop.py").write_text(module_source, encoding="utf-8")
+    (tmp_path / "site" / "public" / "runtime" / "lab-drills.zip").write_bytes(b"PK\x03\x04")
+
+    assert find_copied_runtime_source(tmp_path) == []

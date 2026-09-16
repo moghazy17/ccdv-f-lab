@@ -1,0 +1,62 @@
+id: batch-vs-realtime-tradeoff-pricing-and-latency
+domain: Applications and Integration
+sub_skill: Claude API Mechanics
+difficulty: application
+select: 1
+stem: >-
+  A team processes 20,000 archived support tickets overnight to backfill classifications, with no
+  user waiting on any individual result, and separately runs a live chat widget that must return a
+  classification the instant a customer submits a message. Which processing path fits each case,
+  and why?
+options:
+  - id: a
+    text: >-
+      Route the overnight backfill through the Message Batches API, which processes many
+      independent requests asynchronously at a 50% cost reduction and suits a workload where
+      immediate responses are not required; route the live chat classification through the
+      realtime Messages API, since it needs an immediate response for the single request in
+      flight.
+    correct: true
+    rationale: >-
+      The batch path exists for exactly this workload shape — many independent requests, no one
+      waiting on any single result, and a documented cost reduction for tolerating asynchronous
+      processing — while a single live interaction needing an instant answer is that same
+      tradeoff's realtime case.
+  - id: b
+    text: >-
+      Route both workloads through the Message Batches API, since batch processing is always
+      cheaper and therefore always the correct choice regardless of how quickly a response is
+      needed.
+    correct: false
+    rationale: >-
+      The batch discount is a real saving for the backfill, but applying it to the live chat
+      widget ignores that a chat customer cannot wait for asynchronous processing; cost alone is
+      not the deciding factor when a response is needed immediately.
+    trap_type: cost-theater
+  - id: c
+    text: >-
+      Route both workloads through the realtime Messages API, issuing 20,000 sequential
+      synchronous calls for the backfill to keep the integration simple.
+    correct: false
+    rationale: >-
+      Sending 20,000 realtime calls for a workload that explicitly tolerates delay forgoes the
+      batch discount and the batch path's higher throughput for large volumes, adding cost and
+      load without a latency requirement that needs it.
+    trap_type: overkill
+  - id: d
+    text: >-
+      Route the live chat classification through the Message Batches API and poll for the result
+      once processing ends, since polling is a well-understood pattern.
+    correct: false
+    rationale: >-
+      Batch processing defers results until the batch ends, the opposite of what an interaction
+      requiring an immediate response needs; the fix for a latency requirement is choosing the
+      realtime path, not adapting the chat UI to poll a batch.
+    trap_type: wrong-layer
+sources:
+  - title: Batch processing — Anthropic (Claude Platform docs)
+    url: https://platform.claude.com/docs/en/build-with-claude/batch-processing
+    verified_on: "2026-09-09"
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-09"

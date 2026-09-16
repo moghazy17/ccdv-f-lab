@@ -1,0 +1,53 @@
+id: workflow-vs-agent-open-ended-research-task
+domain: Agents and Workflows
+sub_skill: Agent Architecture
+difficulty: application
+select: 1
+stem: >-
+  A team needs a system that researches a novel technical question: it must decide which of
+  several search tools to call, how many searches to run, and when it has gathered enough
+  information, and the number of steps cannot be known in advance. Which architecture fits this
+  task, per Anthropic's distinction between workflows and agents?
+options:
+  - id: a
+    text: >-
+      Model it as an agent, where the model dynamically directs its own tool calls and decides for
+      itself when the task is complete.
+    correct: true
+    rationale: >-
+      Anthropic defines agents as systems where the LLM dynamically directs its own process and
+      tool usage; this fits a task where the required number of steps is not known ahead of time
+      and cannot be hardcoded into a fixed path.
+  - id: b
+    text: >-
+      Model it as a workflow with a fixed, predetermined sequence of tool calls chosen in advance.
+    correct: false
+    rationale: >-
+      Workflows orchestrate LLMs and tools through predefined code paths, which suits tasks with a
+      known, fixed sequence of steps; wanting a reliable, inspectable structure is a reasonable
+      instinct, but a hardcoded path is the wrong abstraction when the step count is unpredictable.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: >-
+      Use a more capable model to run the fixed workflow, so it can compensate for the unknown
+      step count within the predetermined sequence.
+    correct: false
+    rationale: >-
+      A stronger model running a fixed sequence still cannot add or skip steps the sequence did
+      not define; model capability does not substitute for an architecture that allows the number
+      of steps to vary.
+    trap_type: bigger-model
+  - id: d
+    text: >-
+      Keep the hardcoded workflow, but add a system-prompt instruction asking the model to keep
+      searching until it feels confident it has enough information.
+    correct: false
+    rationale: >-
+      An instruction cannot make a fixed sequence of steps run more or fewer times than it was
+      coded to run; the workflow's predetermined path, not the model's judgment, still controls how
+      many searches happen.
+    trap_type: unenforceable-politeness
+sources:
+  - title: Building effective agents — Anthropic
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    verified_on: "2026-09-08"

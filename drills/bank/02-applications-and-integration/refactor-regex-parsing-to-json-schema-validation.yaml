@@ -1,0 +1,61 @@
+id: refactor-regex-parsing-to-json-schema-validation
+domain: Applications and Integration
+sub_skill: Software Engineering Foundations
+difficulty: application
+select: 2
+stem: >-
+  An existing integration parses Claude's triage responses with a hand-written regex that pulls
+  fields such as category and confidence out of free text, and it breaks whenever the model
+  phrases a field slightly differently. The team wants to refactor this into a more maintainable
+  design. Which two changes make up the correct refactor, and why?
+options:
+  - id: a
+    text: >-
+      Request output_config.format as a json_schema with the required fields, their types, and
+      additionalProperties set to false, replacing free-text generation with a schema Claude's
+      decoding is constrained to follow.
+    correct: true
+    rationale: >-
+      Structured output constrains decoding to the schema, replacing regex guesses about
+      free-text phrasing with a request-time contract for the response's shape.
+  - id: b
+    text: >-
+      Decode the response with a JSON parser and validate the result against that same schema
+      with a JSON Schema validator before building the application's result object.
+    correct: true
+    rationale: >-
+      Validating the decoded payload against the schema, rather than scraping fields out of text
+      with a regex, gives the refactor a single explicit place where a malformed or incomplete
+      response is caught with a readable error.
+  - id: c
+    text: >-
+      Keep the regex, but add another alternative pattern to it each time a new phrasing breaks
+      it.
+    correct: false
+    rationale: >-
+      Extending the regex patches individual failures without addressing why the design is
+      fragile in the first place: it depends on free-text phrasing instead of a schema Claude's
+      decoding is constrained to follow.
+    trap_type: cost-theater
+  - id: d
+    text: >-
+      Ask the model, in the prompt, to phrase its answer exactly the way the regex expects, and
+      leave the regex unchanged.
+    correct: false
+    rationale: >-
+      An instruction about phrasing is not an enforceable contract; the same free-text drift that
+      already broke the regex remains possible on the next response.
+    trap_type: unenforceable-politeness
+  - id: e
+    text: >-
+      Switch to a larger model on the theory that it will phrase its free-text answer more
+      consistently and stop breaking the regex.
+    correct: false
+    rationale: >-
+      No model tier guarantees consistent free-text phrasing; the fragility is a property of
+      parsing free text with a regex, not of which model produced it.
+    trap_type: bigger-model
+sources:
+  - title: Structured outputs — Anthropic (Claude Platform docs)
+    url: https://platform.claude.com/docs/en/build-with-claude/structured-outputs
+    verified_on: "2026-09-09"

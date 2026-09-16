@@ -1,0 +1,65 @@
+id: effort-shape-and-cache-invalidation
+domain: Model Selection and Optimization
+sub_skill: LLM Fundamentals
+difficulty: analysis
+select: 2
+stem: >-
+  A team tunes cost on a Claude Opus 5 integration by changing the effort level between requests
+  and is confused why request latency and cache-read counts fluctuate along with the change. Which
+  two of the following statements about effort are correct?
+options:
+  - id: a
+    text: >-
+      Effort is set at `output_config.effort`, a sibling field of `thinking`, rather than a field
+      placed inside the `thinking` object.
+    correct: true
+    rationale: >-
+      Effort and thinking are separate configuration surfaces at the top level of the request; a
+      request that nests effort inside `thinking` is a shape error rather than a working
+      configuration.
+  - id: b
+    text: >-
+      Changing the effort value between otherwise-identical requests invalidates the prompt cache,
+      because the resolved effort value is rendered into the prompt; explicitly restating the
+      model's current default effort does not itself invalidate the cache.
+    correct: true
+    rationale: >-
+      Effort is rendered into the prompt Claude actually sees, so a different resolved value
+      changes the cached prefix; stating the same value that was already in effect is not a
+      change, so it does not force a fresh cache write.
+  - id: c
+    text: >-
+      Effort must be set inside the `thinking` object, as a sibling of `budget_tokens`, on every
+      current model.
+    correct: false
+    rationale: >-
+      This inverts the correct field path: effort lives at `output_config.effort`, not inside
+      `thinking`; sending it in the wrong location is a shape error that fails at the API.
+    trap_type: right-idea-wrong-mechanism
+  - id: d
+    text: >-
+      Lowering effort is the first cost lever to try, ahead of setting up prompt caching, because
+      it requires no changes to how the request is structured.
+    correct: false
+    rationale: >-
+      Caching trades away no quality and should be tried first; effort is the first lever that
+      trades quality, and reaching for it before caching is a superficial cost tweak that misses
+      the larger, free saving caching already offers.
+    trap_type: cost-theater
+  - id: e
+    text: >-
+      The effort parameter works the same way across the full current model lineup, including
+      Claude Haiku 4.5.
+    correct: false
+    rationale: >-
+      Claude Haiku 4.5 does not support the effort parameter at all; it is the exception in the
+      current lineup that still uses manual extended thinking instead of adaptive thinking steered
+      by effort.
+    trap_type: false-capability
+sources:
+  - title: Steering thinking — Anthropic
+    url: https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost
+    verified_on: "2026-09-05"
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-05"

@@ -1,0 +1,58 @@
+id: haiku-four-five-three-simultaneous-differences
+domain: Model Selection and Optimization
+sub_skill: Model Selection and Tradeoffs
+difficulty: analysis
+select: 2
+stem: >-
+  A team is deciding whether to route a simple, latency-sensitive classification task to Claude
+  Haiku 4.5 instead of Claude Sonnet 5, assuming the only difference between the two models is
+  speed and price. Which two of the following statements correctly identify an additional way
+  Claude Haiku 4.5 differs from the rest of the current lineup?
+options:
+  - id: a
+    text: >-
+      Claude Haiku 4.5 has a 200K-token context window, while Claude Fable 5.1, Claude Opus 5, and
+      Claude Sonnet 5 have a 1M-token context window.
+    correct: true
+    rationale: >-
+      Claude Haiku 4.5 is the odd model out in the current lineup on context window size, which
+      matters directly for a task whose input could approach that limit.
+  - id: b
+    text: >-
+      Claude Haiku 4.5 uses manual extended thinking with a `budget_tokens` value rather than
+      adaptive thinking, and it does not support the `effort` parameter at all.
+    correct: true
+    rationale: >-
+      Claude Haiku 4.5 is the current-lineup exception that still takes the deprecated manual
+      thinking mode, and it is the one current model with no `effort` support, so cost or quality
+      tuning through effort simply is not available on it.
+  - id: c
+    text: >-
+      Claude Haiku 4.5 is the only current model that does not support tool use.
+    correct: false
+    rationale: >-
+      All four current models — Claude Fable 5.1, Claude Opus 5, Claude Sonnet 5, and Claude Haiku
+      4.5 — support tool use; that is not a distinguishing factor for Claude Haiku 4.5.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Claude Haiku 4.5 cannot accept image input, unlike the other three current models.
+    correct: false
+    rationale: >-
+      All four current models take text and image input; Claude Haiku 4.5 is not restricted to
+      text-only input.
+    trap_type: false-capability
+  - id: e
+    text: >-
+      Claude Haiku 4.5's model ID is a floating alias that always resolves to the newest snapshot,
+      unlike the other three current models' pinned IDs.
+    correct: false
+    rationale: >-
+      Every current model ID, dateless or not, is its own pinned snapshot; Claude Haiku 4.5 is not
+      an exception to that, and treating any current ID as a floating alias is a separate, general
+      migration mistake rather than something specific to Claude Haiku 4.5.
+    trap_type: false-capability
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-05"

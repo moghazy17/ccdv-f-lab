@@ -30,6 +30,9 @@ _IGNORED_DIRECTORIES = {
     "playwright-report",
     "test-results",
 }
+# Temporary content copies the end-to-end propagation specs leave under site/. A run killed part-way
+# leaves them behind, and their relative links point at a tree that no longer exists.
+_IGNORED_DIRECTORY_PREFIX = ".us2-"
 
 
 class _BuiltPageParser(HTMLParser):
@@ -114,7 +117,11 @@ def _markdown_files(root: Path) -> list[Path]:
     """List repository Markdown while never traversing dependencies or generated site output."""
     markdown_paths: list[Path] = []
     for directory, directories, files in os.walk(root):
-        directories[:] = [name for name in directories if name not in _IGNORED_DIRECTORIES]
+        directories[:] = [
+            name
+            for name in directories
+            if name not in _IGNORED_DIRECTORIES and not name.startswith(_IGNORED_DIRECTORY_PREFIX)
+        ]
         current = Path(directory)
         markdown_paths.extend(current / filename for filename in files if filename.endswith(".md"))
     return sorted(markdown_paths)

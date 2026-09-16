@@ -56,6 +56,13 @@ describe("transfer module", () => {
     expect(summary.hasDiagnostic).toBe(false);
   });
 
+  test("summarizes a partial mock namespace", () => {
+    const envelope = emptyProgress("2026-09-05T10:00:00.000Z");
+    envelope.namespaces.mock = {} as typeof envelope.namespaces.mock;
+
+    expect(summarizeEnvelope(envelope).mockReportCount).toBe(0);
+  });
+
   test("detects whether progress has been recorded", () => {
     const empty = emptyProgress("2026-09-05T10:00:00.000Z");
     expect(hasRecordedProgress(empty)).toBe(false);
@@ -80,6 +87,40 @@ describe("transfer module", () => {
       expect(result.envelope.schemaVersion).toBe(1);
       expect(result.summary.totalMarks).toBe(2);
       expect(result.summary.plans[0].planSlug).toBe("3-weeks");
+    }
+  });
+
+  test("exports and imports every practice namespace without changing its contents", () => {
+    const record = emptyProgress("2026-09-05T10:00:00.000Z");
+    record.namespaces.labs.edits.router = "print('saved edit')";
+    record.namespaces.mock.current = {
+      id: "attempt-1",
+      items: [],
+      answers: { "item-1": ["a"] },
+      startedAt: "2026-09-05T10:00:00.000Z",
+      deadlineAt: "2026-09-05T12:00:00.000Z",
+      submittedAt: null,
+      expiryHandled: false
+    };
+    record.namespaces.quiz.results["claude-code"] = {
+      correct: 1,
+      itemCount: 2,
+      takenAt: "2026-09-05T10:00:00.000Z",
+      wrongAnswers: []
+    };
+    record.namespaces.flashcards.state["card-1"] = {
+      box: 2,
+      dueAt: "2026-09-08T10:00:00.000Z"
+    };
+
+    const result = parseAndValidateImport(serializeProgress(record));
+
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok") {
+      expect(result.envelope.namespaces.labs).toEqual(record.namespaces.labs);
+      expect(result.envelope.namespaces.mock).toEqual(record.namespaces.mock);
+      expect(result.envelope.namespaces.quiz).toEqual(record.namespaces.quiz);
+      expect(result.envelope.namespaces.flashcards).toEqual(record.namespaces.flashcards);
     }
   });
 

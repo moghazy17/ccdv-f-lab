@@ -1,0 +1,56 @@
+id: legacy-budget-tokens-on-current-model
+domain: Model Selection and Optimization
+sub_skill: LLM Fundamentals
+difficulty: application
+select: 1
+stem: >-
+  Code written for an earlier model generation sends `thinking: {"type": "enabled",
+  "budget_tokens": 4000}` on every request. After migrating the same code to call Claude Opus 5,
+  every request starts failing instead of quietly using less reasoning than before. What is
+  happening, and what replaces the removed configuration?
+options:
+  - id: a
+    text: >-
+      `budget_tokens` is rejected on current models rather than being ignored; Claude Opus 5 uses
+      adaptive thinking instead, where the model decides per request whether and how deeply to
+      think, steered by `output_config.effort` rather than a token budget.
+    correct: true
+    rationale: >-
+      The manual thinking mode with `budget_tokens` is deprecated on the 4.6 generation and is not
+      accepted on later models at all, so the request fails outright; adaptive thinking, tuned by
+      the separate `effort` parameter, is what current models use instead.
+  - id: b
+    text: >-
+      The request is failing because `budget_tokens` must be nested one level deeper, inside a new
+      `output_config.thinking.budget_tokens` field, on current models.
+    correct: false
+    rationale: >-
+      Current models do not accept a thinking token budget in any location; the field was removed
+      rather than relocated, so no amount of re-nesting it restores the old behavior.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: >-
+      The failure is unrelated to `budget_tokens`; it is caused by the request exceeding a
+      per-account rate limit, and the fix is to add retry-with-backoff around the call.
+    correct: false
+    rationale: >-
+      A removed or rejected parameter returns a 400-class validation error tied to the request
+      body, not a 429 rate-limit response; retrying the same invalid request will fail identically
+      every time regardless of backoff.
+    trap_type: wrong-layer
+  - id: d
+    text: >-
+      The fix is to move the workload to Claude Fable 5.1, which is capable enough to ignore an
+      unsupported parameter rather than reject the request.
+    correct: false
+    rationale: >-
+      Rejecting a removed parameter is consistent behavior across the current model lineup; a more
+      capable model does not change which request-body parameters the API accepts.
+    trap_type: bigger-model
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-05"
+  - title: Steering thinking — Anthropic
+    url: https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost
+    verified_on: "2026-09-05"

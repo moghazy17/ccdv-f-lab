@@ -1,0 +1,65 @@
+id: caching-then-effort-before-cheaper-model
+domain: Model Selection and Optimization
+sub_skill: Cost and Token Management
+difficulty: analysis
+select: 2
+stem: >-
+  A high-volume production route on Claude Opus 5 sends a large, stable set of tool definitions
+  and a system prompt on every call, followed by a short unique user question, and no caching is
+  configured. Costs are too high and the team wants to bring them down without guessing. Which two
+  actions should happen before switching to a cheaper model?
+options:
+  - id: a
+    text: >-
+      Add a cache breakpoint at the end of the stable tools-and-system prefix so repeated requests
+      reuse it from cache, then confirm effectiveness through `usage.cache_read_input_tokens`
+      before touching anything else.
+    correct: true
+    rationale: >-
+      Prompt caching trades away no quality and cache reads cost only 10% of the base input price,
+      so it is the first lever to reach for and the one to verify with `usage` before assuming any
+      further tuning is needed.
+  - id: b
+    text: >-
+      If cost still needs to come down once caching is confirmed effective, lower the effort level
+      next, since it is the first lever that trades any quality.
+    correct: true
+    rationale: >-
+      Caching costs nothing in quality; effort is the next lever, and it is the first one that
+      trades quality, which is why it belongs after caching rather than before it or instead of it.
+  - id: c
+    text: >-
+      Switch the route to Claude Haiku 4.5 immediately, since it is the cheapest model in the
+      lineup and will lower cost regardless of what else is configured.
+    correct: false
+    rationale: >-
+      Dropping to a cheaper model first is a superficial cost tweak that misses the actual cost
+      driver here — an uncached, repeated large prefix — and it also splits traffic across two
+      cache namespaces, forfeiting the reuse a single model would keep.
+    trap_type: cost-theater
+  - id: d
+    text: >-
+      Move the user's unique question ahead of the stable tools-and-system prefix so it is
+      processed first on every request.
+    correct: false
+    rationale: >-
+      Caching is a prefix match rendered in the order tools, then system, then messages; putting
+      volatile content before the stable prefix means every request's differing content
+      invalidates the cache instead of preserving it.
+    trap_type: right-idea-wrong-mechanism
+  - id: e
+    text: >-
+      Increase `max_tokens` on the request, expecting a higher ceiling to lower the per-request
+      cost.
+    correct: false
+    rationale: >-
+      `max_tokens` is a ceiling on how much the model may generate; raising it does not lower cost
+      and is unrelated to the caching problem driving the current spend.
+    trap_type: irrelevant-knob
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-05"
+  - title: Steering thinking — Anthropic
+    url: https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost
+    verified_on: "2026-09-05"

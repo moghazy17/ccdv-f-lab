@@ -1,0 +1,56 @@
+id: third-party-cloud-platform-feature-parity
+domain: Applications and Integration
+sub_skill: Claude API Mechanics
+difficulty: application
+select: 1
+stem: >-
+  A company already has committed cloud spend and compliance approval on AWS and wants to call
+  Claude through Amazon Bedrock rather than the direct Claude API. An engineer assumes every
+  feature and model available on the direct API will be available immediately through Bedrock on
+  day one. Is that assumption correct?
+options:
+  - id: a
+    text: >-
+      No. Anthropic documents that feature availability varies by platform for partner-operated
+      cloud platforms such as Amazon Bedrock and Google Cloud, so the integration should check
+      that specific platform's documentation for what is available and when, rather than
+      assuming full parity with the direct API.
+    correct: true
+    rationale: >-
+      The documented comparison between the direct Claude API and cloud platform APIs states that
+      feature availability varies by platform, distinguishing partner-operated platforms such as
+      Bedrock and Google Cloud from Anthropic-operated ones; assuming automatic parity is not
+      supported by that documentation.
+  - id: b
+    text: >-
+      Yes, because cloud platform access is just a different authentication method for the same
+      underlying API with identical feature availability.
+    correct: false
+    rationale: >-
+      Authentication integrated with the cloud provider's IAM system is one documented difference,
+      but the same documentation separately states that feature availability varies by platform;
+      assuming identical availability claims a guarantee the documentation does not make.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      It does not matter, because the company should switch to the direct Claude API regardless of
+      its existing AWS compliance approval.
+    correct: false
+    rationale: >-
+      This ignores the actual business constraint driving the request — existing cloud commitments
+      and compliance approval; the documented cloud-platform choice exists precisely to let a team
+      keep those commitments while still using Claude.
+    trap_type: wrong-layer
+  - id: d
+    text: >-
+      Yes, provided the company selects a larger model, since more capable models are rolled out
+      to every platform simultaneously.
+    correct: false
+    rationale: >-
+      Model capability has no bearing on which platform a given feature or model has been made
+      available on; the documented distinction is about platform rollout, not model tier.
+    trap_type: bigger-model
+sources:
+  - title: API overview — Anthropic
+    url: https://platform.claude.com/docs/en/api/overview
+    verified_on: "2026-09-09"

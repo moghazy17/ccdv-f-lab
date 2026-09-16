@@ -1,0 +1,1541 @@
+{
+  "generatedFrom": "drills/engine/scoring.py",
+  "readiness": {
+    "overallFraction": 0.85,
+    "domainFraction": 0.7
+  },
+  "domainNames": [
+    "Agents and Workflows",
+    "Applications and Integration",
+    "Claude Code",
+    "Eval, Testing, and Debugging",
+    "Model Selection and Optimization",
+    "Prompt and Context Engineering",
+    "Security and Safety",
+    "Tools and MCPs"
+  ],
+  "scale": {
+    "minimum": 100,
+    "maximum": 1000,
+    "passingScore": 720
+  },
+  "cases": [
+    {
+      "name": "every blueprint domain assessed and answered correctly",
+      "mock": {
+        "items": [
+          {
+            "id": "d1",
+            "domain": "Agents and Workflows",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "d2",
+            "domain": "Applications and Integration",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "d3",
+            "domain": "Claude Code",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "d4",
+            "domain": "Eval, Testing, and Debugging",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "d5",
+            "domain": "Model Selection and Optimization",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "d6",
+            "domain": "Prompt and Context Engineering",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "d7",
+            "domain": "Security and Safety",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "d8",
+            "domain": "Tools and MCPs",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          }
+        ]
+      },
+      "attempt": {
+        "answers": [
+          {
+            "item_id": "d1",
+            "selected_option_ids": [
+              "a"
+            ]
+          },
+          {
+            "item_id": "d2",
+            "selected_option_ids": [
+              "a"
+            ]
+          },
+          {
+            "item_id": "d3",
+            "selected_option_ids": [
+              "a"
+            ]
+          },
+          {
+            "item_id": "d4",
+            "selected_option_ids": [
+              "a"
+            ]
+          },
+          {
+            "item_id": "d5",
+            "selected_option_ids": [
+              "a"
+            ]
+          },
+          {
+            "item_id": "d6",
+            "selected_option_ids": [
+              "a"
+            ]
+          },
+          {
+            "item_id": "d7",
+            "selected_option_ids": [
+              "a"
+            ]
+          },
+          {
+            "item_id": "d8",
+            "selected_option_ids": [
+              "a"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "correct": 8,
+        "itemCount": 8,
+        "fractionCorrect": 1.0,
+        "domains": [
+          {
+            "name": "Agents and Workflows",
+            "correct": 1,
+            "itemCount": 1
+          },
+          {
+            "name": "Applications and Integration",
+            "correct": 1,
+            "itemCount": 1
+          },
+          {
+            "name": "Claude Code",
+            "correct": 1,
+            "itemCount": 1
+          },
+          {
+            "name": "Eval, Testing, and Debugging",
+            "correct": 1,
+            "itemCount": 1
+          },
+          {
+            "name": "Model Selection and Optimization",
+            "correct": 1,
+            "itemCount": 1
+          },
+          {
+            "name": "Prompt and Context Engineering",
+            "correct": 1,
+            "itemCount": 1
+          },
+          {
+            "name": "Security and Safety",
+            "correct": 1,
+            "itemCount": 1
+          },
+          {
+            "name": "Tools and MCPs",
+            "correct": 1,
+            "itemCount": 1
+          }
+        ],
+        "estimatedScaledScore": 1000,
+        "scoreAnchor": 720,
+        "scaleMinimum": 100,
+        "scaleMaximum": 1000,
+        "unassessedDomains": [],
+        "lowDomains": [],
+        "ready": true
+      }
+    },
+    {
+      "name": "every domain assessed but one answered wrongly",
+      "mock": {
+        "items": [
+          {
+            "id": "d1",
+            "domain": "Agents and Workflows",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "d2",
+            "domain": "Applications and Integration",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "d3",
+            "domain": "Claude Code",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "d4",
+            "domain": "Eval, Testing, and Debugging",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "d5",
+            "domain": "Model Selection and Optimization",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "d6",
+            "domain": "Prompt and Context Engineering",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "d7",
+            "domain": "Security and Safety",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "d8",
+            "domain": "Tools and MCPs",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          }
+        ]
+      },
+      "attempt": {
+        "answers": [
+          {
+            "item_id": "d1",
+            "selected_option_ids": [
+              "b"
+            ]
+          },
+          {
+            "item_id": "d2",
+            "selected_option_ids": [
+              "a"
+            ]
+          },
+          {
+            "item_id": "d3",
+            "selected_option_ids": [
+              "a"
+            ]
+          },
+          {
+            "item_id": "d4",
+            "selected_option_ids": [
+              "a"
+            ]
+          },
+          {
+            "item_id": "d5",
+            "selected_option_ids": [
+              "a"
+            ]
+          },
+          {
+            "item_id": "d6",
+            "selected_option_ids": [
+              "a"
+            ]
+          },
+          {
+            "item_id": "d7",
+            "selected_option_ids": [
+              "a"
+            ]
+          },
+          {
+            "item_id": "d8",
+            "selected_option_ids": [
+              "a"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "correct": 7,
+        "itemCount": 8,
+        "fractionCorrect": 0.875,
+        "domains": [
+          {
+            "name": "Agents and Workflows",
+            "correct": 0,
+            "itemCount": 1
+          },
+          {
+            "name": "Applications and Integration",
+            "correct": 1,
+            "itemCount": 1
+          },
+          {
+            "name": "Claude Code",
+            "correct": 1,
+            "itemCount": 1
+          },
+          {
+            "name": "Eval, Testing, and Debugging",
+            "correct": 1,
+            "itemCount": 1
+          },
+          {
+            "name": "Model Selection and Optimization",
+            "correct": 1,
+            "itemCount": 1
+          },
+          {
+            "name": "Prompt and Context Engineering",
+            "correct": 1,
+            "itemCount": 1
+          },
+          {
+            "name": "Security and Safety",
+            "correct": 1,
+            "itemCount": 1
+          },
+          {
+            "name": "Tools and MCPs",
+            "correct": 1,
+            "itemCount": 1
+          }
+        ],
+        "estimatedScaledScore": 888,
+        "scoreAnchor": 720,
+        "scaleMinimum": 100,
+        "scaleMaximum": 1000,
+        "unassessedDomains": [],
+        "lowDomains": [
+          "Agents and Workflows"
+        ],
+        "ready": false
+      }
+    },
+    {
+      "name": "every answer correct in every assessed domain",
+      "mock": {
+        "items": [
+          {
+            "id": "s1",
+            "domain": "Agents and Workflows",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "s2",
+            "domain": "Agents and Workflows",
+            "options": [
+              {
+                "id": "a",
+                "correct": false
+              },
+              {
+                "id": "b",
+                "correct": true
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "s3",
+            "domain": "Applications and Integration",
+            "options": [
+              {
+                "id": "a",
+                "correct": false
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": true
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          }
+        ]
+      },
+      "attempt": {
+        "answers": [
+          {
+            "item_id": "s1",
+            "selected_option_ids": [
+              "a"
+            ]
+          },
+          {
+            "item_id": "s2",
+            "selected_option_ids": [
+              "b"
+            ]
+          },
+          {
+            "item_id": "s3",
+            "selected_option_ids": [
+              "c"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "correct": 3,
+        "itemCount": 3,
+        "fractionCorrect": 1.0,
+        "domains": [
+          {
+            "name": "Agents and Workflows",
+            "correct": 2,
+            "itemCount": 2
+          },
+          {
+            "name": "Applications and Integration",
+            "correct": 1,
+            "itemCount": 1
+          },
+          {
+            "name": "Claude Code",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Eval, Testing, and Debugging",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Model Selection and Optimization",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Prompt and Context Engineering",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Security and Safety",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Tools and MCPs",
+            "correct": 0,
+            "itemCount": 0
+          }
+        ],
+        "estimatedScaledScore": 1000,
+        "scoreAnchor": 720,
+        "scaleMinimum": 100,
+        "scaleMaximum": 1000,
+        "unassessedDomains": [
+          "Claude Code",
+          "Eval, Testing, and Debugging",
+          "Model Selection and Optimization",
+          "Prompt and Context Engineering",
+          "Security and Safety",
+          "Tools and MCPs"
+        ],
+        "lowDomains": [],
+        "ready": false
+      }
+    },
+    {
+      "name": "one domain below the per-domain bar",
+      "mock": {
+        "items": [
+          {
+            "id": "s1",
+            "domain": "Agents and Workflows",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "s2",
+            "domain": "Agents and Workflows",
+            "options": [
+              {
+                "id": "a",
+                "correct": false
+              },
+              {
+                "id": "b",
+                "correct": true
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "s3",
+            "domain": "Applications and Integration",
+            "options": [
+              {
+                "id": "a",
+                "correct": false
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": true
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          }
+        ]
+      },
+      "attempt": {
+        "answers": [
+          {
+            "item_id": "s1",
+            "selected_option_ids": [
+              "a"
+            ]
+          },
+          {
+            "item_id": "s2",
+            "selected_option_ids": [
+              "b"
+            ]
+          },
+          {
+            "item_id": "s3",
+            "selected_option_ids": [
+              "a"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "correct": 2,
+        "itemCount": 3,
+        "fractionCorrect": 0.6666666666666666,
+        "domains": [
+          {
+            "name": "Agents and Workflows",
+            "correct": 2,
+            "itemCount": 2
+          },
+          {
+            "name": "Applications and Integration",
+            "correct": 0,
+            "itemCount": 1
+          },
+          {
+            "name": "Claude Code",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Eval, Testing, and Debugging",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Model Selection and Optimization",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Prompt and Context Engineering",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Security and Safety",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Tools and MCPs",
+            "correct": 0,
+            "itemCount": 0
+          }
+        ],
+        "estimatedScaledScore": 700,
+        "scoreAnchor": 720,
+        "scaleMinimum": 100,
+        "scaleMaximum": 1000,
+        "unassessedDomains": [
+          "Claude Code",
+          "Eval, Testing, and Debugging",
+          "Model Selection and Optimization",
+          "Prompt and Context Engineering",
+          "Security and Safety",
+          "Tools and MCPs"
+        ],
+        "lowDomains": [
+          "Applications and Integration"
+        ],
+        "ready": false
+      }
+    },
+    {
+      "name": "a multi-select item needs the exact set, so a subset is wrong",
+      "mock": {
+        "items": [
+          {
+            "id": "m1",
+            "domain": "Agents and Workflows",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": true
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "m2",
+            "domain": "Applications and Integration",
+            "options": [
+              {
+                "id": "a",
+                "correct": false
+              },
+              {
+                "id": "b",
+                "correct": true
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": true
+              }
+            ]
+          }
+        ]
+      },
+      "attempt": {
+        "answers": [
+          {
+            "item_id": "m1",
+            "selected_option_ids": [
+              "a"
+            ]
+          },
+          {
+            "item_id": "m2",
+            "selected_option_ids": [
+              "b",
+              "d"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "correct": 1,
+        "itemCount": 2,
+        "fractionCorrect": 0.5,
+        "domains": [
+          {
+            "name": "Agents and Workflows",
+            "correct": 0,
+            "itemCount": 1
+          },
+          {
+            "name": "Applications and Integration",
+            "correct": 1,
+            "itemCount": 1
+          },
+          {
+            "name": "Claude Code",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Eval, Testing, and Debugging",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Model Selection and Optimization",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Prompt and Context Engineering",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Security and Safety",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Tools and MCPs",
+            "correct": 0,
+            "itemCount": 0
+          }
+        ],
+        "estimatedScaledScore": 550,
+        "scoreAnchor": 720,
+        "scaleMinimum": 100,
+        "scaleMaximum": 1000,
+        "unassessedDomains": [
+          "Claude Code",
+          "Eval, Testing, and Debugging",
+          "Model Selection and Optimization",
+          "Prompt and Context Engineering",
+          "Security and Safety",
+          "Tools and MCPs"
+        ],
+        "lowDomains": [
+          "Agents and Workflows"
+        ],
+        "ready": false
+      }
+    },
+    {
+      "name": "a multi-select item with a superset selected is wrong",
+      "mock": {
+        "items": [
+          {
+            "id": "m1",
+            "domain": "Agents and Workflows",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": true
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "m2",
+            "domain": "Applications and Integration",
+            "options": [
+              {
+                "id": "a",
+                "correct": false
+              },
+              {
+                "id": "b",
+                "correct": true
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": true
+              }
+            ]
+          }
+        ]
+      },
+      "attempt": {
+        "answers": [
+          {
+            "item_id": "m1",
+            "selected_option_ids": [
+              "a",
+              "c",
+              "d"
+            ]
+          },
+          {
+            "item_id": "m2",
+            "selected_option_ids": [
+              "b",
+              "d"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "correct": 1,
+        "itemCount": 2,
+        "fractionCorrect": 0.5,
+        "domains": [
+          {
+            "name": "Agents and Workflows",
+            "correct": 0,
+            "itemCount": 1
+          },
+          {
+            "name": "Applications and Integration",
+            "correct": 1,
+            "itemCount": 1
+          },
+          {
+            "name": "Claude Code",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Eval, Testing, and Debugging",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Model Selection and Optimization",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Prompt and Context Engineering",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Security and Safety",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Tools and MCPs",
+            "correct": 0,
+            "itemCount": 0
+          }
+        ],
+        "estimatedScaledScore": 550,
+        "scoreAnchor": 720,
+        "scaleMinimum": 100,
+        "scaleMaximum": 1000,
+        "unassessedDomains": [
+          "Claude Code",
+          "Eval, Testing, and Debugging",
+          "Model Selection and Optimization",
+          "Prompt and Context Engineering",
+          "Security and Safety",
+          "Tools and MCPs"
+        ],
+        "lowDomains": [
+          "Agents and Workflows"
+        ],
+        "ready": false
+      }
+    },
+    {
+      "name": "an unanswered item counts as wrong rather than as unassessed",
+      "mock": {
+        "items": [
+          {
+            "id": "s1",
+            "domain": "Agents and Workflows",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "s2",
+            "domain": "Agents and Workflows",
+            "options": [
+              {
+                "id": "a",
+                "correct": false
+              },
+              {
+                "id": "b",
+                "correct": true
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "s3",
+            "domain": "Applications and Integration",
+            "options": [
+              {
+                "id": "a",
+                "correct": false
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": true
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          }
+        ]
+      },
+      "attempt": {
+        "answers": [
+          {
+            "item_id": "s1",
+            "selected_option_ids": [
+              "a"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "correct": 1,
+        "itemCount": 3,
+        "fractionCorrect": 0.3333333333333333,
+        "domains": [
+          {
+            "name": "Agents and Workflows",
+            "correct": 1,
+            "itemCount": 2
+          },
+          {
+            "name": "Applications and Integration",
+            "correct": 0,
+            "itemCount": 1
+          },
+          {
+            "name": "Claude Code",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Eval, Testing, and Debugging",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Model Selection and Optimization",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Prompt and Context Engineering",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Security and Safety",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Tools and MCPs",
+            "correct": 0,
+            "itemCount": 0
+          }
+        ],
+        "estimatedScaledScore": 400,
+        "scoreAnchor": 720,
+        "scaleMinimum": 100,
+        "scaleMaximum": 1000,
+        "unassessedDomains": [
+          "Claude Code",
+          "Eval, Testing, and Debugging",
+          "Model Selection and Optimization",
+          "Prompt and Context Engineering",
+          "Security and Safety",
+          "Tools and MCPs"
+        ],
+        "lowDomains": [
+          "Agents and Workflows",
+          "Applications and Integration"
+        ],
+        "ready": false
+      }
+    },
+    {
+      "name": "no answers at all",
+      "mock": {
+        "items": [
+          {
+            "id": "s1",
+            "domain": "Agents and Workflows",
+            "options": [
+              {
+                "id": "a",
+                "correct": true
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "s2",
+            "domain": "Agents and Workflows",
+            "options": [
+              {
+                "id": "a",
+                "correct": false
+              },
+              {
+                "id": "b",
+                "correct": true
+              },
+              {
+                "id": "c",
+                "correct": false
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          },
+          {
+            "id": "s3",
+            "domain": "Applications and Integration",
+            "options": [
+              {
+                "id": "a",
+                "correct": false
+              },
+              {
+                "id": "b",
+                "correct": false
+              },
+              {
+                "id": "c",
+                "correct": true
+              },
+              {
+                "id": "d",
+                "correct": false
+              }
+            ]
+          }
+        ]
+      },
+      "attempt": {
+        "answers": []
+      },
+      "expected": {
+        "correct": 0,
+        "itemCount": 3,
+        "fractionCorrect": 0.0,
+        "domains": [
+          {
+            "name": "Agents and Workflows",
+            "correct": 0,
+            "itemCount": 2
+          },
+          {
+            "name": "Applications and Integration",
+            "correct": 0,
+            "itemCount": 1
+          },
+          {
+            "name": "Claude Code",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Eval, Testing, and Debugging",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Model Selection and Optimization",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Prompt and Context Engineering",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Security and Safety",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Tools and MCPs",
+            "correct": 0,
+            "itemCount": 0
+          }
+        ],
+        "estimatedScaledScore": 100,
+        "scoreAnchor": 720,
+        "scaleMinimum": 100,
+        "scaleMaximum": 1000,
+        "unassessedDomains": [
+          "Claude Code",
+          "Eval, Testing, and Debugging",
+          "Model Selection and Optimization",
+          "Prompt and Context Engineering",
+          "Security and Safety",
+          "Tools and MCPs"
+        ],
+        "lowDomains": [
+          "Agents and Workflows",
+          "Applications and Integration"
+        ],
+        "ready": false
+      }
+    },
+    {
+      "name": "an empty mock scores zero without dividing by zero",
+      "mock": {
+        "items": []
+      },
+      "attempt": {
+        "answers": []
+      },
+      "expected": {
+        "correct": 0,
+        "itemCount": 0,
+        "fractionCorrect": 0.0,
+        "domains": [
+          {
+            "name": "Agents and Workflows",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Applications and Integration",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Claude Code",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Eval, Testing, and Debugging",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Model Selection and Optimization",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Prompt and Context Engineering",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Security and Safety",
+            "correct": 0,
+            "itemCount": 0
+          },
+          {
+            "name": "Tools and MCPs",
+            "correct": 0,
+            "itemCount": 0
+          }
+        ],
+        "estimatedScaledScore": 100,
+        "scoreAnchor": 720,
+        "scaleMinimum": 100,
+        "scaleMaximum": 1000,
+        "unassessedDomains": [
+          "Agents and Workflows",
+          "Applications and Integration",
+          "Claude Code",
+          "Eval, Testing, and Debugging",
+          "Model Selection and Optimization",
+          "Prompt and Context Engineering",
+          "Security and Safety",
+          "Tools and MCPs"
+        ],
+        "lowDomains": [],
+        "ready": false
+      }
+    }
+  ]
+}

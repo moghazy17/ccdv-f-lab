@@ -1,0 +1,60 @@
+id: bounded-agent-loop-turn-cap
+domain: Agents and Workflows
+sub_skill: Agent Construction with Claude
+difficulty: analysis
+select: 1
+stem: >-
+  A custom agent harness repeatedly sends tool results back to the model and dispatches whatever
+  tool it calls next. A bug in one tool's result formatting caused the model to keep calling the
+  same tool over and over during an incident, running up cost for hours before anyone noticed.
+  The team wants a change that guarantees this specific failure mode cannot repeat, in every
+  future session, no matter what the model decides to do. Which change actually guarantees that?
+options:
+  - id: a
+    text: >-
+      Enforce a maximum number of tool-use turns in the harness itself, so the loop stops and
+      returns once the cap is reached regardless of what the model requests next.
+    correct: true
+    rationale: >-
+      A turn cap enforced by the harness's own control flow — not by the model — is a limit the
+      code applies unconditionally; it stops a runaway loop even when the model keeps choosing to
+      call another tool, which is exactly the guarantee the incident requires.
+  - id: b
+    text: >-
+      Add a system-prompt instruction asking the model to stop calling tools once it believes it
+      has gathered enough information.
+    correct: false
+    rationale: >-
+      This is a request the model can fail to follow, especially when a formatting bug is what
+      convinces it more information is still needed; it does not bound the number of turns.
+    trap_type: unenforceable-politeness
+  - id: c
+    text: >-
+      Switch the harness to a larger, more capable model, expecting it to recognize the malformed
+      tool result and stop on its own.
+    correct: false
+    rationale: >-
+      A more capable model can still be misled by a malformed tool result into calling the tool
+      again; model capability is not a substitute for a hard limit the harness enforces.
+    trap_type: bigger-model
+  - id: d
+    text: Lower the per-request max_tokens so each individual model response is shorter.
+    correct: false
+    rationale: >-
+      Shortening each response does not bound how many turns the loop can run; a short response
+      can still request a tool call on every turn, so the runaway pattern continues.
+    trap_type: irrelevant-knob
+  - id: e
+    text: >-
+      Rely on the API's own rate limits to eventually throttle the request volume from the
+      runaway loop.
+    correct: false
+    rationale: >-
+      Rate limiting is a transport-layer control aimed at protecting the API from excess request
+      volume; it is not a substitute for the harness bounding its own loop, and a loop can still
+      run expensively within the rate limit for a long time before being throttled.
+    trap_type: wrong-layer
+sources:
+  - title: How the agent loop works — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/agent-sdk/agent-loop
+    verified_on: "2026-09-08"

@@ -1,0 +1,56 @@
+id: multishot-examples-for-consistent-output-format
+domain: Prompt and Context Engineering
+sub_skill: Prompt Engineering
+difficulty: application
+select: 1
+stem: >-
+  A prompt asks Claude to rewrite customer feedback into a short bullet list with a fixed heading
+  style, but the output format is inconsistent across calls: sometimes headings, sometimes plain
+  bullets, sometimes a short paragraph first. The instructions already describe the desired format
+  in prose. Which change is most likely to make the output format consistent?
+options:
+  - id: a
+    text: >-
+      Add three to five diverse input-output examples of the desired format, each wrapped in its
+      own `<example>` tag inside an `<examples>` block.
+    correct: true
+    rationale: >-
+      A handful of well-chosen, clearly delimited examples is a reliable way to steer output
+      format, tone, and structure; wrapping each in its own tag lets Claude tell examples apart
+      from instructions and from each other.
+  - id: b
+    text: Rephrase the prose instructions to be even more detailed about the exact format.
+    correct: false
+    rationale: >-
+      The format is already stated in prose; adding more descriptive text addresses the same
+      instruction-following path that is already producing inconsistent results, rather than
+      giving Claude a concrete pattern to match.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: Move the rewriting task to a larger, more capable model.
+    correct: false
+    rationale: >-
+      A more capable model can still vary its formatting when only given prose instructions;
+      capability is not what example-based steering fixes.
+    trap_type: bigger-model
+  - id: d
+    text: Lower the sampling temperature to zero so the output is deterministic.
+    correct: false
+    rationale: >-
+      Lowering temperature can make a given prompt more repeatable for the same input, but it does
+      not teach Claude the specific heading and bullet format that is currently underspecified; a
+      different input can still be formatted differently at temperature zero.
+    trap_type: irrelevant-knob
+  - id: e
+    text: >-
+      Ask, in the system prompt, for Claude to try to be consistent with its own formatting from
+      one call to the next.
+    correct: false
+    rationale: >-
+      Separate calls do not share memory of each other's formatting choices, and this instruction
+      gives Claude no concrete pattern to reproduce, so it does not enforce a consistent format.
+    trap_type: unenforceable-politeness
+sources:
+  - title: Prompting best practices — Anthropic (Claude Platform docs)
+    url: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+    verified_on: "2026-09-09"

@@ -1,0 +1,57 @@
+id: claude-md-not-enforced-across-interfaces
+domain: Applications and Integration
+sub_skill: Claude Application Design
+difficulty: analysis
+select: 1
+stem: >-
+  A team's CLAUDE.md tells Claude Code "never run destructive shell commands without asking
+  first." An engineer wants a guarantee that a destructive command cannot execute even if the
+  model decides to run one anyway, across every session and every developer's machine. Which
+  mechanism actually delivers that guarantee, and which does not?
+options:
+  - id: a
+    text: >-
+      A PreToolUse hook that inspects the command and blocks execution before it runs delivers the
+      guarantee, because hooks execute in the harness's own process independent of what the model
+      decides.
+    correct: true
+    rationale: >-
+      Hooks run as callbacks in the harness, outside the model's control, and can block a
+      dangerous operation before it executes; that is what gives a hard guarantee regardless of
+      model behavior, as opposed to content that only shapes what the model decides to do.
+  - id: b
+    text: >-
+      The CLAUDE.md instruction alone delivers the guarantee, since Claude reads and follows
+      CLAUDE.md on every session.
+    correct: false
+    rationale: >-
+      Anthropic's documentation states that Claude treats CLAUDE.md as context, not enforced
+      configuration, and that a PreToolUse hook is the mechanism to use instead when an action
+      must be blocked regardless of what Claude decides; the instruction alone gives no guarantee.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      Rewriting the CLAUDE.md instruction in stronger, more emphatic wording ("ABSOLUTELY NEVER
+      run destructive commands") delivers the guarantee.
+    correct: false
+    rationale: >-
+      Stronger wording still only shapes the model's behavior as context; it does not change
+      CLAUDE.md's documented status as unenforced, and the model can still choose not to comply.
+    trap_type: unenforceable-politeness
+  - id: d
+    text: >-
+      Switching to a larger, more capable model delivers the guarantee, since a more capable model
+      would better respect the CLAUDE.md instruction.
+    correct: false
+    rationale: >-
+      Model capability does not change whether CLAUDE.md is enforced configuration or context; the
+      documented distinction between hooks and CLAUDE.md is architectural, not a function of which
+      model is used.
+    trap_type: bigger-model
+sources:
+  - title: How Claude remembers your project — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/memory
+    verified_on: "2026-09-09"
+  - title: Control execution with hooks — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/agent-sdk/hooks
+    verified_on: "2026-09-09"

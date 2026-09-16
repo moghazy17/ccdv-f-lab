@@ -6,6 +6,9 @@ export interface ContentSectionStatus {
 }
 
 const HEADING = /^(#{1,6})\s+(.+?)\s*$/gm;
+// Mirrors _FRONTMATTER in tools/note_content.py. Metadata is not note content, and a YAML comment
+// inside it would otherwise read as a heading whose body is the rest of the frontmatter.
+const FRONT_MATTER = /^---\r?\n[\s\S]*?\r?\n---\r?\n?/;
 
 export function authoredHeadings(markdown: string): string[] {
   // Return headings that have authored content under the repository's note rule.
@@ -15,8 +18,8 @@ export function authoredHeadings(markdown: string): string[] {
 }
 
 export function sectionStatuses(markdown: string): ContentSectionStatus[] {
-  // Classify each Markdown heading after removing scaffold authoring prompts.
-  const content = withoutAuthoringPrompts(markdown);
+  // Classify each Markdown heading after removing frontmatter and scaffold authoring prompts.
+  const content = withoutAuthoringPrompts(withoutFrontMatter(markdown));
   const headings = Array.from(content.matchAll(HEADING));
 
   return headings.map((heading, index) => {
@@ -38,6 +41,10 @@ export function domainContentStatus(markdowns: Iterable<string>): ContentStatus 
     return "scaffold";
   }
   return authored === statuses.length ? "authored" : "partial";
+}
+
+function withoutFrontMatter(markdown: string): string {
+  return markdown.replace(FRONT_MATTER, "");
 }
 
 function withoutAuthoringPrompts(markdown: string): string {

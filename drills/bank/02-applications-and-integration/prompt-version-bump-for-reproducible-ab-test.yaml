@@ -1,0 +1,60 @@
+id: prompt-version-bump-for-reproducible-ab-test
+domain: Applications and Integration
+sub_skill: Configuration Management
+difficulty: application
+select: 1
+stem: >-
+  A team resolves its system instruction by looking up an explicit name-and-version pair, for
+  example ("ticket_triage", "1.0.0"), from a small catalog, and rejects any lookup for a version
+  not in that catalog. An engineer wants to soften the existing instruction's wording to reduce a
+  category of misclassifications, and plans to edit the "1.0.0" entry's text in place so no other
+  code needs to change. What is the problem with editing the existing version in place, and what
+  should happen instead?
+options:
+  - id: a
+    text: >-
+      Editing "1.0.0" in place silently changes the instruction behind every caller that already
+      resolves that exact version, making it impossible to tell which wording produced any given
+      past or future result. The change should be published as a new explicit version (for
+      example "1.0.1"), leaving "1.0.0" resolvable and unchanged so results can be compared across
+      the two versions.
+    correct: true
+    rationale: >-
+      An explicit, comparable version string is only meaningful if resolving the same
+      name-and-version pair keeps returning the same instruction; editing the text under an
+      existing version number breaks that guarantee and erases the ability to compare behavior
+      before and after the wording change.
+  - id: b
+    text: >-
+      There is no problem, since version is purely cosmetic metadata that does not affect which
+      instruction text a caller receives.
+    correct: false
+    rationale: >-
+      The version is the lookup key that determines which instruction text a caller receives;
+      treating it as cosmetic ignores that every caller resolving "1.0.0" is depending on that
+      lookup returning stable text.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      Add a comment above the edited instruction text explaining that the wording changed on this
+      date, and leave the version number as "1.0.0".
+    correct: false
+    rationale: >-
+      A comment in the source is not visible to whatever recorded which version produced a past
+      result; it does not restore the ability to compare outcomes across the old and new wording
+      the way an actual version bump would.
+    trap_type: cost-theater
+  - id: d
+    text: >-
+      Route the reworded instruction to a larger model instead of bumping the version, since a
+      more capable model will produce fewer misclassifications regardless of wording.
+    correct: false
+    rationale: >-
+      The problem here is a version-management question about tracking which instruction text
+      produced which results, not a question of model capability; switching models does not
+      restore that traceability.
+    trap_type: bigger-model
+sources:
+  - title: ccdv-f-lab reference app — lab/config.py PromptVersion and compare_prompt_versions
+    url: https://github.com/moghazy17/ccdv-f-lab/blob/main/lab/config.py
+    verified_on: "2026-09-09"

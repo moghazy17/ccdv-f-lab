@@ -1,7 +1,10 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  CURRENT_SCHEMA_VERSION,
+  LAST_REPORT_SESSION_KEY,
   PROGRESS_STORAGE_KEY,
+  checkStorageAvailability,
   createProgressStorage,
   emptyProgress,
   migrateProgress,
@@ -12,6 +15,7 @@ import {
 class MemoryStorage implements StorageLike {
   readonly values = new Map<string, string>();
   failWrites = false;
+  writeCount = 0;
 
   getItem(key: string): string | null {
     return this.values.get(key) ?? null;
@@ -21,11 +25,24 @@ class MemoryStorage implements StorageLike {
     if (this.failWrites) {
       throw new Error("quota exceeded");
     }
+    this.writeCount += 1;
     this.values.set(key, value);
+  }
+
+  removeItem(key: string): void {
+    this.values.delete(key);
   }
 }
 
 describe("progress storage", () => {
+  test("writes an unchanged diagnostic object only once", () => {
+    const storage = new MemoryStorage();
+    const progress = createProgressStorage(storage, () => "2026-01-02T00:00:00.000Z");
+
+    expect(progress.setDiagnostic({ recommendedPlan: "3-weeks" }).kind).toBe("ok");
+    expect(storage.writeCount).toBe(1);
+  });
+
   test("theme bootstrap refuses future and invalid schema records", () => {
     const originalDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
     const originalStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
@@ -183,5 +200,180 @@ describe("concurrent plan-mark writes", () => {
 
     const stored = progress.read();
     expect(stored.value?.namespaces.foundation.planMarks["3-weeks"]).toEqual([5]);
+  });
+});
+
+describe("practice namespaces", () => {
+  test("schema version stays one so a record here still imports into an earlier build", () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(1);
+  });
+
+  test("a feature-001 record migrates forward with the four namespaces defaulted", () => {
+    const legacy = {
+      schemaVersion: 1,
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      namespaces: {
+        foundation: { theme: "dark", planMarks: { "1-week": [1] }, diagnostic: null }
+      }
+    };
+
+    const result = migrateProgress(legacy);
+
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok" && result.value !== undefined) {
+      expect(result.value.namespaces.labs).toEqual({ edits: {} });
+      expect(result.value.namespaces.mock).toEqual({ current: null, reports: [], summaries: [] });
+      expect(result.value.namespaces.quiz).toEqual({ results: {}, recall: {} });
+      expect(result.value.namespaces.flashcards).toEqual({ state: {} });
+      // The namespace this reader already understood is untouched by the migration.
+      expect(result.value.namespaces.foundation.planMarks).toEqual({ "1-week": [1] });
+    }
+  });
+
+  test("a record carrying the four namespaces round-trips with their data intact", () => {
+    const record = emptyProgress("2026-01-01T00:00:00.000Z");
+    record.namespaces.labs.edits.transport = "print('edited')";
+    record.namespaces.mock.current = {
+      id: "attempt-1",
+      items: [],
+      answers: { "item-1": ["a"] },
+      startedAt: "2026-01-01T00:00:00.000Z",
+      deadlineAt: "2026-01-01T02:00:00.000Z",
+      submittedAt: null,
+      expiryHandled: false
+    };
+    record.namespaces.mock.summaries.push({
+      attemptId: "attempt-0",
+      submittedAt: "2025-12-31T00:00:00.000Z",
+      correct: 40,
+      itemCount: 53,
+      domainScores: { "Claude Code": { correct: 2, itemCount: 2 } },
+      ready: true,
+      lowDomains: [],
+      unassessedDomains: [],
+      detailDropped: true
+    });
+    record.namespaces.quiz.results["Claude Code"] = {
+      correct: 4,
+      itemCount: 5,
+      takenAt: "2026-01-01T00:00:00.000Z",
+      wrongAnswers: []
+    };
+    record.namespaces.quiz.recall["prompt-1"] = "known";
+    record.namespaces.flashcards.state["card-1"] = { box: 2, dueAt: "2026-01-04T00:00:00.000Z" };
+
+    const result = migrateProgress(record);
+
+    expect(result.kind).toBe("ok");
+    if (result.kind === "ok" && result.value !== undefined) {
+      expect(result.value.namespaces.labs).toEqual(record.namespaces.labs);
+      expect(result.value.namespaces.mock).toEqual(record.namespaces.mock);
+      expect(result.value.namespaces.quiz).toEqual(record.namespaces.quiz);
+      expect(result.value.namespaces.flashcards).toEqual(record.namespaces.flashcards);
+    }
+  });
+
+  test("clears every practice namespace while retaining foundation progress exactly", () => {
+    const storage = new MemoryStorage();
+    const record = emptyProgress("2026-01-01T00:00:00.000Z");
+    record.namespaces.foundation = {
+      theme: "dark",
+      planMarks: { "3-weeks": [2, 5] },
+      diagnostic: { recommendedPlan: "3-weeks" }
+    };
+    record.namespaces.labs.edits.router = "print('practice')";
+    record.namespaces.mock.current = {
+      id: "attempt-1",
+      items: [],
+      answers: {},
+      startedAt: "2026-01-01T00:00:00.000Z",
+      deadlineAt: "2026-01-01T02:00:00.000Z",
+      submittedAt: null,
+      expiryHandled: false
+    };
+    record.namespaces.quiz.results["claude-code"] = {
+      correct: 1,
+      itemCount: 2,
+      takenAt: "2026-01-01T00:00:00.000Z",
+      wrongAnswers: []
+    };
+    record.namespaces.quiz.recall["prompt-1"] = "known";
+    record.namespaces.flashcards.state["card-1"] = {
+      box: 2,
+      dueAt: "2026-01-02T00:00:00.000Z"
+    };
+    storage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(record));
+    const progress = createProgressStorage(storage);
+
+    expect(progress.clearPracticeResults().kind).toBe("ok");
+    const cleared = progress.read().value?.namespaces;
+
+    expect(cleared?.foundation).toEqual(record.namespaces.foundation);
+    expect(cleared?.labs).toEqual({ edits: {} });
+    expect(cleared?.mock).toEqual({ current: null, reports: [], summaries: [] });
+    expect(cleared?.quiz).toEqual({ results: {}, recall: {} });
+    expect(cleared?.flashcards).toEqual({ state: {} });
+  });
+
+  test("records when practice results were cleared, where every tab can read it", () => {
+    const browser = new MemoryStorage();
+    const progress = createProgressStorage(browser, () => "2026-02-03T04:05:06.000Z");
+
+    expect(progress.practiceClearedAt()).toBeNull();
+    expect(progress.clearPracticeResults().kind).toBe("ok");
+    // Session storage reaches only the tab that holds it, so the mark belongs in browser storage:
+    // a report earned before this instant is one another tab must no longer show.
+    expect(progress.practiceClearedAt()).toBe("2026-02-03T04:05:06.000Z");
+  });
+
+  test("clears the session report after practice results are cleared", () => {
+    const originalSessionStorage = Object.getOwnPropertyDescriptor(globalThis, "sessionStorage");
+    const session = new MemoryStorage();
+    session.setItem(LAST_REPORT_SESSION_KEY, "stored report");
+    Object.defineProperty(globalThis, "sessionStorage", { configurable: true, value: session });
+
+    try {
+      expect(createProgressStorage(new MemoryStorage()).clearPracticeResults().kind).toBe("ok");
+      expect(session.getItem(LAST_REPORT_SESSION_KEY)).toBeNull();
+    } finally {
+      if (originalSessionStorage) {
+        Object.defineProperty(globalThis, "sessionStorage", originalSessionStorage);
+      } else {
+        Reflect.deleteProperty(globalThis, "sessionStorage");
+      }
+    }
+  });
+});
+
+describe("storage availability", () => {
+  test("reports unavailable when no backing store exists", () => {
+    expect(checkStorageAvailability(null)).toBe("unavailable");
+  });
+
+  test("reports available for a working store and leaves it clean", () => {
+    const storage = new MemoryStorage();
+
+    expect(checkStorageAvailability(storage)).toBe("available");
+    expect(storage.values.size).toBe(0);
+  });
+
+  test("reports full without throwing when a write hits quota", () => {
+    const storage = new MemoryStorage();
+    storage.failWrites = true;
+
+    expect(checkStorageAvailability(storage)).toBe("full");
+  });
+
+  test("reports unavailable without throwing when reads themselves fail", () => {
+    const storage: StorageLike = {
+      getItem() {
+        throw new Error("blocked");
+      },
+      setItem() {
+        // Unreachable: getItem fails first.
+      }
+    };
+
+    expect(checkStorageAvailability(storage)).toBe("unavailable");
   });
 });

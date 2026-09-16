@@ -1,0 +1,64 @@
+id: specific-first-retry-chain-for-rate-limits
+domain: Model Selection and Optimization
+sub_skill: Technical Fundamentals
+difficulty: application
+select: 1
+stem: >-
+  A production integration built on the official Python SDK wraps every Messages API call in one
+  broad `except anthropic.APIError` block that logs the failure and gives up without retrying.
+  Traffic has grown, and intermittent 429 and 500-range responses are now common. The on-call
+  engineer wants better retry behavior without discarding the SDK. What should they do?
+options:
+  - id: a
+    text: >-
+      Replace the single broad catch with a most-specific-first exception chain, so
+      `RateLimitError`, connection errors, and `InternalServerError` are retried with backoff
+      while a non-retryable failure such as `BadRequestError` surfaces immediately.
+    correct: true
+    rationale: >-
+      Connection errors, 408, 409, 429, and 5xx responses are exactly the set the SDK already
+      retries automatically with exponential backoff; a most-specific-first catch chain preserves
+      that distinction instead of collapsing retryable and non-retryable failures into one path.
+  - id: b
+    text: >-
+      Drop the SDK for this integration and issue raw HTTP requests, writing custom retry logic
+      for 429 and 500-range responses from scratch.
+    correct: false
+    rationale: >-
+      The goal of correct retry behavior is right, but the mechanism is wrong: the SDK already
+      retries connection errors, 408, 409, 429, and 5xx by default, so discarding it also discards
+      credential resolution, timeouts, and typed exceptions for no gain.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: >-
+      Move the workload to Claude Fable 5.1, on the theory that a more capable model will be
+      rate-limited less often.
+    correct: false
+    rationale: >-
+      Rate limiting and server errors are properties of account-level request volume and
+      infrastructure load, not of which model answers the request; a more capable model does not
+      change how often 429s or 500s occur.
+    trap_type: bigger-model
+  - id: d
+    text: >-
+      Add a system-prompt instruction asking the model to avoid triggering rate limits.
+    correct: false
+    rationale: >-
+      Rate limiting is enforced by the API layer based on request volume, independent of anything
+      stated in the prompt; the model has no mechanism to comply with an instruction like this.
+    trap_type: unenforceable-politeness
+  - id: e
+    text: >-
+      Enable prompt caching on every request so fewer of them are rate-limited or fail.
+    correct: false
+    rationale: >-
+      Prompt caching reduces the cost and latency of repeated input tokens; it has no effect on
+      whether a request is rate-limited or returns a server error.
+    trap_type: irrelevant-knob
+sources:
+  - title: Python SDK — Claude Platform Docs
+    url: https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/python
+    verified_on: "2026-09-09"
+  - title: Claude API errors — Anthropic
+    url: https://platform.claude.com/docs/en/api/errors
+    verified_on: "2026-09-08"

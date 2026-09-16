@@ -65,6 +65,9 @@ jobs:
       - name: Build site
         working-directory: site
         run: npm run build
+      - name: Check first-run payload budget
+        working-directory: site
+        run: npm run check:payload
       - name: Run unit tests
         working-directory: site
         run: npm run test:unit

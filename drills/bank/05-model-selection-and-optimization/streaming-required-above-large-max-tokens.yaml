@@ -1,0 +1,64 @@
+id: streaming-required-above-large-max-tokens
+domain: Model Selection and Optimization
+sub_skill: Technical Fundamentals
+difficulty: application
+select: 1
+stem: >-
+  A non-streaming Messages API request sets `max_tokens` very high to generate a long structured
+  report. In production, the request reliably fails partway through the wait with a client-side
+  timeout, even though the account has no rate-limit problems and the model itself completes the
+  generation server-side. What is the correct fix?
+options:
+  - id: a
+    text: >-
+      Switch the request to streaming. A non-streaming request with a large `max_tokens` value is
+      expected to exceed the client's default timeout, so streaming is the documented remedy
+      rather than an optional latency improvement.
+    correct: true
+    rationale: >-
+      The SDK documentation warns against setting a large `max_tokens` value without streaming and
+      recommends the streaming Messages API for long-running requests specifically because a
+      non-streaming call can exceed the default timeout before the response finishes.
+  - id: b
+    text: >-
+      Lower the effort level so the model reasons less before answering.
+    correct: false
+    rationale: >-
+      Effort steers how much internal reasoning the model performs; it does not change how the
+      client is waiting for a non-streaming HTTP response, so it does not address the timeout.
+    trap_type: irrelevant-knob
+  - id: c
+    text: >-
+      Move the workload to Claude Fable 5.1, expecting the more capable model to finish before the
+      timeout is reached.
+    correct: false
+    rationale: >-
+      A non-streaming client-side timeout is a transport-layer limit on how long the caller waits
+      for a complete response; a more capable model does not change that limit or the underlying
+      requirement to stream long-running requests.
+    trap_type: bigger-model
+  - id: d
+    text: >-
+      Raise `max_tokens` further to give the model more room to finish before the timeout.
+    correct: false
+    rationale: >-
+      Raising the ceiling increases how much the model may generate; it does nothing about the
+      transport-layer timeout the non-streaming client hits while waiting, and can make the
+      request take even longer to complete.
+    trap_type: irrelevant-knob
+  - id: e
+    text: >-
+      Add an instruction telling the model to answer more concisely so it finishes in time.
+    correct: false
+    rationale: >-
+      Even if the model complied, there is no enforceable guarantee it stays under the timeout on
+      every request; the documented fix for a long non-streaming call is the streaming mechanism,
+      not a politeness request about length.
+    trap_type: unenforceable-politeness
+sources:
+  - title: Streaming messages — Claude Platform Docs
+    url: https://platform.claude.com/docs/en/build-with-claude/streaming
+    verified_on: "2026-09-09"
+  - title: Python SDK — Claude Platform Docs
+    url: https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/python
+    verified_on: "2026-09-09"

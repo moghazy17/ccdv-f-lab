@@ -2,8 +2,10 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { defineConfig } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "astro/config";
+
+import { assertDerivedDomainsMatchBlueprint } from "./src/lib/blueprint-guard.ts";
 
 const repositoryRoot = fileURLToPath(new URL("..", import.meta.url));
 const site = process.env.SITE ?? "https://moghazy17.github.io";
@@ -25,6 +27,7 @@ function assertCurrentBlueprintData() {
   if (data.sourceDigest !== sourceDigest) {
     throw new Error("Generated blueprint data is stale. Run python tools/export_site_data.py.");
   }
+  assertDerivedDomainsMatchBlueprint(data.domains ?? [], blueprintText);
 }
 
 assertCurrentBlueprintData();

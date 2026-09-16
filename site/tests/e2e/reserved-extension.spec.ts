@@ -1,12 +1,8 @@
 import { expect, test } from "@playwright/test";
 
+// Feature 002 filled the lab, mock, domain-quiz, and flashcard addresses, so they are asserted as
+// live pages below rather than as inert fixtures. The remaining three are still reserved.
 const reservedAddressPatterns = [
-  { pattern: "/labs/", route: "./labs/", label: "Lab index" },
-  { pattern: "/labs/<module-slug>/", route: "./labs/batch/", label: "Runnable lab module" },
-  { pattern: "/mock/", route: "./mock/", label: "Mock exam" },
-  { pattern: "/mock/report/", route: "./mock/report/", label: "Score report" },
-  { pattern: "/flashcards/", route: "./flashcards/", label: "Flashcards" },
-  { pattern: "/domains/<domain-slug>/quiz/", route: "./domains/01-agents-and-workflows/quiz/", label: "Domain quiz" },
   { pattern: "/claude-code/terminal/", route: "./claude-code/terminal/", label: "Terminal simulator" },
   { pattern: "/claude-code/config/", route: "./claude-code/config/", label: "Settings builder" },
   { pattern: "/playground/", route: "./playground/", label: "Playground" }
@@ -26,7 +22,41 @@ const establishedRoutes = [
 ];
 
 test.describe("Reserved extension safety and route stability (SC-010, FR-020, FR-021)", () => {
-  test("all nine reserved address patterns resolve at their contracted paths as inert fixtures", async ({
+  test("the addresses feature 001 reserved now resolve as real pages at the same paths", async ({
+    page
+  }) => {
+    const indexResponse = await page.goto("./labs/");
+    expect(indexResponse?.status()).toBe(200);
+    await expect(page).toHaveURL(/\/ccdv-f-lab\/labs\/$/);
+    await expect(page.getByTestId("labs-catalogue")).toBeVisible();
+
+    const moduleResponse = await page.goto("./labs/batch/");
+    expect(moduleResponse?.status()).toBe(200);
+    await expect(page).toHaveURL(/\/ccdv-f-lab\/labs\/batch\/$/);
+    await expect(page.getByTestId("lab-concept")).toBeVisible();
+
+    const mockResponse = await page.goto("./mock/");
+    expect(mockResponse?.status()).toBe(200);
+    await expect(page).toHaveURL(/\/ccdv-f-lab\/mock\/$/);
+    await expect(page.getByTestId("mock-facts")).toBeVisible();
+
+    const reportResponse = await page.goto("./mock/report/");
+    expect(reportResponse?.status()).toBe(200);
+    await expect(page).toHaveURL(/\/ccdv-f-lab\/mock\/report\/$/);
+    await expect(page.getByTestId("score-report-empty")).toBeVisible();
+
+    const quizResponse = await page.goto("./domains/01-agents-and-workflows/quiz/");
+    expect(quizResponse?.status()).toBe(200);
+    await expect(page).toHaveURL(/\/ccdv-f-lab\/domains\/01-agents-and-workflows\/quiz\/$/);
+    await expect(page.getByRole("heading", { name: "Scored quiz" })).toBeVisible();
+
+    const flashcardsResponse = await page.goto("./flashcards/");
+    expect(flashcardsResponse?.status()).toBe(200);
+    await expect(page).toHaveURL(/\/ccdv-f-lab\/flashcards\/$/);
+    await expect(page.getByRole("heading", { name: "Review the deck" })).toBeVisible();
+  });
+
+  test("the remaining reserved address patterns resolve at their contracted paths as inert fixtures", async ({
     page
   }) => {
     for (const item of reservedAddressPatterns) {
@@ -59,7 +89,7 @@ test.describe("Reserved extension safety and route stability (SC-010, FR-020, FR
 
     await expect(practiceRegion).toBeVisible();
     await expect(practiceRegion.getByRole("heading", { name: /practice/i })).toBeVisible();
-    await expect(practiceRegion).toContainText("This region is reserved for the domain self-check and drill count.");
+    await expect(practiceRegion).toContainText("Only the scored quiz feeds a readiness signal");
   });
 
   test("all established navigation targets and addresses remain unchanged", async ({ page }) => {

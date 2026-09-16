@@ -42,3 +42,9 @@ site/.astro/
 
 # Isolated fixture builds from the domain-content e2e test
 site/.us2-*
+
+# Generated site data and the runtime bundle — derived from BLUEPRINT.md, drills/bank/,
+# lab/, and drills/ at build time. A committed copy would be the duplication FR-001 forbids.
+site/src/data/mock.json
+site/src/data/items.json
+site/public/runtime/

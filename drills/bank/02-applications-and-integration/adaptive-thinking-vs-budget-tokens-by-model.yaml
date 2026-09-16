@@ -1,0 +1,58 @@
+id: adaptive-thinking-vs-budget-tokens-by-model
+domain: Applications and Integration
+sub_skill: Claude API Mechanics
+difficulty: application
+select: 1
+stem: >-
+  An engineer configures extended thinking for two tasks routed to two different pinned models:
+  Sonnet handles drafting, Haiku handles fast classification. They write one shared
+  thinking-configuration helper that always passes a budget_tokens value on every request. What is
+  wrong with that design, and what should the helper do instead?
+options:
+  - id: a
+    text: >-
+      Sonnet and Opus take adaptive thinking, a mode with no separate token budget to configure,
+      while Haiku's thinking is only configured with an explicit budget_tokens value; the helper
+      must branch on which model it is calling rather than always sending budget_tokens.
+    correct: true
+    rationale: >-
+      Adaptive thinking and the fixed-budget thinking form are different request shapes tied to
+      which model is being called; sending budget_tokens to a model that takes adaptive thinking,
+      or omitting it for a model that requires it, produces an invalid request for one of the two
+      models.
+  - id: b
+    text: >-
+      Set effort to "high" instead of configuring thinking at all, since effort and thinking are
+      the same setting under a different name.
+    correct: false
+    rationale: >-
+      Effort is set through output_config.effort as its own parameter, separate from the thinking
+      block; treating the two as interchangeable does not correctly configure either one for a
+      model that needs an explicit thinking budget.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: >-
+      Use the largest possible budget_tokens value for every request, on the assumption that more
+      budget always improves output regardless of which model receives it.
+    correct: false
+    rationale: >-
+      Turning the same numeric knob up does not address the actual problem, which is that one of
+      the two models does not accept a budget_tokens value on its thinking configuration at all.
+    trap_type: irrelevant-knob
+  - id: d
+    text: >-
+      Switch the classification task to the same model used for drafting, so a single thinking
+      configuration works for both.
+    correct: false
+    rationale: >-
+      Changing which model is routed to which task is a routing decision made for latency and cost
+      reasons; it sidesteps rather than fixes the actual bug, which is that the thinking-config
+      helper does not branch on the model it is calling.
+    trap_type: wrong-layer
+sources:
+  - title: Steering thinking — Anthropic
+    url: https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost
+    verified_on: "2026-09-09"
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-09"

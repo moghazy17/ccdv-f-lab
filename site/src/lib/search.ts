@@ -11,7 +11,9 @@ export const KNOWN_RECORD_TYPES = [
   "blueprint",
   "drill",
   "flashcard",
-  "lab"
+  "lab",
+  "mock",
+  "quiz"
 ] as const;
 
 export type KnownRecordType = (typeof KNOWN_RECORD_TYPES)[number];
@@ -52,7 +54,9 @@ const RECORD_TYPE_LABELS: Record<string, string> = {
   blueprint: "Blueprint",
   drill: "Practice item",
   flashcard: "Flashcard",
-  lab: "Lab module"
+  lab: "Lab module",
+  mock: "Mock exam",
+  quiz: "Domain self-check"
 };
 
 /**

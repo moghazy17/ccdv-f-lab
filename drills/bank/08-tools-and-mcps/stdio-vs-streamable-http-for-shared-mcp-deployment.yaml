@@ -1,0 +1,54 @@
+id: stdio-vs-streamable-http-for-shared-mcp-deployment
+domain: Tools and MCPs
+sub_skill: MCP Server Development
+difficulty: application
+select: 1
+stem: >-
+  A triage MCP server exposing knowledge-base and customer-lookup tools currently runs over stdio:
+  each client launches the server as its own local subprocess and exchanges newline-delimited
+  messages over its standard input and output. The team now wants several separate machines to
+  reach one running instance of this server over the network, without each machine launching its
+  own subprocess copy. Which change fits that requirement?
+options:
+  - id: a
+    text: >-
+      Run the server with the Streamable HTTP transport instead, so it listens at a host and port
+      and any client can connect to that one running instance over the network.
+    correct: true
+    rationale: >-
+      Streamable HTTP delivers each message as an HTTP POST to one MCP endpoint, which lets a
+      single running server instance be reached over the network by any client, unlike stdio,
+      which binds one server subprocess to the one client that launched it.
+  - id: b
+    text: >-
+      Keep the server on the stdio transport, and have each remote machine open a network
+      connection directly to the server's standard input and output.
+    correct: false
+    rationale: >-
+      The stdio transport carries newline-delimited messages over the standard streams of a
+      client-launched subprocess; it has no network-listening behavior for a separate machine to
+      connect to, so this describes a capability stdio does not have.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      Register more MCP resources and tools on the existing stdio server so it has more to offer
+      once machines can reach it.
+    correct: false
+    rationale: >-
+      Adding resources or tools changes what the server exposes, not how a client on a different
+      machine can reach a single running instance; the transport, not the tool or resource set, is
+      what the requirement is about.
+    trap_type: irrelevant-knob
+  - id: d
+    text: >-
+      Move the server's tool handlers to a larger underlying model to handle more concurrent
+      load.
+    correct: false
+    rationale: >-
+      Model capability has no bearing on which transport lets several separate machines reach one
+      running server instance over a network; that is a transport and deployment decision.
+    trap_type: bigger-model
+sources:
+  - title: Transports — Model Context Protocol specification
+    url: https://modelcontextprotocol.io/docs/concepts/transports
+    verified_on: "2026-09-09"

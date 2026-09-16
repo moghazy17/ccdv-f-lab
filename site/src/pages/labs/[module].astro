@@ -1,15 +1,114 @@
 ---
-import { readdirSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import ReservedPage from "../../components/ReservedPage.astro";
+import { getCollection } from "astro:content";
+
+import CodePane from "../../components/CodePane.astro";
+import LabSource from "../../components/LabSource.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { domainBySlug, domains } from "../../lib/blueprint";
+import { buildDomainContent } from "../../lib/domain-content";
+import { labs } from "../../lib/runtime/labs";
 
 export function getStaticPaths() {
-  const labDirectory = fileURLToPath(new URL("../../../../lab/", import.meta.url));
-  return readdirSync(labDirectory, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".py") && entry.name !== "__init__.py")
-    .map((entry) => ({ params: { module: entry.name.replace(/\.py$/, "") } }));
+  // One page per catalogue entry, so the twelve runnable labs and the one read-only lab are all
+  // addresses (FR-008, FR-011). The addresses feature 001 reserved keep resolving (FR-015).
+  return labs.map((lab) => ({ params: { module: lab.slug }, props: { lab } }));
 }
+
+const { lab } = Astro.props;
+const repositoryRoot = new URL("../../../../", import.meta.url);
+const base = import.meta.env.BASE_URL;
+
+// FR-013: publication fails if either link target is missing, rather than shipping a dead link.
+if (!existsSync(fileURLToPath(new URL(lab.sourcePath, repositoryRoot)))) {
+  throw new Error(`labs/[module].astro: ${lab.slug} names a source file that does not exist: ${lab.sourcePath}`);
+}
+if (!existsSync(fileURLToPath(new URL(lab.notePath, repositoryRoot)))) {
+  throw new Error(`labs/[module].astro: ${lab.slug} names a note directory that does not exist: ${lab.notePath}`);
+}
+
+const domain = domains.find((candidate) => candidate.number === lab.domainNumber);
+if (domain === undefined) {
+  throw new Error(`labs/[module].astro: no blueprint domain numbered ${lab.domainNumber}.`);
+}
+if (domainBySlug(domain.slug) === undefined) {
+  throw new Error(`labs/[module].astro: domain ${domain.slug} has no page to link to.`);
+}
+
+const noteEntries = await getCollection("notes");
+const noteStatus = buildDomainContent(domain, noteEntries).status;
+const sourceUrl = `https://github.com/moghazy17/ccdv-f-lab/tree/main/${lab.sourcePath}`;
 ---
 
-<ReservedPage title="Lab module" capability="this runnable lab module" />
+<BaseLayout
+  title={`Lab: ${lab.slug} | CCDV-F community study kit`}
+  description={`Run the ${lab.slug} module of this repository's reference application: ${lab.concept}.`}
+  searchRecord={{ type: "lab", domain: domain.slug, weight: String(domain.weight) }}
+>
+  <header>
+    <p class="lab-page__breadcrumb"><a href={`${base}labs/`}>Labs</a></p>
+    <h1>{lab.slug}</h1>
+    <p class="page-introduction" data-testid="lab-concept">
+      This lab demonstrates {lab.concept}.
+    </p>
+  </header>
+
+  <nav class="lab-page__links" aria-label="Where this lab comes from">
+    <ul>
+      <li>
+        <a href={`${base}domains/${domain.slug}/`} data-testid="lab-note-link">
+          Notes for domain {domain.number}: {domain.name}
+        </a>
+        {
+          noteStatus === "scaffold" && (
+            <span data-testid="lab-note-scaffold">
+              {" "}— these notes are still a scaffold, so the page shows what the domain covers
+              rather than authored material.
+            </span>
+          )
+        }
+        {
+          noteStatus === "partial" && (
+            <span data-testid="lab-note-partial">
+              {" "}— these notes are partly authored; some sub-skills are still scaffolded.
+            </span>
+          )
+        }
+      </li>
+      <li>
+        <a href={sourceUrl} data-testid="lab-source-link">
+          <code>{lab.sourcePath}</code> in the repository
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  {
+    lab.runnable ? (
+      <CodePane slug={lab.slug} entrySource={lab.entrySource} />
+    ) : (
+      <LabSource
+        slug={lab.slug}
+        sourcePath={lab.sourcePath}
+        unrunnableReason={lab.unrunnableReason ?? "This lab does not run in the browser."}
+        entrySource={lab.entrySource}
+      />
+    )
+  }
+</BaseLayout>
+
+<style>
+  .lab-page__breadcrumb {
+    margin-block-end: 0.25rem;
+  }
+
+  .lab-page__links ul {
+    padding-inline-start: 1.25rem;
+  }
+
+  .lab-page__links li {
+    max-width: 70ch;
+  }
+</style>

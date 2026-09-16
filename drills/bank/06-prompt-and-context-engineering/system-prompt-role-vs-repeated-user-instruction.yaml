@@ -1,0 +1,62 @@
+id: system-prompt-role-vs-repeated-user-instruction
+domain: Prompt and Context Engineering
+sub_skill: Prompt Engineering
+difficulty: application
+select: 1
+stem: >-
+  A multi-turn support assistant needs to keep a consistent persona and tone across every reply:
+  concise, formal, and always closing with a next step. The current prompt restates that persona
+  paragraph inside every added user turn as the conversation grows, and the wording sometimes
+  drifts between turns. Which change most directly fixes the drift while keeping the request
+  smaller?
+options:
+  - id: a
+    text: >-
+      Move the persona paragraph into the system prompt once, stated as a role Claude should hold
+      for the whole conversation, and stop repeating it in user turns.
+    correct: true
+    rationale: >-
+      Setting a role in the system prompt establishes it once for the whole conversation rather
+      than depending on an identical paragraph being re-typed correctly into every user turn; this
+      removes both the wording drift and the repeated tokens.
+  - id: b
+    text: >-
+      Keep restating the persona in every user turn, but add a stronger sentence asking Claude to
+      copy the wording exactly instead of paraphrasing it.
+    correct: false
+    rationale: >-
+      This still depends on a human or template correctly reproducing the paragraph every turn and
+      on Claude choosing to follow that instruction; it does not remove the source of the drift.
+    trap_type: unenforceable-politeness
+  - id: c
+    text: >-
+      Switch the assistant to a larger model on the assumption that it will remember the persona
+      from earlier turns without needing it restated.
+    correct: false
+    rationale: >-
+      A larger model does not change where the persona text lives in the request; the same
+      restated, drifting paragraph is still what gets sent unless the prompt structure changes.
+    trap_type: bigger-model
+  - id: d
+    text: >-
+      Leave the persona text in the user turn but wrap it in a `<context>` tag so Claude can tell
+      it apart from the rest of the message.
+    correct: false
+    rationale: >-
+      Tagging helps Claude parse mixed content within one turn, but it does not solve a
+      conversation-wide persona that is supposed to hold across every turn; the paragraph is still
+      re-typed each time and can still drift.
+    trap_type: right-idea-wrong-mechanism
+  - id: e
+    text: >-
+      Turn on extended thinking so Claude reasons its way back to the correct persona before each
+      reply.
+    correct: false
+    rationale: >-
+      Thinking mode changes how Claude reasons before answering; it has no bearing on where a
+      persistent persona instruction is placed in the request.
+    trap_type: irrelevant-knob
+sources:
+  - title: Prompting best practices — Anthropic (Claude Platform docs)
+    url: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
+    verified_on: "2026-09-09"

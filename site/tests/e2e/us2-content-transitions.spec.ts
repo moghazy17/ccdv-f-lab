@@ -7,8 +7,11 @@ const domainRoute = "/domains/02-applications-and-integration/";
 test(
   "a domain progresses from scaffold to partial to authored content without hiding gaps",
   async ({ page }) => {
-    // Each fixture state is a full Astro build, so this test needs well above the default.
-    test.setTimeout(300_000);
+  // The fixture helper serializes eight full site builds behind one lock, and its own wait ceiling
+  // is 12,000 attempts at 50ms - ten minutes. A spec that may legitimately be made to wait that long
+  // cannot have a five-minute timeout: the ceiling has to exceed the queue it is queueing for, plus
+  // its own build. This bounds a genuine hang without failing on a busy machine.
+  test.setTimeout(900_000);
   await page.goto(`.${domainRoute}`);
   await expect(page.getByTestId("domain-status")).toHaveText(/Notes are not yet written/i);
 

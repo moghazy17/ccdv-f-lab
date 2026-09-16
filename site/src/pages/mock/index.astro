@@ -1,5 +1,99 @@
 ---
-import ReservedPage from "../../components/ReservedPage.astro";
+import MockRunner from "../../components/MockRunner.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import itemsData from "../../data/items.json";
+import mockData from "../../data/mock.json";
+import { hasNoSurplus, type MockData } from "../../lib/attempt";
+import { domains } from "../../lib/blueprint";
+import type { PracticeItem } from "../../lib/items";
+
+const mock = mockData as MockData;
+const bank = itemsData.items as PracticeItem[];
+const available = itemsData.available as Record<string, number>;
+const domainNames = domains.map((domain) => domain.name);
+const base = import.meta.env.BASE_URL;
+
+// FR-035: a domain the bank cannot fill is named, and no item is borrowed to hide it.
+const shortfalls = domainNames
+  .map((name) => ({
+    domain: name,
+    quota: mock.quotas[name] ?? 0,
+    available: available[name] ?? 0
+  }))
+  .filter((entry) => entry.available < entry.quota);
+
+// FR-036: with no surplus anywhere, repeated attempts must draw the same items, and saying so is
+// more honest than letting a candidate discover it.
+const noSurplus = hasNoSurplus(available, mock.quotas);
 ---
 
-<ReservedPage title="Mock exam" capability="the weighted mock exam" />
+<BaseLayout
+  title="Mock exam | CCDV-F community study kit"
+  description="A weighted mock exam assembled to the blueprint's own per-domain quotas."
+  searchRecord={{ type: "mock" }}
+>
+  <header>
+    <h1>Mock exam</h1>
+    <p class="page-introduction">
+      {mock.fullMockSize} items under a {mock.timeLimitMinutes}-minute countdown, drawn to the
+      per-domain quotas the repository's drill engine computes from <code>BLUEPRINT.md</code>. Both
+      figures are read from the blueprint at build time; neither is typed into this page.
+    </p>
+    <p>
+      This is unofficial practice material. Its items are original, written from the public
+      blueprint, and its score is not a prediction of an Anthropic result.
+    </p>
+  </header>
+
+  {
+    shortfalls.length > 0 && (
+      <section class="mock-notice" data-testid="mock-shortfall" aria-labelledby="mock-shortfall-title">
+        <h2 id="mock-shortfall-title">This mock is short of its full weighting</h2>
+        <p>
+          The bank does not yet hold enough items in every domain. The mock includes what exists
+          rather than substituting an item from another domain, which would misstate the weighting.
+        </p>
+        <ul>
+          {shortfalls.map((entry) => (
+            <li>
+              {entry.domain}: {entry.available} of {entry.quota} items.
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  {
+    noSurplus && (
+      <section class="mock-notice" data-testid="mock-no-surplus" aria-labelledby="mock-no-surplus-title">
+        <h2 id="mock-no-surplus-title">Repeated attempts draw the same items</h2>
+        <p>
+          The bank currently holds exactly its quota in every domain, so a second attempt asks the
+          same questions in a different order. Sitting it again measures recall of these items, not
+          fresh coverage.{" "}
+          <a href={`${base}labs/#labs-contribute-title`}>Contributing an item</a> is what changes
+          that.
+        </p>
+      </section>
+    )
+  }
+
+  <MockRunner mock={mock} bank={bank} available={available} domainNames={domainNames} />
+
+  <p><a href={`${base}mock/report/`}>See the most recent score report</a></p>
+</BaseLayout>
+
+<style>
+  .mock-notice {
+    border: 0.0625rem solid currentColor;
+    border-radius: 0.25rem;
+    padding: 0.75rem 1rem;
+    margin-block: 1.5rem;
+    max-width: 70ch;
+  }
+
+  .mock-notice h2 {
+    margin-block-start: 0;
+  }
+</style>

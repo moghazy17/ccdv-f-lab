@@ -1,0 +1,54 @@
+id: agent-framework-versus-direct-api-decision
+domain: Agents and Workflows
+sub_skill: Agent Patterns and Frameworks
+difficulty: application
+select: 1
+stem: >-
+  A developer is prototyping a two-step assistant: classify an incoming ticket, then draft a
+  reply. A teammate suggests adopting a full multi-agent orchestration framework before writing
+  any code, arguing that agent tasks should always start with a framework built for them. What is
+  the better starting point for this two-step task?
+options:
+  - id: a
+    text: >-
+      Implement the two calls directly against the Messages API tool-use loop first, and only
+      adopt an agentic framework later if the direct implementation becomes hard to extend.
+    correct: true
+    rationale: >-
+      Anthropic's own guidance is to start with the simplest solution and use LLM APIs directly,
+      since many agent patterns take only a few lines of code; complexity, including a framework,
+      is added only once a simpler setup actually falls short.
+  - id: b
+    text: >-
+      Adopt a full multi-agent orchestration framework immediately, since frameworks built for
+      agent tasks save time regardless of how simple the task is.
+    correct: false
+    rationale: >-
+      A two-step task is exactly the kind of simple pattern that framework guidance warns can be
+      implemented directly in a few lines; adopting heavier orchestration up front adds abstraction
+      and debugging difficulty disproportionate to what the task needs.
+    trap_type: overkill
+  - id: c
+    text: >-
+      Skip an explicit two-step tool-use loop entirely and make one call to a more capable model,
+      trusting it to sequence classification and drafting internally in a single response.
+    correct: false
+    rationale: >-
+      Using a stronger model to implicitly absorb an explicit sequencing decision does not address
+      whether the workflow needs a framework; it substitutes model capability for a design decision
+      about how the steps are structured and reviewed.
+    trap_type: bigger-model
+  - id: d
+    text: >-
+      Adopt a framework specifically because it keeps the underlying prompts and responses hidden
+      from the team, simplifying what needs to be reviewed.
+    correct: false
+    rationale: >-
+      Frameworks are documented as adding layers of abstraction that can obscure the underlying
+      prompts and responses, making debugging harder; treating that obscurity as a benefit
+      misstates what the framework actually does.
+    trap_type: false-capability
+sources:
+  - title: Building effective agents — Anthropic
+    url: https://www.anthropic.com/engineering/building-effective-agents
+    verified_on: "2026-09-08"

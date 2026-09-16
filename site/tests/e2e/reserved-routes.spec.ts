@@ -1,12 +1,8 @@
 import { expect, test } from "@playwright/test";
 
+// The lab, mock, domain-quiz, and flashcard addresses left this list when feature 002 filled them;
+// the US1 through US4 specs cover them now. Every address here is still reserved and still inert.
 const reservedRoutes = [
-  "./labs/",
-  "./labs/batch/",
-  "./mock/",
-  "./mock/report/",
-  "./flashcards/",
-  "./domains/01-agents-and-workflows/quiz/",
   "./claude-code/terminal/",
   "./claude-code/config/",
   "./playground/"

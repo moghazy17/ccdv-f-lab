@@ -8,7 +8,11 @@ import { buildCustomContentFixture, createTemporaryContentCopy } from "./domain-
 const guideRoute = "/guide/eligibility/";
 
 test("guide edits propagate without presentation edits (SC-004, FR-004)", async ({ page }) => {
-  test.setTimeout(180_000);
+  // The fixture helper serializes eight full site builds behind one lock, and its own wait ceiling
+  // is 12,000 attempts at 50ms - ten minutes. A spec that may legitimately be made to wait that long
+  // cannot have a five-minute timeout: the ceiling has to exceed the queue it is queueing for, plus
+  // its own build. This bounds a genuine hang without failing on a busy machine.
+  test.setTimeout(900_000);
 
   // Verify baseline guide page loads
   await page.goto(`.${guideRoute}`);

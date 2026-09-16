@@ -6,7 +6,7 @@ type AxePage = ConstructorParameters<typeof AxeBuilder>[0]["page"];
 interface PageTypeCheck {
   name: string;
   route: string;
-  type: "content" | "scaffold" | "diagnostic" | "progress" | "search" | "index" | "reserved";
+  type: "content" | "scaffold" | "diagnostic" | "progress" | "search" | "index" | "reserved" | "lab" | "mock" | "quiz" | "flashcards";
 }
 
 const pageTypesToCheck: PageTypeCheck[] = [
@@ -37,13 +37,24 @@ const pageTypesToCheck: PageTypeCheck[] = [
   { name: "progress page", route: "./progress/", type: "progress" },
 
   // Reserved page types
-  { name: "reserved mock exam", route: "./mock/", type: "reserved" },
-  { name: "reserved mock report", route: "./mock/report/", type: "reserved" },
-  { name: "reserved flashcards", route: "./flashcards/", type: "reserved" },
-  { name: "reserved domain quiz", route: "./domains/01-agents-and-workflows/quiz/", type: "reserved" },
   { name: "reserved terminal", route: "./claude-code/terminal/", type: "reserved" },
   { name: "reserved config builder", route: "./claude-code/config/", type: "reserved" },
-  { name: "reserved playground", route: "./playground/", type: "reserved" }
+  { name: "reserved playground", route: "./playground/", type: "reserved" },
+
+  // Lab page types: one that runs, and the one that shows its source instead
+  { name: "runnable lab", route: "./labs/router/", type: "lab" },
+  { name: "source-only lab", route: "./labs/mcp-server/", type: "lab" },
+
+  // Mock exam surfaces, before an attempt exists
+  { name: "mock exam", route: "./mock/", type: "mock" },
+  { name: "empty score report", route: "./mock/report/", type: "mock" },
+
+  // Domain self-check: one domain with authored recall prompts, one with none
+  { name: "self-check with prompts", route: "./domains/05-model-selection-and-optimization/quiz/", type: "quiz" },
+  { name: "self-check without prompts", route: "./domains/04-eval-testing-and-debugging/quiz/", type: "quiz" },
+
+  // Generated flashcard deck
+  { name: "flashcard review", route: "./flashcards/", type: "flashcards" }
 ];
 
 test.describe("Cross-cutting accessibility sweep (SC-006, FR-041)", () => {
@@ -64,6 +75,27 @@ test.describe("Cross-cutting accessibility sweep (SC-006, FR-041)", () => {
       ).toEqual([]);
     });
   }
+
+  test("a lab page that has executed code has no critical or serious axe violations", async ({
+    page
+  }) => {
+    test.slow();
+    await page.goto("./labs/router/");
+    await page.locator("[data-code-pane-run]").click();
+    await expect(page.locator("[data-code-pane-status]")).toContainText("Finished in", {
+      timeout: 180_000
+    });
+
+    const axePage = page as unknown as AxePage;
+    const results = await new AxeBuilder({ page: axePage }).analyze();
+    const criticalOrSerious = results.violations.filter(
+      (v) => v.impact === "critical" || v.impact === "serious"
+    );
+    expect(
+      criticalOrSerious,
+      "A lab page with output rendered has critical or serious accessibility violations"
+    ).toEqual([]);
+  });
 
   test("search overlay dialog has no critical or serious axe violations", async ({ page }) => {
     await page.goto("./");

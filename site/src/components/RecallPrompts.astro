@@ -1,0 +1,169 @@
+---
+/**
+ * The notes' own recall prompts for one domain, as self-graded cards (FR-039).
+ *
+ * The prompts are parsed out of the domain's `self-check.md` at build time; none of their text is
+ * authored here. A card shows the prompt, and Reveal names the note section that answers it —
+ * the self-check deliberately asks questions the notes answer, so pointing there is the honest
+ * "answer" rather than a second copy of the material.
+ *
+ * Self-grading records nothing about correctness. It is a study aid, and the page says so: only
+ * the scored quiz below feeds a readiness signal (FR-041).
+ */
+
+import type { RecallPrompt } from "../lib/quiz";
+
+interface Props {
+  domainSlug: string;
+  domainName: string;
+  prompts: RecallPrompt[];
+}
+
+const { domainName, domainSlug, prompts } = Astro.props;
+const bySubSkill = new Map<string, RecallPrompt[]>();
+for (const prompt of prompts) {
+  const existing = bySubSkill.get(prompt.subSkill);
+  if (existing === undefined) {
+    bySubSkill.set(prompt.subSkill, [prompt]);
+  } else {
+    existing.push(prompt);
+  }
+}
+---
+
+<section
+  class="recall-prompts"
+  data-recall-prompts
+  data-domain-slug={domainSlug}
+  aria-labelledby="recall-prompts-title"
+>
+  <h2 id="recall-prompts-title">Recall prompts</h2>
+
+  {
+    prompts.length === 0 ? (
+      <p data-testid="recall-empty">
+        {domainName}'s notes carry no recall prompts yet. They come from the domain's
+        <code>self-check.md</code>, so writing that note is what fills this section.
+      </p>
+    ) : (
+      <>
+        <p>
+          Answer from memory, then grade yourself. Nothing here is scored, and none of it counts
+          towards readiness — the quiz below is the half that does.
+        </p>
+        {[...bySubSkill.entries()].map(([subSkill, group]) => (
+          <div class="recall-prompts__group">
+            <h3>{subSkill}</h3>
+            <ol class="recall-prompts__list">
+              {group.map((prompt) => (
+                <li class="recall-prompts__card" data-recall-card data-recall-id={prompt.id}>
+                  <p class="recall-prompts__prompt">{prompt.prompt}</p>
+                  <div class="recall-prompts__actions">
+                    <button type="button" class="action-button" data-recall-reveal>
+                      Where to check
+                    </button>
+                    <button type="button" class="action-button" data-recall-grade="known">
+                      I knew it
+                    </button>
+                    <button type="button" class="action-button" data-recall-grade="unknown">
+                      I did not
+                    </button>
+                  </div>
+                  <p class="recall-prompts__answer" data-recall-answer hidden>
+                    This is measured under <strong>{subSkill}</strong>. The answer is in that
+                    section of this domain's notes above.
+                  </p>
+                  <p class="recall-prompts__state" data-recall-state role="status" aria-live="polite" />
+                </li>
+              ))}
+            </ol>
+          </div>
+        ))}
+      </>
+    )
+  }
+</section>
+
+<script>
+  import { checkStorageAvailability, createProgressStorage } from "../lib/storage";
+
+  const root = document.querySelector<HTMLElement>("[data-recall-prompts]");
+  if (root !== null) {
+    setUpRecall(root);
+  }
+
+  function setUpRecall(root: HTMLElement): void {
+    const domainSlug = root.dataset.domainSlug ?? "";
+    const storageState = checkStorageAvailability();
+    const storage = storageState === "available" ? createProgressStorage() : null;
+    const stored = storage?.read();
+    const recall =
+      stored?.kind === "ok" ? (stored.value?.namespaces.quiz.recall ?? {}) : {};
+
+    for (const card of root.querySelectorAll<HTMLElement>("[data-recall-card]")) {
+      const key = `${domainSlug}:${card.dataset.recallId ?? ""}`;
+      const answer = card.querySelector<HTMLElement>("[data-recall-answer]");
+      const state = card.querySelector<HTMLElement>("[data-recall-state]");
+
+      const describe = (outcome: string | undefined): void => {
+        if (state === null) {
+          return;
+        }
+        if (outcome === "known") {
+          state.textContent = "Marked as known.";
+        } else if (outcome === "unknown") {
+          state.textContent = "Marked as not known — worth another pass.";
+        } else {
+          state.textContent = "";
+        }
+      };
+      describe(recall[key]);
+
+      card.querySelector<HTMLButtonElement>("[data-recall-reveal]")?.addEventListener("click", () => {
+        if (answer !== null) {
+          answer.hidden = false;
+        }
+      });
+
+      for (const button of card.querySelectorAll<HTMLButtonElement>("[data-recall-grade]")) {
+        button.addEventListener("click", () => {
+          const outcome = button.dataset.recallGrade === "known" ? "known" : "unknown";
+          describe(outcome);
+          if (storage === null) {
+            if (state !== null) {
+              state.textContent += " Browser storage is unavailable, so this is not kept.";
+            }
+            return;
+          }
+          storage.setRecallOutcome(key, outcome);
+        });
+      }
+    }
+  }
+</script>
+
+<style>
+  .recall-prompts__list {
+    padding-inline-start: 1.25rem;
+  }
+
+  .recall-prompts__card {
+    margin-block: 1rem;
+    max-width: 75ch;
+  }
+
+  .recall-prompts__prompt {
+    margin-block-end: 0.5rem;
+  }
+
+  .recall-prompts__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .recall-prompts__answer,
+  .recall-prompts__state {
+    margin-block: 0.5rem 0;
+  }
+</style>

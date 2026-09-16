@@ -1,0 +1,53 @@
+id: messages-api-statelessness-full-history-resend
+domain: Applications and Integration
+sub_skill: Software Engineering Foundations
+difficulty: application
+select: 1
+stem: >-
+  An engineer builds a multi-turn chat integration against the Messages API. After the third user
+  message, Claude appears to "forget" the first exchange because each call only sends the newest
+  user message. What is the underlying cause, and what is the correct fix?
+options:
+  - id: a
+    text: >-
+      The Messages API is documented as stateless: each request must include the full
+      conversation history in the messages array. The fix is to resend every prior turn (or an
+      equivalent summarized history) on each call, not only the newest message.
+    correct: true
+    rationale: >-
+      Because the API does not retain conversation state between calls, sending only the newest
+      message on each request genuinely removes the earlier turns from what Claude sees; resending
+      the full history restores the context the model needs.
+  - id: b
+    text: >-
+      Enable prompt caching on the request, since caching remembers the earlier turns for the
+      model automatically.
+    correct: false
+    rationale: >-
+      Prompt caching only reduces the cost and latency of re-sending a repeated prefix that is
+      already included in the request; it does not retain or reconstruct conversation state on the
+      server, so it cannot substitute for actually including the prior turns in the request.
+    trap_type: irrelevant-knob
+  - id: c
+    text: >-
+      Switch to a larger model, since a more capable model would remember the earlier turns
+      without being sent them again.
+    correct: false
+    rationale: >-
+      No model tier changes the API's stateless request/response contract; every model only
+      receives what is included in the request it is sent, regardless of its capability.
+    trap_type: bigger-model
+  - id: d
+    text: >-
+      Add a system-prompt instruction telling Claude to "remember what the user said earlier in
+      the conversation."
+    correct: false
+    rationale: >-
+      An instruction cannot make information available that was never included in the request;
+      the earlier turns are simply absent from the context Claude receives, and no wording changes
+      that.
+    trap_type: unenforceable-politeness
+sources:
+  - title: Messages API reference — Anthropic
+    url: https://platform.claude.com/docs/en/api/messages
+    verified_on: "2026-09-09"

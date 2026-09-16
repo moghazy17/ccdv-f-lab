@@ -1,0 +1,54 @@
+id: confidence-field-skepticism-in-triage-validation
+domain: Prompt and Context Engineering
+sub_skill: Output Handling
+difficulty: analysis
+select: 2
+stem: >-
+  A ticket-triage integration asks Claude for structured JSON with a category, a suggested action,
+  a self-reported confidence number, and a needs_human boolean. The caller must decide whether a
+  given response can be routed automatically without a person reviewing it first. Which two
+  conditions should, on their own, be enough to route that response to a person instead of acting
+  on it automatically?
+options:
+  - id: a
+    text: The decoded payload fails schema validation, so no complete result was produced.
+    correct: true
+    rationale: >-
+      Skepticism toward confident output means a caller should never trust a payload that failed
+      validation just because some fields parsed; an invalid or incomplete result has no reliable
+      category or action to act on automatically.
+  - id: b
+    text: The payload is valid but its own needs_human field is true.
+    correct: true
+    rationale: >-
+      The model's own signal that it wants a human involved should be honored regardless of how
+      confident the rest of the payload looks; routing on this flag, not on confidence, is what
+      keeps a low-quality but self-assured response from being acted on automatically.
+  - id: c
+    text: The payload is valid and reports a confidence value above a fixed threshold.
+    correct: false
+    rationale: >-
+      A self-reported confidence number is model output, not a verified property of the response;
+      treating a high confidence value as sufficient to skip a person is exactly the trust in
+      confident output that defensive handling is meant to avoid.
+    trap_type: false-capability
+  - id: d
+    text: The payload is valid and reports a confidence value below a fixed threshold.
+    correct: false
+    rationale: >-
+      Routing only on a low self-reported confidence number still trusts the same unverified field;
+      a valid response with a high confidence number that is nonetheless wrong would be routed
+      automatically under this rule, which is the failure mode skepticism toward confident output
+      is meant to catch.
+    trap_type: false-capability
+  - id: e
+    text: The response used a larger model than the caller's default for this request.
+    correct: false
+    rationale: >-
+      Which model produced a response is not a property of the decoded payload that indicates
+      whether this particular result is safe to act on automatically.
+    trap_type: irrelevant-knob
+sources:
+  - title: Structured outputs — Anthropic (Claude Platform docs)
+    url: https://platform.claude.com/docs/en/build-with-claude/structured-outputs
+    verified_on: "2026-09-09"

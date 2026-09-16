@@ -1,0 +1,69 @@
+id: managed-agent-deployment-model-selection
+domain: Agents and Workflows
+sub_skill: Agent Construction with Claude
+difficulty: application
+select: 1
+stem: >-
+  A team is building an agent on Claude Agent SDK's Managed Agents product. The agent must run
+  bash commands and read files from an internal, non-public system that a compliance policy
+  requires stay under the company's own network and audit controls; the model call itself is not
+  the concern. Which deployment choice fits, and why?
+options:
+  - id: a
+    text: >-
+      Use Managed Agents with self-hosted sandboxes, so tool execution — the filesystem, process
+      spawning, and network egress — runs on infrastructure the company controls, while
+      Anthropic's control plane still runs the model and the orchestration loop.
+    correct: true
+    rationale: >-
+      Self-hosted sandboxes move tool execution into the customer's infrastructure while
+      orchestration and the model stay on Anthropic's control plane; this is documented as the
+      fit when the agent needs to reach internal, non-public services or operate under the
+      company's own compliance and audit controls.
+  - id: b
+    text: >-
+      Use the default Anthropic-hosted sandbox, since it is the most fully managed option and the
+      compliance requirement is only a matter of scale.
+    correct: false
+    rationale: >-
+      The default deployment runs tool execution — filesystem, processes, and network egress — in
+      Anthropic-managed cloud sandboxes, not the customer's own infrastructure; it does not
+      satisfy a requirement that execution stay under the company's network and audit controls.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      Skip Managed Agents and the SDK's agent loop entirely, and hand-write a custom loop directly
+      against the Messages API on the company's own servers.
+    correct: false
+    rationale: >-
+      This can technically keep everything on company infrastructure, but it discards the tool
+      loop, session handling, and context management the SDK already provides, which is far more
+      engineering effort than self-hosted sandboxes need to satisfy the same requirement.
+    trap_type: overkill
+  - id: d
+    text: >-
+      Keep the default hosted sandbox but switch to a more capable model, on the theory that a
+      stronger model is more careful about which internal systems it touches.
+    correct: false
+    rationale: >-
+      Model capability does not change where tool execution physically runs; the compliance
+      requirement is about infrastructure placement, which only a deployment-model choice
+      addresses.
+    trap_type: bigger-model
+  - id: e
+    text: >-
+      Keep the default hosted sandbox and add a system-prompt instruction telling the agent never
+      to send data outside the company network.
+    correct: false
+    rationale: >-
+      An instruction in the prompt is not an enforced boundary on where tool execution runs; the
+      model can still be directed toward it, and nothing in the deployment prevents infrastructure
+      outside the company's control from executing the tool calls.
+    trap_type: unenforceable-politeness
+sources:
+  - title: Self-hosted sandboxes — Anthropic (Claude Platform docs)
+    url: https://platform.claude.com/docs/en/managed-agents/self-hosted-sandboxes
+    verified_on: "2026-09-08"
+  - title: Agent SDK overview — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/agent-sdk/overview
+    verified_on: "2026-09-08"
