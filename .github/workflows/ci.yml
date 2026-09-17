@@ -4,6 +4,16 @@ on:
   push:
   pull_request:
 
+# A push to a branch with an open pull request matches both triggers, so the same commit started
+# two identical runs at once. That matters here more than it usually would: the site job's
+# propagation specs serialize eight full site builds behind one lock, with a ten-minute queue
+# ceiling, so two runs competing for the same runner pool pushed each other past it — the same
+# commit passed in three minutes and timed out at seventeen. `ref_name` is the branch on both
+# triggers, so the two collapse into one group and the superseded run is cancelled.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
