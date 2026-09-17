@@ -1,15 +1,16 @@
 name: CI
 
 on:
+  # Restricted to the default branch on purpose. An unfiltered `push` also matches every commit on
+  # a branch with an open pull request, so each push started two identical runs of a job whose
+  # propagation specs serialize eight full site builds behind one lock — they competed for the same
+  # runner pool, and cancelling one after the fact left every pull request reporting a cancelled
+  # check forever. Work on a branch is covered by `pull_request`.
   push:
+    branches: [main]
   pull_request:
 
-# A push to a branch with an open pull request matches both triggers, so the same commit started
-# two identical runs at once. That matters here more than it usually would: the site job's
-# propagation specs serialize eight full site builds behind one lock, with a ten-minute queue
-# ceiling, so two runs competing for the same runner pool pushed each other past it — the same
-# commit passed in three minutes and timed out at seventeen. `ref_name` is the branch on both
-# triggers, so the two collapse into one group and the superseded run is cancelled.
+# Supersede a run that a newer commit has overtaken, rather than paying for both.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
