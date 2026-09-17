@@ -81,13 +81,30 @@ export function assembleMock(
 }
 
 /**
- * Whether repeated attempts must draw the same items because no domain holds a surplus (FR-036).
+ * The domains whose items repeat between attempts, because the bank holds no more than the quota
+ * the mock draws from them (FR-036).
+ *
+ * Reported per domain rather than for the bank as a whole: once some domains hold a surplus and
+ * others do not, a single yes-or-no answer would either overstate the variety a candidate gets or
+ * deny the variety they do get. The list is what keeps the page's claim true in that middle state.
+ */
+export function domainsWithoutSurplus(
+  available: Readonly<Record<string, number>>,
+  quotas: Readonly<Record<string, number>>
+): string[] {
+  return Object.entries(quotas)
+    .filter(([domain, quota]) => (available[domain] ?? 0) <= quota)
+    .map(([domain]) => domain);
+}
+
+/**
+ * Whether every domain repeats, so a whole second attempt asks the same questions (FR-036).
  */
 export function hasNoSurplus(
   available: Readonly<Record<string, number>>,
   quotas: Readonly<Record<string, number>>
 ): boolean {
-  return Object.entries(quotas).every(([domain, quota]) => (available[domain] ?? 0) <= quota);
+  return domainsWithoutSurplus(available, quotas).length === Object.keys(quotas).length;
 }
 
 /** Start an attempt, fixing the instant it must end from the blueprint's own time limit. */

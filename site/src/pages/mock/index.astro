@@ -3,7 +3,7 @@ import MockRunner from "../../components/MockRunner.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import itemsData from "../../data/items.json";
 import mockData from "../../data/mock.json";
-import { hasNoSurplus, type MockData } from "../../lib/attempt";
+import { domainsWithoutSurplus, hasNoSurplus, type MockData } from "../../lib/attempt";
 import { domains } from "../../lib/blueprint";
 import type { PracticeItem } from "../../lib/items";
 
@@ -25,6 +25,9 @@ const shortfalls = domainNames
 // FR-036: with no surplus anywhere, repeated attempts must draw the same items, and saying so is
 // more honest than letting a candidate discover it.
 const noSurplus = hasNoSurplus(available, mock.quotas);
+// A domain still at quota repeats its items even when others have grown past theirs, so the notice
+// names those domains rather than answering for the bank as a whole (FR-036).
+const repeatingDomains = domainsWithoutSurplus(available, mock.quotas);
 ---
 
 <BaseLayout
@@ -65,16 +68,25 @@ const noSurplus = hasNoSurplus(available, mock.quotas);
   }
 
   {
-    noSurplus && (
+    repeatingDomains.length > 0 && (
       <section class="mock-notice" data-testid="mock-no-surplus" aria-labelledby="mock-no-surplus-title">
-        <h2 id="mock-no-surplus-title">Repeated attempts draw the same items</h2>
+        <h2 id="mock-no-surplus-title">
+          {noSurplus ? "Repeated attempts draw the same items" : "Some domains repeat their items"}
+        </h2>
         <p>
-          The bank currently holds exactly its quota in every domain, so a second attempt asks the
-          same questions in a different order. Sitting it again measures recall of these items, not
-          fresh coverage.{" "}
+          {noSurplus
+            ? "The bank holds no more than its quota in any domain, so a second attempt asks the same questions in a different order. Sitting it again measures recall of these items, not fresh coverage."
+            : "The bank holds no more than its quota in the domains below, so a second attempt asks the same questions there. The remaining domains draw from a surplus and do vary."}{" "}
           <a href={`${base}labs/#labs-contribute-title`}>Contributing an item</a> is what changes
           that.
         </p>
+        {!noSurplus && (
+          <ul>
+            {repeatingDomains.map((domain) => (
+              <li>{domain}</li>
+            ))}
+          </ul>
+        )}
       </section>
     )
   }

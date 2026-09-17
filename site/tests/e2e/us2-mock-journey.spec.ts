@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { expect, test } from "@playwright/test";
 
 /**
@@ -294,11 +297,38 @@ test.describe("Sit a full weighted mock (US2)", () => {
     expect(current).toBeNull();
   });
 
-  test("the bank holds no surplus, so the page says repeated attempts repeat items", async ({
-    page
-  }) => {
-    await expect(page.getByTestId("mock-no-surplus")).toBeVisible();
-    // Every domain is filled to quota today, so no shortfall notice belongs on the page.
-    await expect(page.getByTestId("mock-shortfall")).toHaveCount(0);
+  test("the repeat notice matches what the bank actually holds", async ({ page }) => {
+    // Derived from the build-time data rather than pinned to today's bank: growing the remaining
+    // domains past quota is the tracked next step, and it must not break this expectation.
+    const read = (name: string) =>
+      JSON.parse(
+        readFileSync(fileURLToPath(new URL(`../../src/data/${name}`, import.meta.url)), "utf-8")
+      );
+    const itemsData = read("items.json");
+    const mockData = read("mock.json");
+    const entries = Array.isArray(itemsData) ? itemsData : itemsData.items;
+    const held: Record<string, number> = {};
+    for (const entry of entries as Array<{ domain: string }>) {
+      held[entry.domain] = (held[entry.domain] ?? 0) + 1;
+    }
+    const quotas = mockData.quotas as Record<string, number>;
+    const domains = Object.keys(quotas);
+    const repeating = domains.filter((domain) => (held[domain] ?? 0) <= quotas[domain]);
+    const short = domains.filter((domain) => (held[domain] ?? 0) < quotas[domain]);
+
+    const notice = page.getByTestId("mock-no-surplus");
+    if (repeating.length === 0) {
+      await expect(notice).toHaveCount(0);
+    } else {
+      await expect(notice).toBeVisible();
+      if (repeating.length < domains.length) {
+        // Mixed state: some domains vary and some do not, so the notice must name the ones that do
+        // not, rather than answering for the whole bank.
+        for (const domain of repeating) {
+          await expect(notice).toContainText(domain);
+        }
+      }
+    }
+    await expect(page.getByTestId("mock-shortfall")).toHaveCount(short.length === 0 ? 0 : 1);
   });
 });
