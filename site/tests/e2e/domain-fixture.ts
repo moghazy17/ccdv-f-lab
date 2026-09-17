@@ -81,10 +81,17 @@ export async function buildCustomContentFixture(
     new URL("../../node_modules/astro/bin/astro.mjs", import.meta.url)
   );
 
+  // These fixtures assert that content propagates, and never load the Python runtime. Astro would
+  // otherwise copy the fourteen-megabyte `public/runtime/` into each of the eight builds this lock
+  // serializes, which is latency in the one place the suite cannot parallelize.
+  const emptyPublicDirectory = await mkdtemp(join(siteRoot, `.us2-public-${label}-`));
+  trackedDirectories.add(emptyPublicDirectory);
+
   const env: Record<string, string> = {
     ...(process.env as Record<string, string>),
     BASE: "/",
     SITE_OUTPUT_DIRECTORY: outputDirectory,
+    SITE_PUBLIC_DIRECTORY: emptyPublicDirectory,
     ...(options.extraEnv ?? {})
   };
 
