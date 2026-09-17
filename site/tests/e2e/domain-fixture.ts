@@ -138,11 +138,29 @@ export async function buildCustomContentFixture(
     trackedDirectories.delete(outputDirectory);
     await rm(outputDirectory, { force: true, recursive: true });
     throw error;
+  } finally {
+    // The empty public directory is only needed while the build reads it.
+    trackedDirectories.delete(emptyPublicDirectory);
+    await rm(emptyPublicDirectory, { force: true, recursive: true });
   }
+
+  // Keep this directory visibly alive to the other worker.
+  //
+  // `trackedDirectories` is per-process, and Playwright gives each spec file its own worker, so
+  // the other worker's `cleanOrphanedDirectories` judges this directory only by age. While the
+  // whole suite finished inside the ten-minute threshold that was survivable; once it does not,
+  // one worker deletes a fixture the other is still serving, its pages start 404ing, and the spec
+  // hangs until its timeout — which then makes the suite slower still. The lock already solves
+  // exactly this with a heartbeat, so a live output directory gets one too.
+  const heartbeat = setInterval(() => {
+    utimes(outputDirectory, new Date(), new Date()).catch(() => {});
+  }, 5000);
+  heartbeat.unref?.();
 
   const server = await serveDirectory(outputDirectory);
   return {
     close: async () => {
+      clearInterval(heartbeat);
       try {
         await new Promise<void>((resolveClose, rejectClose) => {
           server.close((error) => (error === undefined ? resolveClose() : rejectClose(error)));
