@@ -105,8 +105,12 @@ def _parse_exam_facts(blueprint: str) -> tuple[int, int, int, int, int]:
     )
 
 
-def _weight_value(weight: str) -> Decimal:
-    """Convert a published percentage string into an exact decimal percentage."""
+def weight_value(weight: str) -> Decimal:
+    """Convert a published percentage string into an exact decimal percentage.
+
+    Public because every consumer of a blueprint weight must reject a malformed cell the same way:
+    a cell without a percent sign, or one holding prose, is a blueprint defect rather than a zero.
+    """
     if not weight.endswith("%"):
         raise ValueError(f"Blueprint domain weight is not a percentage: {weight!r}")
     return Decimal(weight.removesuffix("%"))
@@ -120,7 +124,7 @@ def load_blueprint(path: Path = DEFAULT_BLUEPRINT_PATH) -> Blueprint:
         Domain(
             number=number,
             name=name,
-            weight=_weight_value(weight),
+            weight=weight_value(weight),
             sub_skills=tuple(sub_skill for sub_skill, _ in parse_sub_skills(text, number)),
         )
         for number, name, weight in parsed_domains

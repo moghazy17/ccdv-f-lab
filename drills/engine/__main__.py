@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 from drills.engine.blueprint import DEFAULT_BLUEPRINT_PATH, load_blueprint
+from drills.engine.coverage import (
+    BankCoverage,
+    build_coverage,
+    coverage_document,
+    format_coverage_report,
+)
 from drills.engine.mock import (
     DEFAULT_MOCKS_PATH,
     default_mock_path,
@@ -21,6 +28,8 @@ from drills.engine.scoring import format_score_report, score_attempt
 from drills.engine.validation import (
     DEFAULT_BANK_PATH,
     bank_validation_errors,
+    find_bank_items,
+    near_duplicate_advisories,
     require_valid_bank,
 )
 
@@ -39,6 +48,16 @@ def build_parser() -> argparse.ArgumentParser:
     validate = subcommands.add_parser("validate", help="Validate every item in the drill bank.")
     validate.add_argument("--bank", type=_path_argument, default=DEFAULT_BANK_PATH)
     validate.add_argument("--blueprint", type=_path_argument, default=DEFAULT_BLUEPRINT_PATH)
+
+    coverage = subcommands.add_parser(
+        "coverage", help="Report authoring targets and shortfalls for the drill bank."
+    )
+    coverage.add_argument("--domain", help="Limit the report to one exact blueprint domain name.")
+    coverage.add_argument(
+        "--json", action="store_true", help="Emit the report as JSON rather than a table."
+    )
+    coverage.add_argument("--bank", type=_path_argument, default=DEFAULT_BANK_PATH)
+    coverage.add_argument("--blueprint", type=_path_argument, default=DEFAULT_BLUEPRINT_PATH)
 
     generate = subcommands.add_parser("generate", help="Build a weighted mock from the drill bank.")
     generate.add_argument("--seed", type=int, help="Seed item selection for reproducible mocks.")
@@ -72,6 +91,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     score.add_argument("--blueprint", type=_path_argument, default=DEFAULT_BLUEPRINT_PATH)
     return parser
+
+
+def _limit_coverage(coverage: BankCoverage, domain_name: str) -> BankCoverage:
+    """Narrow a report to one domain, naming the blueprint's domains when the name is unknown."""
+    selected = [domain for domain in coverage.domains if domain.name == domain_name]
+    if not selected:
+        known = ", ".join(domain.name for domain in coverage.domains)
+        raise ValueError(f"{domain_name!r} is not a blueprint domain; expected one of: {known}")
+    return BankCoverage(domains=tuple(selected))
 
 
 def _take_mock(mock_path: Path, output_path: Path | None) -> Path:
@@ -156,8 +184,29 @@ def main(argv: list[str] | None = None) -> int:
                 print("Validation failed:")
                 print("\n".join(f"- {error}" for error in errors))
                 return 1
-            item_count = len(require_valid_bank(args.bank, load_blueprint(args.blueprint)))
-            print(f"Validated {item_count} item(s).")
+            bank_items = require_valid_bank(args.bank, load_blueprint(args.blueprint))
+            print(f"Validated {len(bank_items)} item(s).")
+            advisories = near_duplicate_advisories(bank_items)
+            if advisories:
+                print(
+                    "Near-duplicate advisories (not failures; judge whether each pair turns on "
+                    "the same distinguishing fact):"
+                )
+                for advisory in advisories:
+                    print(f"- {advisory.describe()}")
+            return 0
+
+        if args.command == "coverage":
+            blueprint = load_blueprint(args.blueprint)
+            coverage = build_coverage(
+                find_bank_items(args.bank), blueprint, blueprint_path=args.blueprint
+            )
+            if args.domain is not None:
+                coverage = _limit_coverage(coverage, args.domain)
+            if args.json:
+                print(json.dumps(coverage_document(coverage), indent=2))
+            else:
+                print(format_coverage_report(coverage))
             return 0
 
         if args.command == "generate":

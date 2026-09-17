@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import random
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
 from decimal import ROUND_FLOOR, Decimal
 from pathlib import Path
@@ -27,33 +28,45 @@ class GeneratedMock:
     warnings: tuple[str, ...]
 
 
+def apportion_weights(weights: Sequence[tuple[str, Decimal]], size: int) -> dict[str, int]:
+    """Allocate ``size`` across named weights by largest remainder, breaking ties by listed order.
+
+    The blueprint lists both domains and sub-skills in a fixed published order, so position is the
+    tie-break for two equal remainders. Domain apportionment and sub-skill apportionment are the
+    same arithmetic over different weights, and share this function so the two cannot drift.
+    """
+    if size < 1:
+        raise ValueError("Apportioned size must be at least 1")
+
+    total_weight = sum((weight for _, weight in weights), start=Decimal("0"))
+    if total_weight <= 0:
+        raise ValueError("Apportioned weights must sum to a positive value")
+
+    exact_shares = [(name, Decimal(size) * weight / total_weight) for name, weight in weights]
+    allocation = {
+        name: int(exact_share.to_integral_value(rounding=ROUND_FLOOR))
+        for name, exact_share in exact_shares
+    }
+    remaining = size - sum(allocation.values())
+    remainders = sorted(
+        (
+            (exact_share - allocation[name], position, name)
+            for position, (name, exact_share) in enumerate(exact_shares)
+        ),
+        key=lambda remainder: (-remainder[0], remainder[1]),
+    )
+    for _, _, name in remainders[:remaining]:
+        allocation[name] += 1
+    return allocation
+
+
 def apportion_items(blueprint: Blueprint, size: int) -> dict[str, int]:
     """Allocate a mock size with largest-remainder apportionment of blueprint weights."""
     if size < 1:
         raise ValueError("Mock size must be at least 1")
 
-    total_weight = sum((domain.weight for domain in blueprint.domains), start=Decimal("0"))
-    if total_weight <= 0:
-        raise ValueError("Blueprint domain weights must sum to a positive value")
-
-    exact_quotas = [
-        (domain, Decimal(size) * domain.weight / total_weight) for domain in blueprint.domains
-    ]
-    quotas = {
-        domain.name: int(exact_quota.to_integral_value(rounding=ROUND_FLOOR))
-        for domain, exact_quota in exact_quotas
-    }
-    remaining = size - sum(quotas.values())
-    remainders = sorted(
-        (
-            (exact_quota - quotas[domain.name], domain.number, domain.name)
-            for domain, exact_quota in exact_quotas
-        ),
-        key=lambda remainder: (-remainder[0], remainder[1]),
-    )
-    for _, _, domain_name in remainders[:remaining]:
-        quotas[domain_name] += 1
-    return quotas
+    ordered_domains = sorted(blueprint.domains, key=lambda domain: domain.number)
+    return apportion_weights([(domain.name, domain.weight) for domain in ordered_domains], size)
 
 
 def generate_weighted_mock(

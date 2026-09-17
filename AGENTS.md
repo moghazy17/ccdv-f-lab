@@ -72,6 +72,7 @@ python -m drills.engine validate
 python -m lab.evals run
 python tools/check_blueprint_consistency.py
 python tools/check_links.py
+python tools/check_source_integrity.py
 python tools/check_content_single_source.py
 ```
 
