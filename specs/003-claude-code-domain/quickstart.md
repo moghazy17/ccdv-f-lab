@@ -10,9 +10,18 @@ From the repository root:
 ruff check .
 ruff format --check .
 pytest -q
+python -m drills.engine validate
+python -m lab.evals run
 python tools/check_blueprint_consistency.py
 python tools/check_links.py
+python tools/check_content_single_source.py
 ```
+
+That is the full set CI runs, not a summary of it. The last three are easy to skip locally and
+each one has caught something: `check_content_single_source.py` is the gate that sees generated
+data, and it fails on `site/src/data/claude-code.json` if that file stops being excluded — it is
+the first *tracked* generated data file in the tree, because its recording must be committed to be
+compared against a regeneration.
 
 From `site/`:
 
