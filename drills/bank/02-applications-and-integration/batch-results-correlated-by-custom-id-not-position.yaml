@@ -10,24 +10,15 @@ stem: >-
 options:
   - id: a
     text: >-
-      Index results by each result's custom_id field, the identifier that was set on the
-      originating request when the batch was submitted.
-    correct: true
-    rationale: >-
-      Batch results can return in any order and may not match the ordering requests were
-      submitted in; custom_id is the field documented for correlating a result back to its
-      request regardless of the order results arrive in.
-  - id: b
-    text: >-
-      Assume results stream back in the same order the requests were submitted in, and pair the
-      two lists together by position.
+      Switch all 5,000 requests to the realtime Messages API instead, since realtime responses
+      always return in request order.
     correct: false
     rationale: >-
-      The Message Batches API documents that results can return in any order and may not match
-      submission order; assuming positional correspondence will silently mismatch some rows once
-      results arrive out of order.
-    trap_type: false-capability
-  - id: c
+      This abandons the asynchronous batch pattern that this volume and delay-tolerant workload
+      calls for, trading away the batch discount and throughput to solve what is a straightforward
+      result-correlation problem, not a processing-path problem.
+    trap_type: wrong-layer
+  - id: b
     text: >-
       Re-submit the entire batch a second time and only trust results that come back identical
       across both runs.
@@ -37,17 +28,26 @@ options:
       custom_id field already solves; it doubles cost and latency for no benefit over reading the
       field the API provides for exactly this purpose.
     trap_type: overkill
-  - id: d
+  - id: c
     text: >-
-      Switch all 5,000 requests to the realtime Messages API instead, since realtime responses
-      always return in request order.
+      Assume results stream back in the same order the requests were submitted in, and pair the
+      two lists together by position.
     correct: false
     rationale: >-
-      This abandons the asynchronous batch pattern that this volume and delay-tolerant workload
-      calls for, trading away the batch discount and throughput to solve what is a straightforward
-      result-correlation problem, not a processing-path problem.
-    trap_type: wrong-layer
+      The Message Batches API documents that results can return in any order and may not match
+      submission order; assuming positional correspondence will silently mismatch some rows once
+      results arrive out of order.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Index results by each result's custom_id field, the identifier that was set on the
+      originating request when the batch was submitted.
+    correct: true
+    rationale: >-
+      Batch results can return in any order and may not match the ordering requests were
+      submitted in; custom_id is the field documented for correlating a result back to its
+      request regardless of the order results arrive in.
 sources:
   - title: Batch processing — Anthropic (Claude Platform docs)
     url: https://platform.claude.com/docs/en/build-with-claude/batch-processing
-    verified_on: "2026-09-09"
+    verified_on: "2026-09-17"

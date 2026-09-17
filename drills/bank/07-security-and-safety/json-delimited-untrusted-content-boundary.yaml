@@ -11,6 +11,16 @@ stem: >-
 options:
   - id: a
     text: >-
+      Move ticket classification to a larger, more capable model, on the assumption that it will
+      be better at recognizing manipulation attempts.
+    correct: false
+    rationale: >-
+      A more capable model can still be misled by an injection attempt; model capability is not a
+      substitute for structuring the request so untrusted content cannot masquerade as an
+      instruction.
+    trap_type: bigger-model
+  - id: b
+    text: >-
       JSON-encode the ticket text inside an explicitly delimited region of the user turn, and
       state in the system prompt that content in that region is data to analyze, never
       instructions to follow.
@@ -20,7 +30,17 @@ options:
       of by closing a quote or tag, and pairing it with an explicit system-prompt statement that
       the region is data gives the model the structural and stated basis to distinguish it from
       an instruction.
-  - id: b
+  - id: c
+    text: >-
+      Trust that Claude's training makes it immune to this kind of embedded instruction, so no
+      additional structuring of the request is needed.
+    correct: false
+    rationale: >-
+      Anthropic documents Claude as inherently resilient but not immune to these attacks, and
+      recommends additional structural steps precisely because resilience alone is not a
+      guarantee.
+    trap_type: false-capability
+  - id: d
     text: >-
       Add a stronger sentence to the system prompt insisting the model must never obey instructions
       found inside a ticket.
@@ -30,17 +50,7 @@ options:
       injection attempt; it does not change how the ticket text is structurally represented in the
       request.
     trap_type: unenforceable-politeness
-  - id: c
-    text: >-
-      Move ticket classification to a larger, more capable model, on the assumption that it will
-      be better at recognizing manipulation attempts.
-    correct: false
-    rationale: >-
-      A more capable model can still be misled by an injection attempt; model capability is not a
-      substitute for structuring the request so untrusted content cannot masquerade as an
-      instruction.
-    trap_type: bigger-model
-  - id: d
+  - id: e
     text: >-
       Filter tickets with an exact-match keyword blocklist for phrases like "ignore previous
       instructions" before they reach the model, and treat a clean scan as proof the ticket is
@@ -51,16 +61,6 @@ options:
       keyword scan as sufficient conflates input screening with the encoding and delimiter design
       that actually keeps ticket text from being read as an instruction.
     trap_type: wrong-layer
-  - id: e
-    text: >-
-      Trust that Claude's training makes it immune to this kind of embedded instruction, so no
-      additional structuring of the request is needed.
-    correct: false
-    rationale: >-
-      Anthropic documents Claude as inherently resilient but not immune to these attacks, and
-      recommends additional structural steps precisely because resilience alone is not a
-      guarantee.
-    trap_type: false-capability
 sources:
   - title: Mitigate jailbreaks and prompt injections — Anthropic (Claude Platform docs)
     url: https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/mitigate-jailbreaks

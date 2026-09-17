@@ -1,0 +1,53 @@
+id: payload-size-limit-differs-by-endpoint
+domain: Applications and Integration
+sub_skill: Software Engineering Foundations
+difficulty: recall
+select: 1
+stem: >-
+  A pipeline assembles a large request and receives a 413 `request_too_large`. An engineer checks the
+  size limits before deciding how to split the work. Which statement about request size limits is
+  accurate?
+options:
+  - id: a
+    text: One organization-wide limit applies to every endpoint, and it cannot be varied by request.
+    correct: false
+    rationale: >-
+      A single global limit is the intuitive assumption and it is wrong; the maximums are documented
+      per endpoint type. Believing this hides the option of moving the work to a path with more room.
+    trap_type: false-capability
+  - id: b
+    text: >-
+      Streaming the request raises the limit, because the payload is delivered incrementally rather
+      than at once.
+    correct: false
+    rationale: >-
+      Streaming governs how the response is returned, not how large the request may be. The request
+      is still sent as one body and still measured against the endpoint's maximum.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: >-
+      The limit differs by endpoint: Messages and token counting accept less than the Batch endpoint,
+      which accepts less than the Files endpoint.
+    correct: true
+    rationale: >-
+      The documented maximums rise across those endpoints — 32 MB for Messages and token counting,
+      256 MB for batches, and 500 MB for files — so a payload that is too large for one path may be
+      well within another's. The endpoint is part of the sizing decision.
+  - id: d
+    text: A 413 is a transient failure, so the SDK's automatic retries resolve it without a change.
+    correct: false
+    rationale: >-
+      Retrying an identical oversized request produces an identical 413. The SDKs retry transient
+      failures such as connection errors, rate limits, and 5xx responses, which this is not.
+    trap_type: false-capability
+  - id: e
+    text: The limit is measured in tokens, so trimming the prompt is always the remedy for a 413.
+    correct: false
+    rationale: >-
+      The limit is a byte size on the request, which is why a large attachment or a long batch file
+      can trip it while the token count looks unremarkable. Token budgets are a separate constraint.
+    trap_type: wrong-layer
+sources:
+  - title: Claude API errors — Anthropic
+    url: https://platform.claude.com/docs/en/api/errors
+    verified_on: "2026-09-17"

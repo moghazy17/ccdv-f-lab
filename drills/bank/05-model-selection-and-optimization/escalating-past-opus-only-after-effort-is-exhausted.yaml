@@ -1,0 +1,61 @@
+id: escalating-past-opus-only-after-effort-is-exhausted
+domain: Model Selection and Optimization
+sub_skill: Model Selection and Tradeoffs
+difficulty: application
+select: 1
+stem: >-
+  A team's long-horizon agentic workflow runs on Claude Opus 5 and scores below their acceptance
+  threshold on an eval suite they trust. They have not changed the effort level from its default.
+  Someone proposes moving straight to the most capable model available. What does the documented
+  selection guidance suggest?
+options:
+  - id: a
+    text: >-
+      Move to Fable 5.1 immediately, since the workload is long-horizon agentic work and that is what
+      the model is for.
+    correct: false
+    rationale: >-
+      The workload description does point that way, which is what makes this tempting, but the team
+      has not yet tried the cheaper lever on their current model. Escalating first pays a higher
+      per-token price and a slower response for a gap that more effort might close.
+    trap_type: bigger-model
+  - id: b
+    text: >-
+      Raise effort on Opus 5 and re-run the evals first; move to Fable 5.1 if the results at higher
+      effort still fall short.
+    correct: true
+    rationale: >-
+      The guidance names that exact sequence: start with Opus 5 for most workloads, and use Fable 5.1
+      for demanding reasoning and long-horizon agentic work or when evals on Opus 5 at higher effort
+      still fall short. The eval suite the team already trusts is what turns the escalation into a
+      measured decision rather than a guess.
+  - id: c
+    text: >-
+      Route each request to whichever model is idle, since capability differences disappear at higher
+      effort.
+    correct: false
+    rationale: >-
+      Effort steers how much a model thinks; it does not equalize models. Non-deterministic routing
+      would also make the eval suite meaningless, since a score could not be attributed to anything.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Move down to Sonnet 5 and raise effort there, since a faster model with more thinking is
+      cheaper than a slower model at default effort.
+    correct: false
+    rationale: >-
+      This reasons about price while ignoring that the current model is already failing the bar.
+      Reducing capability to buy effort is the wrong direction when the deficit is capability.
+    trap_type: cost-theater
+  - id: e
+    text: >-
+      Keep Opus 5 and raise `max_tokens`, so the model has room to reason its way to a better answer.
+    correct: false
+    rationale: >-
+      That parameter bounds the response length; it is not how thinking is steered. Effort is the
+      control the guidance names.
+    trap_type: irrelevant-knob
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-17"

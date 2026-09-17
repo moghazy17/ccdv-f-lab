@@ -1,0 +1,60 @@
+id: rate-limit-headroom-read-from-response-headers
+domain: Model Selection and Optimization
+sub_skill: Technical Fundamentals
+difficulty: application
+select: 1
+stem: >-
+  A service wants to slow itself down before it starts receiving throttling errors, rather than
+  reacting after the first one. It already retries correctly when a 429 arrives. What signal lets it
+  act earlier, and what does that signal describe?
+options:
+  - id: a
+    text: >-
+      The Console usage charts, which show hourly maxima and cache rates for each model.
+    correct: false
+    rationale: >-
+      Those charts are for tuning capacity and requesting increases, not for a client to consult in
+      the moment. They describe the past, at an hourly grain.
+    trap_type: wrong-layer
+  - id: b
+    text: >-
+      The usage figures in the response body, which report tokens consumed and can be compared with
+      the account's configured limits.
+    correct: false
+    rationale: >-
+      Usage tells the caller what one request cost, leaving it to track a rolling window itself and
+      to guess the limit. The headers report the enforced limit and the remainder directly.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: >-
+      A fixed client-side quota set to the published tier limit, since limits reset at the top of each
+      minute.
+    correct: false
+    rationale: >-
+      Capacity is replenished continuously by a token bucket rather than reset on a fixed boundary,
+      so a client modeling minute-aligned resets will both stall unnecessarily and burst at the wrong
+      moment.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      The `retry-after` header, which is present on every response and indicates how long to wait
+      before the next request.
+    correct: false
+    rationale: >-
+      That header accompanies a throttling response, telling the caller how long to wait after being
+      limited. It is not a continuous headroom signal, and it is absent from the spend-cap case
+      entirely.
+    trap_type: false-capability
+  - id: e
+    text: >-
+      The rate-limit response headers, which report the limit in force, how much remains, and when
+      the allowance is fully replenished.
+    correct: true
+    rationale: >-
+      Every response carries headers giving the enforced limit, the remaining requests and tokens,
+      and a reset time, with the token headers reflecting the most restrictive limit currently in
+      effect. A client can taper as the remaining figure falls instead of waiting for a rejection.
+sources:
+  - title: Rate limits — Anthropic
+    url: https://platform.claude.com/docs/en/api/rate-limits
+    verified_on: "2026-09-17"

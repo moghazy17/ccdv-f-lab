@@ -1,0 +1,62 @@
+id: assistant-prefill-replaced-by-structured-output
+domain: Applications and Integration
+sub_skill: Claude API Mechanics
+difficulty: application
+select: 1
+stem: >-
+  A service has long forced JSON responses by ending each request with a partial assistant message
+  containing an opening brace, so the model continues from it. After the team pins a current model,
+  every request returns a 400 saying the model does not support assistant message prefill and that
+  the conversation must end with a user message. What replaces the technique?
+options:
+  - id: a
+    text: >-
+      Pin the previous model generation, since prefill is the only reliable way to guarantee parseable
+      output.
+    correct: false
+    rationale: >-
+      This freezes the integration on an older model to preserve a technique the platform has
+      replaced with a stronger one. Constrained decoding guarantees schema conformance, which prefill
+      never did.
+    trap_type: wrong-layer
+  - id: b
+    text: >-
+      Ask for the shape directly through structured outputs, and let the conversation end with the
+      user turn.
+    correct: true
+    rationale: >-
+      Prefill was a way to coerce a format before the API offered one, and constrained decoding now
+      provides the guarantee properly. A system-prompt instruction is the weaker fallback the
+      documentation also mentions: it asks for the format rather than enforcing it, which is not what
+      a service parsing every response needs.
+  - id: c
+    text: >-
+      Retry the request with exponential backoff, since a 400 on a previously working call indicates a
+      transient rollout issue.
+    correct: false
+    rationale: >-
+      A 400 is a request-validation failure and will be identical on every retry. Retrying it turns a
+      clear error into a silent loop.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Move the opening brace into the last user message, so the conversation still ends with a user
+      turn while preserving the prefill effect.
+    correct: false
+    rationale: >-
+      This satisfies the letter of the error and loses the mechanism entirely: text in a user turn is
+      a request, not the start of the assistant's response. It also leaves the format unenforced.
+    trap_type: right-idea-wrong-mechanism
+  - id: e
+    text: >-
+      Raise the effort level so the model follows the format instruction more reliably without
+      prefill.
+    correct: false
+    rationale: >-
+      More reasoning effort does not create a format guarantee, and it addresses neither the 400 nor
+      the parsing requirement. The platform offers an explicit mechanism for the shape.
+    trap_type: bigger-model
+sources:
+  - title: Claude API errors — Anthropic
+    url: https://platform.claude.com/docs/en/api/errors
+    verified_on: "2026-09-17"

@@ -11,6 +11,15 @@ stem: >-
 options:
   - id: a
     text: >-
+      The request is failing because `budget_tokens` must be nested one level deeper, inside a new
+      `output_config.thinking.budget_tokens` field, on current models.
+    correct: false
+    rationale: >-
+      Current models do not accept a thinking token budget in any location; the field was removed
+      rather than relocated, so no amount of re-nesting it restores the old behavior.
+    trap_type: right-idea-wrong-mechanism
+  - id: b
+    text: >-
       `budget_tokens` is rejected on current models rather than being ignored; Claude Opus 5 uses
       adaptive thinking instead, where the model decides per request whether and how deeply to
       think, steered by `output_config.effort` rather than a token budget.
@@ -19,15 +28,6 @@ options:
       The manual thinking mode with `budget_tokens` is deprecated on the 4.6 generation and is not
       accepted on later models at all, so the request fails outright; adaptive thinking, tuned by
       the separate `effort` parameter, is what current models use instead.
-  - id: b
-    text: >-
-      The request is failing because `budget_tokens` must be nested one level deeper, inside a new
-      `output_config.thinking.budget_tokens` field, on current models.
-    correct: false
-    rationale: >-
-      Current models do not accept a thinking token budget in any location; the field was removed
-      rather than relocated, so no amount of re-nesting it restores the old behavior.
-    trap_type: right-idea-wrong-mechanism
   - id: c
     text: >-
       The failure is unrelated to `budget_tokens`; it is caused by the request exceeding a
@@ -50,7 +50,7 @@ options:
 sources:
   - title: Models overview — Anthropic
     url: https://platform.claude.com/docs/en/about-claude/models/overview
-    verified_on: "2026-09-05"
+    verified_on: "2026-09-17"
   - title: Steering thinking — Anthropic
     url: https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost
     verified_on: "2026-09-05"

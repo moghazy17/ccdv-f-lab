@@ -1,0 +1,61 @@
+id: pinned-catalog-entry-versus-moving-branch
+domain: Applications and Integration
+sub_skill: Software Engineering Foundations
+difficulty: application
+select: 1
+stem: >-
+  A security reviewer is asked how a third-party plugin the team installs from the community
+  marketplace could change under them between one session and the next, and what bounds that risk.
+  Which statement describes how the catalog entry works?
+options:
+  - id: a
+    text: >-
+      A community catalog entry is pinned to a specific commit, and continuous integration advances
+      that pin as the author pushes.
+    correct: true
+    rationale: >-
+      What installs is a fixed commit rather than whatever a branch happens to point at, which is
+      what makes an install reproducible. The pin does move as the author pushes, so it bounds the
+      risk rather than freezing the plugin, and it moves on the catalog's schedule rather than the
+      instant a branch changes.
+  - id: b
+    text: >-
+      The catalog stores a branch name, so an install always fetches the author's latest commit at
+      the moment of installation.
+    correct: false
+    rationale: >-
+      This is the risk the pin exists to bound, stated as if it were the behavior. It would make
+      every install unreproducible and every review of the plugin's contents provisional.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      Because entries pass automated screening before listing, the pin is a formality and the content
+      cannot change after approval.
+    correct: false
+    rationale: >-
+      Screening happens at submission and does not stop later commits from being picked up as the pin
+      advances. Treating the review as a standing guarantee is exactly the assumption a security
+      reviewer should avoid.
+    trap_type: unenforceable-politeness
+  - id: d
+    text: >-
+      Marketplace entries carry no version information, so the only way to bound the risk is to vendor
+      the plugin into the repository.
+    correct: false
+    rationale: >-
+      Vendoring is a heavy response to a problem the catalog already addresses with a pin, and it
+      moves maintenance of someone else's code into the team's repository.
+    trap_type: overkill
+  - id: e
+    text: >-
+      Plugins are frozen permanently at the commit reviewed on submission and never change without a
+      manual reinstall by each user.
+    correct: false
+    rationale: >-
+      This overstates the guarantee in the other direction. The pin does advance as the author pushes
+      new commits, so a reviewer should not treat one review as covering the plugin forever.
+    trap_type: false-capability
+sources:
+  - title: Discover and install plugins — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/discover-plugins
+    verified_on: "2026-09-17"

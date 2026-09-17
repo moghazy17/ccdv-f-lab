@@ -1,0 +1,63 @@
+id: auto-update-changes-tooling-under-a-running-fleet
+domain: Applications and Integration
+sub_skill: Systems Life Cycle
+difficulty: analysis
+select: 1
+stem: >-
+  A platform team maintains a set of plugins their engineers use daily. They want two properties: a
+  session already under way should keep behaving as it did when it started, and an engineer should
+  not have to think about staying current. Which description matches how updates are delivered, and
+  what remains the team's responsibility?
+options:
+  - id: a
+    text: >-
+      Disabling the auto-updater for Claude Code also freezes plugin versions, so one setting covers
+      both concerns.
+    correct: false
+    rationale: >-
+      The two are separable: plugin updates can be kept on while Claude Code's own updates are
+      disabled. Treating one switch as covering both leaves the team's actual state unclear.
+    trap_type: false-capability
+  - id: b
+    text: >-
+      Pinning each plugin to a commit in the team's own marketplace is required, because otherwise
+      versions are undefined.
+    correct: false
+    rationale: >-
+      A manifest version already governs when consumers receive an update, and a marketplace entry
+      identifies what installs. Requiring commit pinning everywhere adds process without addressing
+      either stated property.
+    trap_type: overkill
+  - id: c
+    text: >-
+      Nothing updates unless each engineer reinstalls, so the team must publish upgrade instructions
+      for every release.
+    correct: false
+    rationale: >-
+      Marketplaces and their installed plugins can update in the background, and official
+      marketplaces have that enabled by default. Assuming manual reinstalls creates busywork the
+      tooling already handles.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Updates are fetched in the background after a session starts, and the team still chooses which
+      marketplaces update automatically.
+    correct: true
+    rationale: >-
+      Because the check happens after startup with a delay, the running session keeps the versions it
+      launched with, and a notification asks for a reload when something changed — so both of the
+      team's properties hold. Auto-update is a per-marketplace setting, so which sources update
+      without asking remains their decision rather than a default they inherit everywhere.
+  - id: e
+    text: >-
+      Updates are applied to the running session as soon as they are published, so an engineer always
+      has the newest version mid-task.
+    correct: false
+    rationale: >-
+      This is the property the delayed check exists to avoid. Swapping tooling underneath an
+      in-progress task is precisely the behavior the team listed first among its requirements.
+    trap_type: false-capability
+sources:
+  - title: Discover and install plugins — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/discover-plugins
+    verified_on: "2026-09-17"

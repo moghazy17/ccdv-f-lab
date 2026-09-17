@@ -23,14 +23,13 @@ options:
       supported by that documentation.
   - id: b
     text: >-
-      Yes, because cloud platform access is just a different authentication method for the same
-      underlying API with identical feature availability.
+      Yes, provided the company selects a larger model, since more capable models are rolled out
+      to every platform simultaneously.
     correct: false
     rationale: >-
-      Authentication integrated with the cloud provider's IAM system is one documented difference,
-      but the same documentation separately states that feature availability varies by platform;
-      assuming identical availability claims a guarantee the documentation does not make.
-    trap_type: false-capability
+      Model capability has no bearing on which platform a given feature or model has been made
+      available on; the documented distinction is about platform rollout, not model tier.
+    trap_type: bigger-model
   - id: c
     text: >-
       It does not matter, because the company should switch to the direct Claude API regardless of
@@ -43,13 +42,14 @@ options:
     trap_type: wrong-layer
   - id: d
     text: >-
-      Yes, provided the company selects a larger model, since more capable models are rolled out
-      to every platform simultaneously.
+      Yes, because cloud platform access is just a different authentication method for the same
+      underlying API with identical feature availability.
     correct: false
     rationale: >-
-      Model capability has no bearing on which platform a given feature or model has been made
-      available on; the documented distinction is about platform rollout, not model tier.
-    trap_type: bigger-model
+      Authentication integrated with the cloud provider's IAM system is one documented difference,
+      but the same documentation separately states that feature availability varies by platform;
+      assuming identical availability claims a guarantee the documentation does not make.
+    trap_type: false-capability
 sources:
   - title: API overview — Anthropic
     url: https://platform.claude.com/docs/en/api/overview

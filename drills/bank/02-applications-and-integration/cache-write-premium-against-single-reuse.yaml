@@ -1,0 +1,61 @@
+id: cache-write-premium-against-single-reuse
+domain: Applications and Integration
+sub_skill: Claude API Mechanics
+difficulty: analysis
+select: 1
+stem: >-
+  An integration caches a large document prefix on every incoming request. Each document is unique to
+  its request and is read exactly once. After enabling caching, the bill rises. An engineer argues
+  that caching cannot increase cost because reads are far cheaper than base input. Where does the
+  argument go wrong?
+options:
+  - id: a
+    text: >-
+      Placing the breakpoint after the document rather than before it, so the unique content falls
+      outside the cached prefix.
+    correct: false
+    rationale: >-
+      Moving the breakpoint is the right instinct when a prefix contains something variable, and it
+      is the correct fix for a different problem. Here every request's document is unique, so no
+      placement makes this content worth caching.
+    trap_type: right-idea-wrong-mechanism
+  - id: b
+    text: >-
+      The documents exceed the minimum cacheable length, so each one writes several entries and
+      multiplies the write cost.
+    correct: false
+    rationale: >-
+      The minimum is a floor below which caching does not happen, not a unit that repeats. Exceeding
+      it makes a prefix eligible; it does not multiply writes.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      Cache reads are cheap only for the first few minutes, after which they are billed at the full
+      input rate, so the entries are being read too late.
+    correct: false
+    rationale: >-
+      An entry either survives its lifetime or expires; it does not degrade into full-price reads.
+      In this integration nothing is read back at all, which is the actual problem.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      The argument holds, and the increase must come from the longer cache duration; switching to the
+      default five-minute lifetime restores the saving.
+    correct: false
+    rationale: >-
+      The shorter duration is cheaper to write, but it is still priced above base input. Halving a
+      premium that should not be paid at all leaves the design wrong in the same direction.
+    trap_type: cost-theater
+  - id: e
+    text: >-
+      A cache write is charged above base input, so a prefix that is written and never read back
+      costs more than sending it uncached; caching pays only when the same prefix is reused.
+    correct: true
+    rationale: >-
+      A write is priced at a premium over base input — higher still for the longer duration — while
+      a read is a small fraction of it. The saving comes from amortizing one write across later
+      reads, so a prefix used once pays the premium and collects none of the benefit.
+sources:
+  - title: Prompt caching — Anthropic
+    url: https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+    verified_on: "2026-09-17"

@@ -1,0 +1,64 @@
+id: shared-setting-overridden-by-a-personal-local-file
+domain: Applications and Integration
+sub_skill: Configuration Management
+difficulty: analysis
+select: 1
+stem: >-
+  A team standardizes a key in the repository's shared project settings and confirms it is committed.
+  Most engineers see the new behavior. One engineer does not, on any branch, and their shared
+  settings file is identical to everyone else's. The organization also deploys managed settings, but
+  that file does not mention this key. Where should the team look first, and why?
+options:
+  - id: a
+    text: >-
+      The managed settings file, since organization policy silently wins over everything a team
+      commits.
+    correct: false
+    rationale: >-
+      Managed settings do outrank everything, with a few security-sensitive exceptions, but the team
+      has already established that this key is absent there. A tier that does not set the key cannot
+      be what overrides it.
+    trap_type: wrong-layer
+  - id: b
+    text: >-
+      The engineer's project local settings file, which sits above shared project settings in
+      precedence and is personal to that one project.
+    correct: true
+    rationale: >-
+      Precedence runs managed, then the command line, then project local, then shared project, then
+      user. A personal local file in the same repository outranks the shared file, which is exactly
+      the tier that would affect one engineer everywhere in this project while leaving teammates
+      unaffected.
+  - id: c
+    text: >-
+      Git history, since the engineer most likely has an uncommitted local edit to the shared file
+      that reverts the key.
+    correct: false
+    rationale: >-
+      The team has already confirmed that the engineer's shared file is identical to everyone
+      else's, so the difference is not in that file. This re-checks something the premise settled.
+    trap_type: right-idea-wrong-mechanism
+  - id: d
+    text: >-
+      A plugin the engineer installed, because a plugin's own settings replace project configuration
+      when the plugin is enabled.
+    correct: false
+    rationale: >-
+      A plugin can ship defaults for a small set of keys when enabled, but it does not sit above the
+      project tier for arbitrary settings. This reaches for a mechanism before checking the tier
+      that plainly outranks the shared file.
+    trap_type: right-idea-wrong-mechanism
+  - id: e
+    text: >-
+      The engineer's user settings file, which applies across all their projects and so would
+      override a project-level value.
+    correct: false
+    rationale: >-
+      User settings apply across every project, which matches the symptom's breadth, but they sit
+      *below* shared project settings in precedence. A value there would lose to the committed file
+      rather than beat it.
+    trap_type: wrong-layer
+sources:
+  - title: Settings files and precedence — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/settings
+    verified_on: "2026-09-17"

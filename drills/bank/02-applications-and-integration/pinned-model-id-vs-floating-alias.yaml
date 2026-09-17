@@ -31,16 +31,6 @@ options:
     trap_type: false-capability
   - id: c
     text: >-
-      Yes, but only after switching every task in the integration to the largest available model
-      tier first.
-    correct: false
-    rationale: >-
-      Which model tier is used for a task is a separate decision from whether the identifier that
-      selects it is pinned or floating; escalating to a larger tier does not address the
-      reproducibility problem an unpinned alias would introduce.
-    trap_type: bigger-model
-  - id: d
-    text: >-
       The change is harmless as long as the team adds a comment in the code noting which model was
       live when the alias was introduced.
     correct: false
@@ -49,7 +39,17 @@ options:
       different snapshot on a later date; it does not restore the reproducibility a pinned
       constant enforced at startup.
     trap_type: cost-theater
+  - id: d
+    text: >-
+      Yes, but only after switching every task in the integration to the largest available model
+      tier first.
+    correct: false
+    rationale: >-
+      Which model tier is used for a task is a separate decision from whether the identifier that
+      selects it is pinned or floating; escalating to a larger tier does not address the
+      reproducibility problem an unpinned alias would introduce.
+    trap_type: bigger-model
 sources:
   - title: Models overview — Anthropic
     url: https://platform.claude.com/docs/en/about-claude/models/overview
-    verified_on: "2026-09-09"
+    verified_on: "2026-09-17"

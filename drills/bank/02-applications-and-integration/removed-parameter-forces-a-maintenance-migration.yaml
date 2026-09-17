@@ -1,0 +1,61 @@
+id: removed-parameter-forces-a-maintenance-migration
+domain: Applications and Integration
+sub_skill: Systems Life Cycle
+difficulty: application
+select: 1
+stem: >-
+  A service in its maintenance phase has run unchanged for a year, configuring a thinking budget
+  through the parameter shape its pinned model accepted. During a routine upgrade to a current model,
+  every request returns a 400 saying that thinking type is not supported for this model and naming
+  the replacement configuration. What does this tell the team about the work in front of them?
+options:
+  - id: a
+    text: >-
+      The new model is faulty for this workload, so the team should report the 400 and remain on the
+      pinned model until it is fixed.
+    correct: false
+    rationale: >-
+      A documented rejection with a named replacement is intended behavior, not a defect. Staying put
+      defers a migration that a retirement date will eventually force on a worse schedule.
+    trap_type: false-capability
+  - id: b
+    text: >-
+      Retries with backoff will clear it, because a newly released model often rejects requests while
+      capacity is provisioned.
+    correct: false
+    rationale: >-
+      A 400 is a validation failure and is identical on every attempt. Capacity problems surface as
+      429 or 529 responses instead.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      A capability the integration depends on has been superseded, so the upgrade includes a
+      parameter migration to the replacement configuration rather than a version bump alone.
+    correct: true
+    rationale: >-
+      The error names the newer configuration explicitly, which makes this a mapping exercise across
+      a documented migration rather than a defect. Treating a model upgrade as a one-line change is
+      what turns a supported migration into an outage.
+  - id: d
+    text: >-
+      The team should remove the thinking configuration entirely and accept whatever default applies,
+      since the parameter is no longer supported.
+    correct: false
+    rationale: >-
+      Dropping the configuration would run, but it discards a deliberate tuning decision without
+      evaluating the replacement the error names. A migration should carry the intent across, not
+      abandon it.
+    trap_type: right-idea-wrong-mechanism
+  - id: e
+    text: >-
+      The pinned model identifier must have been mistyped, since a valid identifier would accept the
+      same parameters.
+    correct: false
+    rationale: >-
+      An unknown identifier fails differently, and parameters are not guaranteed to carry across
+      model generations. This assumes a stability the platform does not promise.
+    trap_type: false-capability
+sources:
+  - title: Claude API errors — Anthropic
+    url: https://platform.claude.com/docs/en/api/errors
+    verified_on: "2026-09-17"

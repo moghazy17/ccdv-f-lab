@@ -1,0 +1,61 @@
+id: output-tokens-dominate-a-verbose-response-bill
+domain: Model Selection and Optimization
+sub_skill: Cost and Token Management
+difficulty: analysis
+select: 1
+stem: >-
+  A summarization service sends a short prompt and receives long, discursive answers, and a person
+  waits on each response, so the work cannot move to an asynchronous path. Spend is above forecast.
+  The team's forecast assumed the prompt was the expensive part, so their first plan is to compress
+  the system instruction from 400 tokens to 200. What is the dominant cost driver here?
+options:
+  - id: a
+    text: >-
+      At `max_tokens`, which should be lowered, since the parameter is what the response is billed
+      against.
+    correct: false
+    rationale: >-
+      Billing follows tokens actually generated, not the ceiling. Lowering the ceiling truncates long
+      answers mid-sentence rather than making them shorter, which is a quality change disguised as a
+      cost change.
+    trap_type: irrelevant-knob
+  - id: b
+    text: >-
+      At the input side still, since every request resends the system instruction and those tokens
+      accumulate across high volume.
+    correct: false
+    rationale: >-
+      Repeated input does accumulate, and caching is the remedy when a prefix is large. Two hundred
+      tokens per request is not what moved a bill driven by long generations.
+    trap_type: cost-theater
+  - id: c
+    text: >-
+      Response length, because output tokens are priced several times higher than input.
+    correct: true
+    rationale: >-
+      Every tier prices output at a multiple of input — five times, on the published per-MTok
+      figures — so a long answer costs far more than the prompt that requested it. With a short
+      prompt and long answers, instructing for brevity is worth far more than halving an already
+      small instruction.
+  - id: d
+    text: >-
+      At the model tier, moving to the cheapest model, since per-token price is the only lever that
+      applies to output.
+    correct: false
+    rationale: >-
+      Changing tier scales the same verbosity down by a constant and accepts a capability drop for
+      it. The discursiveness is the defect, and it will still be there on a cheaper model.
+    trap_type: cost-theater
+  - id: e
+    text: >-
+      At the batch path, since a summarization service that is over budget should trade latency for
+      the halved price.
+    correct: false
+    rationale: >-
+      Batching genuinely halves the price and is right when nothing waits on the result, but it
+      leaves a verbose response verbose and cuts the symptom in half rather than addressing it.
+    trap_type: cost-theater
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-17"

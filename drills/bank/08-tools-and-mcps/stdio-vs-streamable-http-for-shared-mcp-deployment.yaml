@@ -12,15 +12,6 @@ stem: >-
 options:
   - id: a
     text: >-
-      Run the server with the Streamable HTTP transport instead, so it listens at a host and port
-      and any client can connect to that one running instance over the network.
-    correct: true
-    rationale: >-
-      Streamable HTTP delivers each message as an HTTP POST to one MCP endpoint, which lets a
-      single running server instance be reached over the network by any client, unlike stdio,
-      which binds one server subprocess to the one client that launched it.
-  - id: b
-    text: >-
       Keep the server on the stdio transport, and have each remote machine open a network
       connection directly to the server's standard input and output.
     correct: false
@@ -29,6 +20,15 @@ options:
       client-launched subprocess; it has no network-listening behavior for a separate machine to
       connect to, so this describes a capability stdio does not have.
     trap_type: false-capability
+  - id: b
+    text: >-
+      Run the server with the Streamable HTTP transport instead, so it listens at a host and port
+      and any client can connect to that one running instance over the network.
+    correct: true
+    rationale: >-
+      Streamable HTTP delivers each message as an HTTP POST to one MCP endpoint, which lets a
+      single running server instance be reached over the network by any client, unlike stdio,
+      which binds one server subprocess to the one client that launched it.
   - id: c
     text: >-
       Register more MCP resources and tools on the existing stdio server so it has more to offer

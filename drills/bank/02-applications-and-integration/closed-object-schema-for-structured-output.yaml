@@ -1,0 +1,54 @@
+id: closed-object-schema-for-structured-output
+domain: Applications and Integration
+sub_skill: Claude Application Design
+difficulty: recall
+select: 1
+stem: >-
+  An engineer writes a schema for a structured-output request. Every object declares its properties
+  and lists them under `required`, and the engineer deliberately leaves `additionalProperties` unset
+  so that a later model version may add useful fields without a schema change. The request returns a
+  400 error. Which rule of the supported schema subset does the schema break?
+options:
+  - id: a
+    text: >-
+      Object properties must be ordered to match the order the model emits them, and an unordered
+      schema is rejected.
+    correct: false
+    rationale: >-
+      No property-ordering rule exists in the supported subset. This invents a constraint that
+      sounds plausible for a generation format but is not part of the schema contract.
+    trap_type: false-capability
+  - id: b
+    text: Objects must not list every property under `required`; at least one must stay optional.
+    correct: false
+    rationale: >-
+      `required` is supported and marking every property required is ordinary practice. Nothing in
+      the subset obliges a schema to leave a property optional.
+    trap_type: false-capability
+  - id: c
+    text: A schema may not declare `default` values, which conflict with generated output.
+    correct: false
+    rationale: >-
+      The `default` property is supported for every supported type. It is not the cause of the
+      error.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Forward compatibility requires the schema to be versioned through an external `$ref`, which the
+      engineer omitted.
+    correct: false
+    rationale: >-
+      External `$ref` is explicitly unsupported; only internal references resolve. This would replace
+      one unsupported feature with another.
+    trap_type: right-idea-wrong-mechanism
+  - id: e
+    text: Every object must set `additionalProperties` to `false`.
+    correct: true
+    rationale: >-
+      The supported subset requires `additionalProperties: false` on every object, and any other
+      value — including leaving it to its default — is unsupported and returns a 400 error. A closed
+      object is what lets a caller rely on the shape it declared.
+sources:
+  - title: Structured outputs — Anthropic
+    url: https://platform.claude.com/docs/en/build-with-claude/structured-outputs
+    verified_on: "2026-09-17"

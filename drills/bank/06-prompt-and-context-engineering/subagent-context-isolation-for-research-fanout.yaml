@@ -21,16 +21,6 @@ options:
       out of the main agent's context while still surfacing the conclusion it needs.
   - id: b
     text: >-
-      Do all the exploration directly in the main conversation, then compact the older turns into
-      one summary once the token estimate is high.
-    correct: false
-    rationale: >-
-      Compaction only helps after the exploration detail has already accumulated in the main
-      context; it does not prevent that detail from entering the shared conversation in the first
-      place, which isolation through a subagent does directly.
-    trap_type: wrong-layer
-  - id: c
-    text: >-
       Do all the exploration directly in the main conversation, but prune each individual search
       result to a fixed character limit as it is inserted.
     correct: false
@@ -39,6 +29,16 @@ options:
       turns, tool calls, and reasoning mixed into the one context the routing decision has to read
       through; isolating each category's work is a better fit than shrinking it in place.
     trap_type: overkill
+  - id: c
+    text: >-
+      Do all the exploration directly in the main conversation, then compact the older turns into
+      one summary once the token estimate is high.
+    correct: false
+    rationale: >-
+      Compaction only helps after the exploration detail has already accumulated in the main
+      context; it does not prevent that detail from entering the shared conversation in the first
+      place, which isolation through a subagent does directly.
+    trap_type: wrong-layer
   - id: d
     text: Move the whole exploration task to a model with a larger context window.
     correct: false

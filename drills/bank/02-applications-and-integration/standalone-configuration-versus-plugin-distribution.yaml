@@ -1,0 +1,65 @@
+id: standalone-configuration-versus-plugin-distribution
+domain: Applications and Integration
+sub_skill: Claude Application Design
+difficulty: application
+select: 1
+stem: >-
+  A platform team has built a code-review skill, a release agent, and a lint hook, all under one
+  repository's `.claude/` directory, where they work well. Four other repositories now want the same
+  three components, the team wants to cut versioned releases so a consuming repository can stay on a
+  known-good version, and they do not want each repository copying files by hand. Which change fits
+  the requirement?
+options:
+  - id: a
+    text: >-
+      Move the three components into each engineer's personal directory, so they are available in
+      every project on every machine.
+    correct: false
+    rationale: >-
+      A personal configuration follows one engineer across their own projects; it never reaches a
+      teammate's machine, and it cannot be versioned or released. It answers "available everywhere
+      for me" rather than "shared with the team".
+    trap_type: wrong-layer
+  - id: b
+    text: >-
+      Launch each consuming repository with `--plugin-dir` pointed at a shared network path holding
+      the components.
+    correct: false
+    rationale: >-
+      That flag loads a plugin for one session without installing it, which is a development and
+      testing path. It requires every invocation to carry the flag and still provides no version a
+      consumer can pin.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: >-
+      Keep the components in `.claude/` and add each consuming repository as a git submodule of the
+      original, so the files are shared rather than copied.
+    correct: false
+    rationale: >-
+      This distributes the files but reproduces none of what a plugin adds: no manifest, no version
+      a consumer can pin, no install or uninstall, and no namespacing to prevent a collision with a
+      repository's own components.
+    trap_type: right-idea-wrong-mechanism
+  - id: d
+    text: >-
+      Package the three components as a plugin with a `.claude-plugin/plugin.json` manifest and
+      distribute it through a marketplace the team hosts, which may be a private repository.
+    correct: true
+    rationale: >-
+      Plugins exist for exactly this: sharing with teammates, versioned releases, and reuse across
+      projects. The manifest carries the version, so consumers receive an update when the team bumps
+      it, and a marketplace hosted in a private repository keeps the distribution internal.
+  - id: e
+    text: >-
+      Put the three components in the organization's managed policy settings, so every machine
+      receives them automatically.
+    correct: false
+    rationale: >-
+      Managed policy distributes to every user the organization controls, regardless of which
+      repository is checked out. It is disproportionate for components four repositories want, and
+      it removes the per-repository choice the team is trying to keep.
+    trap_type: overkill
+sources:
+  - title: Create plugins — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/plugins
+    verified_on: "2026-09-17"

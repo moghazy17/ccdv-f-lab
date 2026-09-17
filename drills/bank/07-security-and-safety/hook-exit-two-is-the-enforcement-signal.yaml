@@ -1,0 +1,61 @@
+id: hook-exit-two-is-the-enforcement-signal
+domain: Security and Safety
+sub_skill: Claude Hooks
+difficulty: application
+select: 1
+stem: >-
+  A team writes a `PreToolUse` hook to stop shell commands that would touch a protected file. The
+  hook detects the pattern correctly — its log line proves it — prints an explanation to standard
+  error, and exits 1. The command runs anyway. What does the hook need to do instead?
+options:
+  - id: a
+    text: >-
+      Exit 0 and print the explanation on standard output, so the message reaches Claude and it
+      abandons the command.
+    correct: false
+    rationale: >-
+      Exiting 0 reports success, so nothing is blocked, and on this event standard output goes to the
+      debug log rather than to Claude. The command would run with the warning unseen.
+    trap_type: false-capability
+  - id: b
+    text: >-
+      Write the prohibition into the project instruction file as well, so the model declines the
+      command before the hook is consulted.
+    correct: false
+    rationale: >-
+      Instructions shape behavior but are not enforcement; a hook exists precisely because a
+      guarantee cannot rest on the model choosing to comply. Adding text does not close the gap the
+      team is looking at.
+    trap_type: unenforceable-politeness
+  - id: c
+    text: >-
+      Exit 2, which is the blocking error code; on `PreToolUse` it blocks the tool call, and the
+      stderr text becomes the reason the block is reported with.
+    correct: true
+    rationale: >-
+      Exit 2 is the documented blocking signal, and on this event it stops the tool call. It also
+      turns the hook's standard error into the blocking message, so the explanation the team already
+      writes becomes the reason rather than being discarded.
+  - id: d
+    text: >-
+      Move the check to a `PostToolUse` hook, which sees the completed call and can reject it with the
+      same exit code.
+    correct: false
+    rationale: >-
+      That event runs after the tool has already run, so there is nothing left to prevent. For a
+      protected file, the write would have happened before the hook ever executed.
+    trap_type: wrong-layer
+  - id: e
+    text: >-
+      Keep exiting 1 but print a JSON decision denying the call, since structured output carries more
+      authority than an exit code.
+    correct: false
+    rationale: >-
+      The relationship runs the other way: exit 2 blocks whether or not JSON is printed, and a JSON
+      decision cannot override it. A non-zero code that is not 2 does not block on its own for this
+      event, so the call would still proceed.
+    trap_type: right-idea-wrong-mechanism
+sources:
+  - title: Hooks reference — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/hooks
+    verified_on: "2026-09-17"

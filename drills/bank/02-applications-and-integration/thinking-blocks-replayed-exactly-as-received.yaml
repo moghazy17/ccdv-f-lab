@@ -1,0 +1,63 @@
+id: thinking-blocks-replayed-exactly-as-received
+domain: Applications and Integration
+sub_skill: Claude API Mechanics
+difficulty: analysis
+select: 1
+stem: >-
+  A tool-using integration keeps a conversation going across turns. To keep payloads small, it walks
+  the previous assistant message and rebuilds it, keeping the `text` and `tool_use` blocks, dropping
+  any block whose `thinking` field is empty, and re-serializing the rest in a stable order. Single
+  turns work; the next request after a tool call fails with a 400 naming a block position. What is
+  the cause?
+options:
+  - id: a
+    text: >-
+      Empty thinking blocks are placeholders that should never be sent back; the failure is that the
+      integration keeps some of them rather than dropping them all.
+    correct: false
+    rationale: >-
+      This inverts the rule. An empty `thinking` field is still a block that must be replayed, which
+      is exactly the case the documentation calls out because it looks so obviously droppable.
+    trap_type: false-capability
+  - id: b
+    text: >-
+      Rebuilding messages is fine, but the integration must strip thinking blocks entirely, since
+      they are internal to the turn that produced them.
+    correct: false
+    rationale: >-
+      Filtering them out is one of the named ways to trigger this error. Thinking content is part of
+      the assistant turn the next request builds on, not a per-turn artifact the client may discard.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      Payload trimming pushed the request under a minimum size for tool-use continuations, so the
+      server could not match the tool call.
+    correct: false
+    rationale: >-
+      No minimum request size exists, and an unmatched tool call reports a different problem. The
+      error points at a block position, which is what identifies a modified thinking block.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Thinking blocks in the latest assistant message must be replayed exactly as received —
+      unedited, unreordered, and unfiltered — including any block whose `thinking` field is empty.
+    correct: true
+    rationale: >-
+      The API rejects a latest assistant message whose `thinking` or `redacted_thinking` blocks were
+      edited, reordered, filtered out, or reconstructed, and with tool use every such block must be
+      passed back as received, empty ones included. All three of the integration's optimizations —
+      dropping, reordering, re-serializing — break that requirement, and the error names the first
+      offending position.
+  - id: e
+    text: >-
+      The block order changed, which invalidates the cache prefix, so the request is rejected to
+      avoid serving a stale result.
+    correct: false
+    rationale: >-
+      Cache invalidation costs money and latency; it does not produce a 400. This substitutes a
+      familiar mechanism for the validation rule that actually fired.
+    trap_type: right-idea-wrong-mechanism
+sources:
+  - title: Claude API errors — Anthropic
+    url: https://platform.claude.com/docs/en/api/errors
+    verified_on: "2026-09-17"

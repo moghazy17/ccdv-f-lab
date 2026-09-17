@@ -11,6 +11,25 @@ stem: >-
 options:
   - id: a
     text: >-
+      Set effort to "high" instead of configuring thinking at all, since effort and thinking are
+      the same setting under a different name.
+    correct: false
+    rationale: >-
+      Effort is set through output_config.effort as its own parameter, separate from the thinking
+      block; treating the two as interchangeable does not correctly configure either one for a
+      model that needs an explicit thinking budget.
+    trap_type: right-idea-wrong-mechanism
+  - id: b
+    text: >-
+      Use the largest possible budget_tokens value for every request, on the assumption that more
+      budget always improves output regardless of which model receives it.
+    correct: false
+    rationale: >-
+      Turning the same numeric knob up does not address the actual problem, which is that one of
+      the two models does not accept a budget_tokens value on its thinking configuration at all.
+    trap_type: irrelevant-knob
+  - id: c
+    text: >-
       Sonnet and Opus take adaptive thinking, a mode with no separate token budget to configure,
       while Haiku's thinking is only configured with an explicit budget_tokens value; the helper
       must branch on which model it is calling rather than always sending budget_tokens.
@@ -20,25 +39,6 @@ options:
       which model is being called; sending budget_tokens to a model that takes adaptive thinking,
       or omitting it for a model that requires it, produces an invalid request for one of the two
       models.
-  - id: b
-    text: >-
-      Set effort to "high" instead of configuring thinking at all, since effort and thinking are
-      the same setting under a different name.
-    correct: false
-    rationale: >-
-      Effort is set through output_config.effort as its own parameter, separate from the thinking
-      block; treating the two as interchangeable does not correctly configure either one for a
-      model that needs an explicit thinking budget.
-    trap_type: right-idea-wrong-mechanism
-  - id: c
-    text: >-
-      Use the largest possible budget_tokens value for every request, on the assumption that more
-      budget always improves output regardless of which model receives it.
-    correct: false
-    rationale: >-
-      Turning the same numeric knob up does not address the actual problem, which is that one of
-      the two models does not accept a budget_tokens value on its thinking configuration at all.
-    trap_type: irrelevant-knob
   - id: d
     text: >-
       Switch the classification task to the same model used for drafting, so a single thinking
@@ -55,4 +55,4 @@ sources:
     verified_on: "2026-09-09"
   - title: Models overview — Anthropic
     url: https://platform.claude.com/docs/en/about-claude/models/overview
-    verified_on: "2026-09-09"
+    verified_on: "2026-09-17"

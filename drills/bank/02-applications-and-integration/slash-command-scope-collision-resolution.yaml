@@ -31,21 +31,21 @@ options:
     trap_type: right-idea-wrong-mechanism
   - id: c
     text: >-
-      Both commands run in sequence, personal first and then project, because Claude Code merges
-      same-named commands rather than picking a single one.
-    correct: false
-    rationale: >-
-      Command resolution selects a single command by scope priority; there is no documented merge
-      behavior that runs multiple same-named commands in sequence.
-    trap_type: false-capability
-  - id: d
-    text: >-
       Whichever command file was modified most recently runs, since Claude Code resolves
       collisions by file modification time.
     correct: false
     rationale: >-
       Scope, not file modification time, governs which command resolves; there is no documented
       timestamp-based resolution mechanism for colliding command names.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Both commands run in sequence, personal first and then project, because Claude Code merges
+      same-named commands rather than picking a single one.
+    correct: false
+    rationale: >-
+      Command resolution selects a single command by scope priority; there is no documented merge
+      behavior that runs multiple same-named commands in sequence.
     trap_type: false-capability
 sources:
   - title: Custom slash commands — Anthropic (Claude Code docs)

@@ -1,0 +1,58 @@
+id: regional-endpoint-for-guaranteed-data-routing
+domain: Model Selection and Optimization
+sub_skill: Technical Fundamentals
+difficulty: application
+select: 1
+stem: >-
+  A regulated customer requires that inference for their workload stay within a named geography, and
+  the team serves them through Amazon Bedrock. An engineer proposes the global endpoint because it
+  routes dynamically and therefore offers better availability. What should the team choose, and why?
+options:
+  - id: a
+    text: >-
+      The global endpoint, adding a contractual clause that the provider will keep traffic in region.
+    correct: false
+    rationale: >-
+      A clause does not change how a dynamically routed endpoint selects capacity. The platform
+      already offers the mechanism that enforces this; a promise is not a substitute for it.
+    trap_type: unenforceable-politeness
+  - id: b
+    text: >-
+      The global endpoint, because regional endpoints are limited to older models and would force a
+      downgrade.
+    correct: false
+    rationale: >-
+      Regional endpoints are offered for the current generation on that platform, so no downgrade is
+      implied. This invents a constraint that would push the team away from the compliant option.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      A regional endpoint, because it guarantees where the request is served, while the global
+      endpoint routes dynamically and cannot make that commitment.
+    correct: true
+    rationale: >-
+      The platform offers both, and the distinction is exactly this: dynamic routing for availability
+      against guaranteed data routing for a residency requirement. When a contract names a
+      geography, the guarantee is the requirement and availability is the tradeoff being accepted.
+  - id: d
+    text: >-
+      The first-party Claude API instead, since Anthropic-operated platforms follow one lifecycle and
+      one routing policy.
+    correct: false
+    rationale: >-
+      Moving platforms is a larger decision than the requirement calls for, and it discards the
+      customer's existing cloud relationship and compliance approval to solve something the current
+      platform already supports.
+    trap_type: overkill
+  - id: e
+    text: >-
+      Either endpoint, since the model identifier determines where inference runs.
+    correct: false
+    rationale: >-
+      The identifier names the model, not the routing behavior. Two endpoints can serve the same
+      model with different residency properties.
+    trap_type: false-capability
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-17"

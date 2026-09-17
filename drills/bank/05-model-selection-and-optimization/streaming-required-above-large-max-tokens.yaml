@@ -58,7 +58,7 @@ options:
 sources:
   - title: Streaming messages — Claude Platform Docs
     url: https://platform.claude.com/docs/en/build-with-claude/streaming
-    verified_on: "2026-09-09"
+    verified_on: "2026-09-17"
   - title: Python SDK — Claude Platform Docs
     url: https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/python
     verified_on: "2026-09-09"

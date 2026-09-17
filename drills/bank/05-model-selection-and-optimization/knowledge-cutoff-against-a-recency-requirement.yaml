@@ -1,0 +1,63 @@
+id: knowledge-cutoff-against-a-recency-requirement
+domain: Model Selection and Optimization
+sub_skill: Model Selection and Tradeoffs
+difficulty: analysis
+select: 1
+stem: >-
+  An internal assistant answers questions about a fast-moving regulatory area. The team compares
+  models and notices their reliable knowledge cutoffs differ by more than a year. One engineer argues
+  the newest cutoff should decide the model choice, since regulation changes constantly. What is the
+  sounder reading?
+options:
+  - id: a
+    text: >-
+      Cutoffs are irrelevant in every design, because a model never answers from training knowledge
+      when documents are provided.
+    correct: false
+    rationale: >-
+      Overcorrecting in the other direction is also wrong: a model can answer from prior knowledge
+      when retrieval returns nothing relevant, which is exactly when a stale answer is most damaging.
+    trap_type: false-capability
+  - id: b
+    text: >-
+      Raising effort compensates for an older cutoff, since more reasoning recovers facts the model
+      saw less of.
+    correct: false
+    rationale: >-
+      Effort steers how much a model thinks with what it has; it cannot supply information the model
+      does not hold. This asks a capability control to do the job of retrieval.
+    trap_type: bigger-model
+  - id: c
+    text: >-
+      The training-data cutoff is what matters rather than the reliable knowledge cutoff, since it is
+      the later of the two and reflects everything the model saw.
+    correct: false
+    rationale: >-
+      The reliable knowledge cutoff is the date through which knowledge is most extensive and
+      reliable; the broader training range is not a promise of reliable recall. Preferring the later
+      number inverts what each one means.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      A cutoff bounds what the model knows unaided, but this assistant should be supplying the
+      current text in context.
+    correct: true
+    rationale: >-
+      No cutoff is recent enough for a fast-moving area, so a design that depends on training
+      knowledge is already wrong. Once the authoritative text is retrieved into context, the cutoff
+      matters far less than capability, latency, and cost, and becomes a fallback concern rather than
+      the deciding one.
+  - id: e
+    text: >-
+      The newest cutoff should decide it, because a model trained on more recent data will need less
+      correction from retrieved context.
+    correct: false
+    rationale: >-
+      This treats a difference of months as a substitute for current source text in a domain that
+      changes weekly. It also silently accepts that the assistant may answer from memory when
+      retrieval fails.
+    trap_type: wrong-layer
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-17"

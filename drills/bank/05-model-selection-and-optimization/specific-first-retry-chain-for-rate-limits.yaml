@@ -21,15 +21,21 @@ options:
       that distinction instead of collapsing retryable and non-retryable failures into one path.
   - id: b
     text: >-
-      Drop the SDK for this integration and issue raw HTTP requests, writing custom retry logic
-      for 429 and 500-range responses from scratch.
+      Add a system-prompt instruction asking the model to avoid triggering rate limits.
     correct: false
     rationale: >-
-      The goal of correct retry behavior is right, but the mechanism is wrong: the SDK already
-      retries connection errors, 408, 409, 429, and 5xx by default, so discarding it also discards
-      credential resolution, timeouts, and typed exceptions for no gain.
-    trap_type: right-idea-wrong-mechanism
+      Rate limiting is enforced by the API layer based on request volume, independent of anything
+      stated in the prompt; the model has no mechanism to comply with an instruction like this.
+    trap_type: unenforceable-politeness
   - id: c
+    text: >-
+      Enable prompt caching on every request so fewer of them are rate-limited or fail.
+    correct: false
+    rationale: >-
+      Prompt caching reduces the cost and latency of repeated input tokens; it has no effect on
+      whether a request is rate-limited or returns a server error.
+    trap_type: irrelevant-knob
+  - id: d
     text: >-
       Move the workload to Claude Fable 5.1, on the theory that a more capable model will be
       rate-limited less often.
@@ -39,26 +45,20 @@ options:
       infrastructure load, not of which model answers the request; a more capable model does not
       change how often 429s or 500s occur.
     trap_type: bigger-model
-  - id: d
-    text: >-
-      Add a system-prompt instruction asking the model to avoid triggering rate limits.
-    correct: false
-    rationale: >-
-      Rate limiting is enforced by the API layer based on request volume, independent of anything
-      stated in the prompt; the model has no mechanism to comply with an instruction like this.
-    trap_type: unenforceable-politeness
   - id: e
     text: >-
-      Enable prompt caching on every request so fewer of them are rate-limited or fail.
+      Drop the SDK for this integration and issue raw HTTP requests, writing custom retry logic
+      for 429 and 500-range responses from scratch.
     correct: false
     rationale: >-
-      Prompt caching reduces the cost and latency of repeated input tokens; it has no effect on
-      whether a request is rate-limited or returns a server error.
-    trap_type: irrelevant-knob
+      The goal of correct retry behavior is right, but the mechanism is wrong: the SDK already
+      retries connection errors, 408, 409, 429, and 5xx by default, so discarding it also discards
+      credential resolution, timeouts, and typed exceptions for no gain.
+    trap_type: right-idea-wrong-mechanism
 sources:
   - title: Python SDK — Claude Platform Docs
     url: https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/python
     verified_on: "2026-09-09"
   - title: Claude API errors — Anthropic
     url: https://platform.claude.com/docs/en/api/errors
-    verified_on: "2026-09-08"
+    verified_on: "2026-09-17"

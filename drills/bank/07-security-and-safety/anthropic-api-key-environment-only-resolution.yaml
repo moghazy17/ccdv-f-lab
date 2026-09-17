@@ -22,14 +22,13 @@ options:
       tests runnable without one.
   - id: b
     text: >-
-      A committed default key is fine as long as the file holding it is added to `.gitignore` for
-      extra caution.
+      Avoid the problem by moving to a larger model that needs fewer live-transport calls during
+      testing.
     correct: false
     rationale: >-
-      A file meant to be shared and committed cannot simultaneously be excluded by `.gitignore`;
-      this asserts a protection that the described setup does not actually provide, since the key
-      would already be committed and visible in history.
-    trap_type: false-capability
+      Model choice does not change whether a shared key sits in the repository; the exposure risk
+      is about where the credential is stored, not how many live calls the tests make.
+    trap_type: bigger-model
   - id: c
     text: >-
       Store the key in the repository, but ask contributors in the README never to copy it outside
@@ -41,15 +40,6 @@ options:
     trap_type: unenforceable-politeness
   - id: d
     text: >-
-      Avoid the problem by moving to a larger model that needs fewer live-transport calls during
-      testing.
-    correct: false
-    rationale: >-
-      Model choice does not change whether a shared key sits in the repository; the exposure risk
-      is about where the credential is stored, not how many live calls the tests make.
-    trap_type: bigger-model
-  - id: e
-    text: >-
       Log the resolved key value alongside each request, so any leakage can be traced back to its
       source later.
     correct: false
@@ -58,6 +48,16 @@ options:
       documented practice is to record the requesting identity, scope, and decision for an
       auditable trail while never writing the secret's value anywhere, including logs.
     trap_type: wrong-layer
+  - id: e
+    text: >-
+      A committed default key is fine as long as the file holding it is added to `.gitignore` for
+      extra caution.
+    correct: false
+    rationale: >-
+      A file meant to be shared and committed cannot simultaneously be excluded by `.gitignore`;
+      this asserts a protection that the described setup does not actually provide, since the key
+      would already be committed and visible in history.
+    trap_type: false-capability
 sources:
   - title: API Key Best Practices — Anthropic (Claude Help Center)
     url: https://support.claude.com/en/articles/9767949-api-key-best-practices-keeping-your-keys-safe-and-secure

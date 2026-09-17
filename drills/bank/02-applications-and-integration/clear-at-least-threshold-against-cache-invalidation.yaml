@@ -1,0 +1,63 @@
+id: clear-at-least-threshold-against-cache-invalidation
+domain: Applications and Integration
+sub_skill: Claude Application Design
+difficulty: analysis
+select: 1
+stem: >-
+  A long-running agent reads many files, so its conversation fills with spent tool results. The team
+  enables tool-result clearing with a low threshold and a small minimum, and clearing now fires
+  often. Context stays comfortable, but the cost per turn goes up rather than down, and latency
+  worsens. The number of tool calls per task is unchanged, while cache-read tokens have collapsed to
+  near zero. What is happening, and which adjustment addresses it?
+options:
+  - id: a
+    text: >-
+      The threshold is too high, so clearing waits until the conversation is large and pays the most
+      to clear it; lower the threshold further so clears stay cheap.
+    correct: false
+    rationale: >-
+      The threshold is already low, which is why clearing fires often. Lowering it further increases
+      the number of invalidations, making the exact symptom worse while sounding like a tuning fix.
+    trap_type: irrelevant-knob
+  - id: b
+    text: >-
+      Tool results are being cleared before the agent has finished with them, so it re-reads files
+      it already read; exclude the most recent tool results from clearing.
+    correct: false
+    rationale: >-
+      Preserving recent results is sensible in general, but re-reading would show up as extra tool
+      calls rather than as a higher price for the same turns. It treats a plausible different
+      failure than the one described.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: >-
+      A smaller model would reduce the per-token price enough to absorb the clearing overhead.
+    correct: false
+    rationale: >-
+      This trades capability for a discount on a cost the team created through configuration, and
+      leaves the repeated invalidation in place. The waste is structural, not a question of rate.
+    trap_type: bigger-model
+  - id: d
+    text: >-
+      Each clearing invalidates the cached prompt prefix, so frequent small clears keep repricing
+      the conversation at full rate; raise the minimum tokens cleared so each invalidation buys
+      enough room to be worth paying for.
+    correct: true
+    rationale: >-
+      Clearing content invalidates cached prefixes, which is the cost the team is now paying on
+      almost every turn. The documented remedy is to clear enough at once for the invalidation to
+      be worthwhile, which is what the minimum-tokens setting exists to enforce.
+  - id: e
+    text: >-
+      Clearing rewrites the conversation, so the model re-reads the placeholders each turn; switch
+      to compaction, which summarizes history and leaves nothing to re-read.
+    correct: false
+    rationale: >-
+      A placeholder is short and is not what drives the cost here. Compaction is a different
+      trade-off entirely — it summarizes and replaces the full history it covers, losing the detail
+      of turns the agent may still need, and it does not avoid re-pricing.
+    trap_type: right-idea-wrong-mechanism
+sources:
+  - title: Context editing — Anthropic
+    url: https://platform.claude.com/docs/en/build-with-claude/context-editing
+    verified_on: "2026-09-17"

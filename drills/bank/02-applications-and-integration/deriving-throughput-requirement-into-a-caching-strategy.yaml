@@ -1,0 +1,63 @@
+id: deriving-throughput-requirement-into-a-caching-strategy
+domain: Applications and Integration
+sub_skill: Understanding Requirements
+difficulty: analysis
+select: 1
+stem: >-
+  A product owner states the requirement as "we are launching in two more regions, so the assistant
+  has to serve roughly three times the traffic from the same account, and we cannot wait on a limit
+  increase to ship." Each request sends the same large policy handbook followed by a short user
+  question, and the usage dashboard shows the account bounded by its input-tokens-per-minute limit
+  rather than by requests or output. Which technical requirement follows most directly from the
+  business one?
+options:
+  - id: a
+    text: >-
+      Split traffic across two models so each draws on its own limit, since limits apply per model.
+    correct: false
+    rationale: >-
+      Limits are indeed applied per model, so this is not nonsense, but it answers a capacity problem
+      by sending a third of users to a model chosen for its quota rather than for the task. The
+      repeated prefix is the actual lever.
+    trap_type: right-idea-wrong-mechanism
+  - id: b
+    text: >-
+      Lower `max_tokens` on every request, so each response consumes less of the output-token limit
+      and more requests fit within the minute.
+    correct: false
+    rationale: >-
+      Output limits count tokens actually generated; the parameter does not factor into them, so
+      there is no rate-limit gain from lowering it. It would only truncate legitimate answers.
+    trap_type: irrelevant-knob
+  - id: c
+    text: >-
+      Cache the handbook prefix so that repeat traffic reads it from cache, because cached input
+      tokens do not count toward the input-token-per-minute limit on most models.
+    correct: true
+    rationale: >-
+      The binding constraint is uncached input per minute, and cache reads are excluded from it on
+      most models while cache writes and the remaining input are not. Raising the cache hit rate
+      therefore multiplies effective throughput under an unchanged limit, which is exactly the
+      "without waiting for an increase" clause.
+  - id: d
+    text: >-
+      Move the handbook into the user turn rather than the system prompt, so it is billed and counted
+      as conversation rather than as standing input.
+    correct: false
+    rationale: >-
+      Where content sits in the request does not change whether its tokens count; only whether they
+      are read from cache does. This relocates text without changing the quantity measured.
+    trap_type: false-capability
+  - id: e
+    text: >-
+      Batch the requests, since batch traffic is exempt from the Messages API limits.
+    correct: false
+    rationale: >-
+      Batching does move work off the synchronous limits, but the Batches API carries its own
+      request-rate and queue limits, and a user waiting for an answer cannot be served by an
+      asynchronous path.
+    trap_type: wrong-layer
+sources:
+  - title: Rate limits — Anthropic
+    url: https://platform.claude.com/docs/en/api/rate-limits
+    verified_on: "2026-09-17"

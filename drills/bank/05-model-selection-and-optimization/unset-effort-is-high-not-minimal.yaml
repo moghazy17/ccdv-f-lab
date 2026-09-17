@@ -1,0 +1,62 @@
+id: unset-effort-is-high-not-minimal
+domain: Model Selection and Optimization
+sub_skill: LLM Fundamentals
+difficulty: application
+select: 1
+stem: >-
+  A team reviewing spend finds that a simple extraction route on Claude Sonnet 5 produces far more
+  reasoning than the task needs. Their code has never set the effort parameter. An engineer says
+  effort must already be at its lowest, since nothing configures it, and looks elsewhere for the
+  cost. Where is the reasoning wrong?
+options:
+  - id: a
+    text: >-
+      Effort is not supported on this model, so the reasoning must be extended thinking configured
+      elsewhere in the stack.
+    correct: false
+    rationale: >-
+      Effort is unsupported on one model in the lineup, and this is not it. Generalizing that
+      exception to a model that takes adaptive thinking sends the investigation in the wrong
+      direction.
+    trap_type: false-capability
+  - id: b
+    text: >-
+      Lowering effort would break the prompt cache on every request, so the lever is unavailable in
+      practice.
+    correct: false
+    rationale: >-
+      Changing effort mid-conversation does invalidate the cache, but setting a lower level once in
+      configuration is a one-time change, after which requests are consistent again.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: >-
+      There is no default; effort applies only when set, so the observed reasoning must come from the
+      prompt asking the model to explain itself.
+    correct: false
+    rationale: >-
+      A default exists and applies. Prompt wording can add explanation, but attributing everything to
+      it leaves the actual control untouched.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      The default effort is `high`, so a route that never sets it is running at the top of the range
+      and lowering it explicitly is available as a lever.
+    correct: true
+    rationale: >-
+      Leaving the parameter out selects the documented default, which is the highest level rather
+      than the lowest. On a simple extraction task that is the obvious place to look first, and it
+      costs nothing to test.
+  - id: e
+    text: >-
+      Moving the route to the fastest model, since its lack of effort support guarantees minimal
+      reasoning.
+    correct: false
+    rationale: >-
+      This changes model tier to avoid setting a parameter, trading capability for a configuration
+      the team could simply write down. It also assumes a model without effort support does less
+      work, which is not what the parameter's absence means.
+    trap_type: bigger-model
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-17"

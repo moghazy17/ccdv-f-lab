@@ -1,0 +1,65 @@
+id: migrated-plugin-agent-shadowed-by-project-definition
+domain: Applications and Integration
+sub_skill: Claude Application Design
+difficulty: analysis
+select: 1
+stem: >-
+  A team converts its `.claude/` configuration into a plugin and installs the plugin in the same
+  repository, leaving the original files in place for a transition period. They then observe two
+  things: the plugin's `release` agent behaves exactly as the old one did, including a bug the
+  plugin was supposed to fix, while the plugin's `changelog` skill appears alongside the original
+  rather than replacing it. Why do the two components behave differently?
+options:
+  - id: a
+    text: >-
+      A project or user agent definition overrides a same-named plugin agent, so the old file still
+      wins; plugin skills are namespaced, so both the original and the plugin copy remain available.
+    correct: true
+    rationale: >-
+      These are the documented consequences of leaving the originals in place. An agent resolves by
+      name, and the project definition takes precedence, so the plugin's fixed version applies only
+      once the original is removed. A plugin skill is invoked as `/plugin-name:skill-name`, so it
+      does not collide with the original name at all and the two coexist.
+  - id: b
+    text: >-
+      The plugin was installed without a version in its manifest, so its components load in a
+      degraded mode where agents are ignored and skills are duplicated.
+    correct: false
+    rationale: >-
+      The manifest version governs when consumers receive updates, not whether components load. No
+      degraded mode makes agents ignored and skills duplicated.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      The plugin's directories were placed inside `.claude-plugin/`, which loads agents but not
+      skills.
+    correct: false
+    rationale: >-
+      Only the manifest belongs in `.claude-plugin/`, and a misplaced directory would prevent
+      components from loading rather than produce this split. It also would not explain a skill that
+      loads under its namespace.
+    trap_type: wrong-layer
+  - id: d
+    text: >-
+      Agents are cached for the session while skills are re-read on each invocation, so a restart
+      would make the plugin's agent take effect.
+    correct: false
+    rationale: >-
+      This attributes the behavior to staleness rather than to precedence. Restarting changes
+      nothing while the original agent file is still present, because the project definition
+      continues to override the plugin's.
+    trap_type: right-idea-wrong-mechanism
+  - id: e
+    text: >-
+      Marketplace-installed components always lose to local ones, so neither the plugin's agent nor
+      its skill can take effect until the local configuration is deleted.
+    correct: false
+    rationale: >-
+      The first half describes the agent correctly and the conclusion is wrong for skills: the
+      plugin's namespaced skill is available right away. Treating both the same way is what hides
+      the distinction the team just ran into.
+    trap_type: right-idea-wrong-mechanism
+sources:
+  - title: Create plugins — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/plugins
+    verified_on: "2026-09-17"

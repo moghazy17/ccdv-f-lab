@@ -1,0 +1,55 @@
+id: batch-results-retention-is-not-an-archive
+domain: Applications and Integration
+sub_skill: Claude API Mechanics
+difficulty: recall
+select: 1
+stem: >-
+  A team plans to treat completed batches as the archive of record for their classification history,
+  re-downloading a batch's results whenever an audit asks about a decision made months earlier. Which
+  fact about batch results should change that plan?
+options:
+  - id: a
+    text: Results are retained indefinitely, so the plan is sound as long as the batch is not deleted.
+    correct: false
+    rationale: >-
+      This is the assumption the plan rests on and it is wrong. Indefinite retention is exactly what
+      the documented 29-day window rules out.
+    trap_type: false-capability
+  - id: b
+    text: Results are deleted as soon as they are downloaded once, so a second retrieval always fails.
+    correct: false
+    rationale: >-
+      Retrieval is not destructive; results can be fetched again within the retention window. This
+      overstates the limit and would imply a stricter design than the one documented.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      Results are returned only as a streamed response at completion and are never stored, so there
+      is nothing to re-download at any point.
+    correct: false
+    rationale: >-
+      Results are stored and fetched from the batch's results URL as JSON Lines, which is why a
+      retention window exists to describe at all.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Results remain downloadable for 29 days after the batch is created; after that the batch is
+      still visible but its results are not.
+    correct: true
+    rationale: >-
+      The retention window is finite and short relative to an audit cycle, and what survives it is
+      the batch record rather than the results themselves. A team that needs the outputs later has to
+      persist them when it retrieves them.
+  - id: e
+    text: >-
+      Results expire 24 hours after creation, matching the processing deadline, so nothing can be
+      re-read the next day.
+    correct: false
+    rationale: >-
+      Twenty-four hours is the processing deadline, after which results become accessible rather than
+      unavailable. Conflating the two windows makes the API look less usable than it is.
+    trap_type: right-idea-wrong-mechanism
+sources:
+  - title: Batch processing — Anthropic
+    url: https://platform.claude.com/docs/en/build-with-claude/batch-processing
+    verified_on: "2026-09-17"

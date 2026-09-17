@@ -1,0 +1,62 @@
+id: plugin-default-settings-silently-ignore-unknown-keys
+domain: Applications and Integration
+sub_skill: Configuration Management
+difficulty: analysis
+select: 1
+stem: >-
+  A plugin author ships a settings file at the plugin root declaring two keys: one that activates the
+  plugin's own review agent as the main thread, and one that sets a permission rule the author wants
+  applied wherever the plugin is enabled. Users report that the agent activates as intended while the
+  permission rule never takes effect, and no error or warning appears anywhere. What explains this?
+options:
+  - id: a
+    text: >-
+      Declaring the same settings in the plugin manifest instead, since manifest settings take
+      priority over the plugin's settings file.
+    correct: false
+    rationale: >-
+      The priority runs the other way — the settings file takes priority over settings declared in
+      the manifest — and moving an unsupported key between two places it is not read from changes
+      nothing.
+    trap_type: right-idea-wrong-mechanism
+  - id: b
+    text: >-
+      Permission rules from a plugin are honored only after the user restarts, so the rule is applied
+      in later sessions and the reports are premature.
+    correct: false
+    rationale: >-
+      A reload does apply plugin changes, but nothing in that path turns an ignored key into an
+      applied one. This reads a timing problem into a key that was never supported.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: >-
+      Managed settings are overriding the plugin's permission rule, so the author should ask
+      administrators to allow it.
+    correct: false
+    rationale: >-
+      Managed settings do outrank user configuration, but an override would be a plausible
+      explanation only if the key were being read at all. Escalating to administrators chases a
+      conflict that is not happening.
+    trap_type: wrong-layer
+  - id: d
+    text: >-
+      The keys conflict, and the agent key takes priority, so removing it would let the permission
+      rule apply.
+    correct: false
+    rationale: >-
+      The two keys govern unrelated things and do not compete. Removing a working feature to
+      troubleshoot an unsupported one would leave the author with neither.
+    trap_type: false-capability
+  - id: e
+    text: >-
+      A plugin's default settings support only a small set of keys, and an unrecognized one is
+      silently ignored.
+    correct: true
+    rationale: >-
+      The plugin settings file applies defaults for a limited set of keys, and unknown keys are
+      silently ignored, which is why one key works and the other disappears without complaint. A
+      permission rule has to come from a settings tier instead, where precedence and review apply.
+sources:
+  - title: Create plugins — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/plugins
+    verified_on: "2026-09-17"

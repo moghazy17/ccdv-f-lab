@@ -1,0 +1,63 @@
+id: mid-stream-failure-after-a-200-response
+domain: Applications and Integration
+sub_skill: Software Engineering Foundations
+difficulty: analysis
+select: 1
+stem: >-
+  A service consumes streamed responses and treats the initial HTTP 200 as the point after which the
+  request has succeeded: once the status line arrives, the error-handling wrapper is exited and the
+  accumulated text is written to the database. Reports arrive of occasional half-written records with
+  no corresponding error in the logs. What is the flaw in this control flow?
+options:
+  - id: a
+    text: >-
+      Switching to non-streaming requests, since a single response body either arrives or does not.
+    correct: false
+    rationale: >-
+      That trades one failure mode for a worse one for long generations, which is where a held
+      connection can be dropped with no response at all. It also abandons incremental delivery to
+      avoid writing one event handler.
+    trap_type: wrong-layer
+  - id: b
+    text: >-
+      The SDK retries transient failures automatically, so the wrapper should simply be widened to
+      cover the whole stream and let retries resolve it.
+    correct: false
+    rationale: >-
+      Widening the wrapper is half of the remedy, but automatic retries cover transient failures on
+      the request, not an error delivered as an event within an accepted stream. The consumer still
+      has to recognize that event.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: >-
+      An error can arrive inside the stream after the 200, so the consumer must handle error events
+      too.
+    correct: true
+    rationale: >-
+      The status line reports that the stream started, not that it completed, and a mid-stream
+      failure explicitly does not follow the standard HTTP error mechanics. A consumer that stops
+      watching after the 200 therefore records whatever partial text it had accumulated, with no
+      error anywhere to explain it.
+  - id: d
+    text: >-
+      Streaming responses cannot fail once started, so the half-written records must come from a
+      client-side timeout the service imposes.
+    correct: false
+    rationale: >-
+      This asserts a guarantee that does not exist. A mid-stream error is explicitly documented, and
+      assuming otherwise is what produced the missing log entry.
+    trap_type: false-capability
+  - id: e
+    text: >-
+      The database write is not transactional, so a partial record is a persistence bug rather than a
+      transport one.
+    correct: false
+    rationale: >-
+      A transaction would keep the partial text out of the table, which is worth doing, but it
+      neither detects nor explains the failure. The service would still silently lose responses and
+      still log nothing.
+    trap_type: wrong-layer
+sources:
+  - title: Claude API errors — Anthropic
+    url: https://platform.claude.com/docs/en/api/errors
+    verified_on: "2026-09-17"

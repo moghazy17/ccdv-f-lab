@@ -10,12 +10,15 @@ stem: >-
   the manager receive back from the subagent when it finishes?
 options:
   - id: a
-    text: Only the subagent's final summary, added to the manager's context as a single result.
-    correct: true
+    text: >-
+      Give the manager a larger context window so it can hold the subagent's entire transcript
+      without running out of space.
+    correct: false
     rationale: >-
-      A subagent runs its work in its own context window and returns only a summary to the parent;
-      this is exactly the isolation the delegation was meant to achieve, keeping the intermediate
-      search results out of the manager's transcript entirely.
+      A bigger window changes how much the manager could hold, not whether the subagent's
+      intermediate results should be sent to it at all; the isolation the task called for is a
+      design choice, not a capacity limit to work around.
+    trap_type: bigger-model
   - id: b
     text: >-
       The subagent's full intermediate transcript, so the manager can review every search call it
@@ -36,15 +39,12 @@ options:
       was meant to avoid and adds no verification the subagent's summary did not already provide.
     trap_type: cost-theater
   - id: d
-    text: >-
-      Give the manager a larger context window so it can hold the subagent's entire transcript
-      without running out of space.
-    correct: false
+    text: Only the subagent's final summary, added to the manager's context as a single result.
+    correct: true
     rationale: >-
-      A bigger window changes how much the manager could hold, not whether the subagent's
-      intermediate results should be sent to it at all; the isolation the task called for is a
-      design choice, not a capacity limit to work around.
-    trap_type: bigger-model
+      A subagent runs its work in its own context window and returns only a summary to the parent;
+      this is exactly the isolation the delegation was meant to achieve, keeping the intermediate
+      search results out of the manager's transcript entirely.
 sources:
   - title: Subagents — Anthropic (Claude Code docs)
     url: https://code.claude.com/docs/en/sub-agents

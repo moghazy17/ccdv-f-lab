@@ -11,6 +11,25 @@ stem: >-
 options:
   - id: a
     text: >-
+      The plan is fine once the workload is moved to a more capable model, because a stronger
+      model can tolerate a mismatched client configuration.
+    correct: false
+    rationale: >-
+      Which client class and model ID a platform requires has nothing to do with the model's
+      capability; a more capable model sent through a misconfigured client fails the same way a
+      less capable one does.
+    trap_type: bigger-model
+  - id: b
+    text: >-
+      The plan is fine as long as the system prompt tells the model it is now running on Bedrock.
+    correct: false
+    rationale: >-
+      Platform routing, authentication, and model ID formatting are handled by the client and
+      request layer before the model ever sees a prompt; no instruction inside the prompt can
+      substitute for using the correct client class and model ID string.
+    trap_type: wrong-layer
+  - id: c
+    text: >-
       Bedrock is reached through the SDK's dedicated Bedrock client class, not a base-URL override
       of the default client, and Bedrock model IDs carry an `anthropic.` provider prefix that the
       existing model ID strings do not have.
@@ -20,7 +39,7 @@ options:
       Foundry specifically because request shape, authentication, and model identifiers differ per
       platform; a base-URL override on the default client does not reproduce that and Bedrock
       model IDs need the `anthropic.` prefix the plan omits.
-  - id: b
+  - id: d
     text: >-
       Nothing is wrong; a base-URL override is functionally equivalent to using the dedicated
       Bedrock client class as long as the API key is valid for the Bedrock account.
@@ -31,25 +50,6 @@ options:
       those platform-specific differences and produces confusing failures, not a working
       integration.
     trap_type: false-capability
-  - id: c
-    text: >-
-      The plan is fine once the workload is moved to a more capable model, because a stronger
-      model can tolerate a mismatched client configuration.
-    correct: false
-    rationale: >-
-      Which client class and model ID a platform requires has nothing to do with the model's
-      capability; a more capable model sent through a misconfigured client fails the same way a
-      less capable one does.
-    trap_type: bigger-model
-  - id: d
-    text: >-
-      The plan is fine as long as the system prompt tells the model it is now running on Bedrock.
-    correct: false
-    rationale: >-
-      Platform routing, authentication, and model ID formatting are handled by the client and
-      request layer before the model ever sees a prompt; no instruction inside the prompt can
-      substitute for using the correct client class and model ID string.
-    trap_type: wrong-layer
 sources:
   - title: Python SDK — Claude Platform Docs
     url: https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/python

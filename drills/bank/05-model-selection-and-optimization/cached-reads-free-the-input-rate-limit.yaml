@@ -1,0 +1,61 @@
+id: cached-reads-free-the-input-rate-limit
+domain: Model Selection and Optimization
+sub_skill: Cost and Token Management
+difficulty: analysis
+select: 1
+stem: >-
+  An engineer reviewing usage sees `input_tokens` of 60 on requests that send a cached 180,000-token
+  handbook plus a short question, and concludes the accounting is broken. A colleague adds that the
+  same workload stopped hitting its per-minute input limit after caching was introduced, with no
+  limit increase. What explains both observations?
+options:
+  - id: a
+    text: >-
+      Cached tokens are billed but not reported, so usage undercounts and the limit is being computed
+      from the unreported total.
+    correct: false
+    rationale: >-
+      Cache reads are reported in their own field rather than hidden, which is why the three
+      components can be added to recover the total. Nothing is missing from the report.
+    trap_type: false-capability
+  - id: b
+    text: >-
+      The limit is measured in requests rather than tokens, so a smaller payload was never what
+      relieved it.
+    correct: false
+    rationale: >-
+      Requests per minute is one limit among three; input and output tokens per minute are also
+      enforced. The workload was hitting the input-token limit, which is precisely the one caching
+      relieved.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      `input_tokens` counts only what follows the last cache breakpoint, and cached reads are
+      excluded from the input limit on most models.
+    correct: true
+    rationale: >-
+      Total input is the sum of cache reads, cache writes, and the remainder, so a small
+      `input_tokens` beside a large cached prefix is the field working as documented. The exclusion
+      then means the same traffic consumes far less of the per-minute quota after caching, which is
+      why the limit stopped binding without an increase.
+  - id: d
+    text: >-
+      Cache writes are excluded from the limit as well, so a workload that only ever writes entries
+      also gains throughput.
+    correct: false
+    rationale: >-
+      Cache creation tokens do count toward the input limit. A workload that writes without reading
+      back gains neither cost nor throughput, which is the case that makes caching a loss.
+    trap_type: false-capability
+  - id: e
+    text: >-
+      The tokenizer changed, so the handbook now costs fewer tokens and both numbers fell together.
+    correct: false
+    rationale: >-
+      A tokenizer difference would change the handbook's measured size, not place most of it in a
+      separate field. It also would not explain relief that arrived exactly when caching did.
+    trap_type: right-idea-wrong-mechanism
+sources:
+  - title: Rate limits — Anthropic
+    url: https://platform.claude.com/docs/en/api/rate-limits
+    verified_on: "2026-09-17"

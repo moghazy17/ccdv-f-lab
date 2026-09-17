@@ -1,0 +1,63 @@
+id: short-prefix-below-the-cacheable-minimum
+domain: Applications and Integration
+sub_skill: Claude API Mechanics
+difficulty: application
+select: 1
+stem: >-
+  A service marks its compact system prompt — a few hundred tokens of role and tone instructions —
+  with `cache_control`, expecting cache reads on the high-volume path that follows. Requests succeed,
+  no error appears anywhere, and usage reports no cache reads and no cache writes at all. The
+  breakpoint count is well within the limit and the prefix is byte-identical between requests. What
+  is the most likely explanation?
+options:
+  - id: a
+    text: >-
+      The prompt is deterministic, and caching only engages when the API detects repeated content
+      across requests, which takes a warm-up period.
+    correct: false
+    rationale: >-
+      A write happens at the marked breakpoint on the first qualifying request; there is no
+      detection period to wait out. This invents a mechanism to explain an absence that has a
+      documented cause.
+    trap_type: false-capability
+  - id: b
+    text: >-
+      Cache reads are reported only when a request crosses the one-hour duration, so a five-minute
+      cache shows nothing in usage.
+    correct: false
+    rationale: >-
+      The duration governs how long an entry survives, not whether reads are reported. A
+      five-minute cache reports its reads like any other.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      A breakpoint on the system prompt is ignored, because caching applies to tool definitions and
+      documents rather than instructions.
+    correct: false
+    rationale: >-
+      A system prompt is cacheable like any other prefix content. This invents a restriction by
+      content type in place of the length rule that applies.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Extending the prompt with filler text to clear the minimum, since the threshold is what blocks
+      caching.
+    correct: false
+    rationale: >-
+      The diagnosis is right and the remedy is padding the context with tokens that do no work, paid
+      for on every request. If a prefix is genuinely too small to cache, the honest conclusion is
+      that caching it saves nothing.
+    trap_type: cost-theater
+  - id: e
+    text: >-
+      The prefix is below the model's minimum cacheable length, so the request is processed without
+      caching and no error is returned.
+    correct: true
+    rationale: >-
+      Each model sets a minimum, ranging from several hundred to several thousand tokens, and a
+      prompt shorter than it is processed without caching even when marked. Nothing fails, which is
+      why the symptom is silence in the usage numbers rather than an error.
+sources:
+  - title: Prompt caching — Anthropic
+    url: https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+    verified_on: "2026-09-17"

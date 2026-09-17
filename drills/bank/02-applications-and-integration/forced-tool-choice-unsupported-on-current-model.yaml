@@ -1,0 +1,63 @@
+id: forced-tool-choice-unsupported-on-current-model
+domain: Applications and Integration
+sub_skill: Claude API Mechanics
+difficulty: application
+select: 1
+stem: >-
+  An extraction service guarantees a machine-readable result by naming a single tool in
+  `tool_choice`, so the model must call it. Pinned to a newer model, every request returns a 400
+  stating that the `tool` and `any` values of `tool_choice` are not supported for this model. The
+  service still needs a result its parser can rely on. What is the appropriate change?
+options:
+  - id: a
+    text: >-
+      Count on the token-counting endpoint to validate the request before sending it, so unsupported
+      combinations never reach the model.
+    correct: false
+    rationale: >-
+      Token counting rejects the same unsupported combination rather than repairing it, so this adds
+      a round trip and still leaves the service without a guarantee.
+    trap_type: irrelevant-knob
+  - id: b
+    text: >-
+      Send the tool definition twice, once in `tools` and once in the system prompt, so the model
+      treats it as mandatory.
+    correct: false
+    rationale: >-
+      Repeating a definition is not an enforcement mechanism; it only enlarges the prompt. The model
+      still decides whether to call the tool, which is the behavior the team wanted bounded.
+    trap_type: unenforceable-politeness
+  - id: c
+    text: >-
+      Ask for the payload itself through structured outputs, since the requirement is a
+      machine-readable result rather than a tool call in particular.
+    correct: true
+    rationale: >-
+      Structured outputs constrain the response itself to a schema, which is the guarantee the parser
+      needs and the one the forced call was standing in for. Strict tool use keeps a tool's inputs
+      schema-valid but does not make the model call the tool, so it cannot replace the forcing on its
+      own.
+  - id: d
+    text: >-
+      Set `tool_choice` to `none` and describe the desired call in the prompt, so the model produces
+      the same arguments as text.
+    correct: false
+    rationale: >-
+      This forbids tool use altogether and returns to parsing free text, which is what the tool
+      contract existed to avoid. It accepts the least reliable option as a response to a validation
+      error.
+    trap_type: wrong-layer
+  - id: e
+    text: >-
+      Keep the forced choice and add a retry that falls back to the previous model generation when the
+      400 appears.
+    correct: false
+    rationale: >-
+      This builds a permanent split path around an unsupported parameter, so half the traffic runs on
+      an older model and the two behaviors drift. The current model has a supported way to meet the
+      requirement.
+    trap_type: right-idea-wrong-mechanism
+sources:
+  - title: Claude API errors — Anthropic
+    url: https://platform.claude.com/docs/en/api/errors
+    verified_on: "2026-09-17"
