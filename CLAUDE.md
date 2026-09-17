@@ -13,8 +13,9 @@ after changes.
 Claude Opus 5, acting as the orchestrator in Claude Code, may run `git add` and `git commit`, and
 only after the full gate set passes. The permission is scoped to that model in that role: every
 delegated implementer — Codex, Antigravity, or any other CLI — leaves its work uncommitted in the
-working tree for the orchestrator to review, re-gate, and commit. This paragraph overrides the
-commit rule in [AGENTS.md](AGENTS.md), which still states the older blanket prohibition.
+working tree for the orchestrator to review, re-gate, and commit. [AGENTS.md](AGENTS.md) no longer
+states the older blanket prohibition, so this paragraph is the only rule on the subject rather than
+an override of a conflicting one.
 
 Use `/verify-triage` to run the triage verification sequence. Use the `triage-security` skill when
 reviewing the untrusted-input boundary, secret handling, or tool permissions.

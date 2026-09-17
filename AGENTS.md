@@ -60,10 +60,28 @@ invent, round, or restate a weight from memory — read it from `BLUEPRINT.md`.
 
 ## Gates
 
-Run before finishing any change:
+Run before finishing any change. This is the full set CI runs, not a summary of it — a gate you do
+not know to run is a gate you do not run, and the last three are the easiest to skip and the most
+likely to catch something:
 
 ```bash
 ruff check .
 ruff format --check .
 pytest -q
+python -m drills.engine validate
+python -m lab.evals run
+python tools/check_blueprint_consistency.py
+python tools/check_links.py
+python tools/check_content_single_source.py
+```
+
+The website carries its own set. From `site/`:
+
+```bash
+npm run lint
+npm run typecheck
+npm run test:unit
+npm run build
+npm run check:payload
+npm run test:e2e
 ```

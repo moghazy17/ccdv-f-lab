@@ -39,8 +39,19 @@ Changed: "Development workflow and quality gates" no longer forbids the assistan
 The orchestrating model may commit once the full gate set passes; delegated implementers still may
 not, which keeps author and committer distinct. Spec Kit's auto-commit hooks remain declined.
 Propagated to: CLAUDE.md, .specify/templates/tasks-template.md.
-Outstanding: AGENTS.md still carries the older blanket prohibition and is protected from assistant
-edits, so it must be reconciled by the maintainer. CLAUDE.md records the precedence meanwhile.
+Outstanding: none as of 1.1.1.
+
+Amendment 1.1.0 -> 1.1.1 (2026-09-17)
+Bump rationale: PATCH. A record was corrected; no principle, rule, or workflow changed.
+The 1.1.0 report left AGENTS.md as outstanding, on the understanding that it still carried the
+older blanket prohibition on committing. It does not: the rule "Do not run `git add` or `git
+commit`" left that file in commit 3ce8194 and is absent from every later revision. Two documents
+still described it as present — this report, and the paragraph in CLAUDE.md that claimed to
+override it. Both now say what is true, and no edit to AGENTS.md was needed on that point.
+Separately, AGENTS.md's "Gates" section listed three of the eight commands CI runs. The omission
+is not cosmetic: a gate that contributors do not know to run is one they do not run, and a build
+reached a feature branch red for exactly that reason. The section now lists the full set.
+Propagated to: AGENTS.md, CLAUDE.md.
 -->
 
 # CCDV-F community study kit constitution
@@ -196,4 +207,4 @@ materially expanded rule; PATCH for clarifications, wording, and non-semantic re
 result against the change in front of it. The automated gates in Principle VI are the mechanical half
 of compliance; the Constitution Check is the half that requires judgment.
 
-**Version**: 1.1.0 | **Ratified**: 2026-09-05 | **Last Amended**: 2026-09-05
+**Version**: 1.1.1 | **Ratified**: 2026-09-05 | **Last Amended**: 2026-09-17
