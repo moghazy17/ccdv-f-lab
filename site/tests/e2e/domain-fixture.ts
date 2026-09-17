@@ -179,6 +179,12 @@ export async function buildCustomContentFixture(
       clearInterval(heartbeat);
       try {
         await new Promise<void>((resolveClose, rejectClose) => {
+          // `close` stops the server accepting new connections and then waits for the open ones
+          // to end — it does not end them. The browser holds its keep-alive socket open after the
+          // page loads, so without this the callback never fires and the spec hangs until its own
+          // timeout, reporting nothing but "Test timeout exceeded". Whether the socket happened to
+          // be idle is what made the failure bimodal, and land on a different spec each run.
+          server.closeAllConnections();
           server.close((error) => (error === undefined ? resolveClose() : rejectClose(error)));
         });
       } finally {
