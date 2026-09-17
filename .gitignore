@@ -22,6 +22,10 @@ lab/**/traces/*.jsonl
 lab/**/.cache/
 drills/mocks/attempts/
 
+# Personal Claude Code overrides — written when someone answers "allow always" here. They are
+# per-machine choices, and the worked example documents the configuration this repository shares.
+.claude/settings.local.json
+
 # OS / editor
 .DS_Store
 Thumbs.db

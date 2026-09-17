@@ -415,8 +415,10 @@ export class ProgressStorage {
   }
 
   clearPracticeResults(): StorageResult {
-    // Clear the four namespaces this feature owns and leave `foundation` untouched (FR-051):
-    // a candidate discarding practice keeps their theme, plan marks, and diagnostic outcome.
+    // Clear the five practice namespaces and leave `foundation` untouched (FR-051): a candidate
+    // discarding practice keeps their theme, plan marks, and diagnostic outcome. `claudeCode`
+    // joins them because FR-048 requires this module's record to be clearable without discarding
+    // plans, diagnostic, or mock history, and this is the control that offers that.
     const result = this.mergeAndRetry(
       (envelope) => {
         const empty = emptyProgress(envelope.updatedAt).namespaces;
@@ -424,13 +426,17 @@ export class ProgressStorage {
         envelope.namespaces.mock = empty.mock;
         envelope.namespaces.quiz = empty.quiz;
         envelope.namespaces.flashcards = empty.flashcards;
+        envelope.namespaces.claudeCode = empty.claudeCode;
       },
       (envelope) =>
         envelope.namespaces.mock.reports.length === 0 &&
         envelope.namespaces.mock.current === null &&
         Object.keys(envelope.namespaces.labs.edits).length === 0 &&
         Object.keys(envelope.namespaces.quiz.results).length === 0 &&
-        Object.keys(envelope.namespaces.flashcards.state).length === 0
+        Object.keys(envelope.namespaces.flashcards.state).length === 0 &&
+        Object.keys(envelope.namespaces.claudeCode.guidedTasks).length === 0 &&
+        Object.keys(envelope.namespaces.claudeCode.scopeExercise).length === 0 &&
+        envelope.namespaces.claudeCode.configDraft === null
     );
     if (result.kind === "ok") {
       try {

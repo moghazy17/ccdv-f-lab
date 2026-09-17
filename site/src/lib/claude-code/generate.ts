@@ -88,6 +88,21 @@ export function validateConfigDraft(draft: ConfigDraft): readonly string[] {
   if (draft.hook.enabled && !isSafeHookName(draft.hook.name)) {
     errors.push("Use a hook filename made of lowercase letters, numbers, and hyphens.");
   }
+  // A hook that matches only file tools decides by protected filename. With no filenames it can
+  // never deny anything, so it is inert in the same way an empty matcher is — and the page could
+  // not honour its promise to show the candidate a real denial.
+  if (
+    draft.hook.enabled &&
+    isMatcher(draft.hook.matcher) &&
+    draft.hook.matcher.trim().length > 0 &&
+    !matcherMatches(draft.hook.matcher, "Bash") &&
+    entries(draft.hook.protectedPaths).length === 0
+  ) {
+    errors.push(
+      "A hook that matches only file tools needs at least one protected file name, " +
+        "or it can never deny anything."
+    );
+  }
   if (allow.length === 0 && deny.length === 0 && !draft.hook.enabled) {
     errors.push("There is nothing to generate: add a permission or register a hook.");
   }
@@ -198,17 +213,40 @@ function readback(allow: string[], deny: string[], hook: HookDraft): string[] {
   ];
 }
 
+/**
+ * An ordinary file path the generated hook will not deny.
+ *
+ * The permitted sample must actually be permitted. A fixed path would be denied whenever the
+ * candidate happened to protect that same basename, and the page would then label a denial
+ * "Ordinary action", teaching the opposite of what it set out to show.
+ */
+function ordinaryPath(protectedPaths: readonly string[]): string {
+  const protectedNames = new Set(
+    protectedPaths.map((path) => path.split("/").at(-1)?.toUpperCase() ?? "")
+  );
+  let candidate = "src/example.py";
+  let suffix = 0;
+  while (protectedNames.has(candidate.split("/").at(-1)?.toUpperCase() ?? "")) {
+    suffix += 1;
+    candidate = `src/example-${suffix}.py`;
+  }
+  return candidate;
+}
+
 function hookSamples(matcher: string, protectedPaths: string[]): HookSample[] {
   const matchesBash = matcherMatches(matcher, "Bash");
   const matchingTool = matchesBash ? "Bash" : firstMatchingTool(matcher);
   const protectedPath = protectedPaths[0] ?? "protected-file";
+  // Each payload must be one Claude Code could really send. A file tool carries `file_path` and a
+  // shell tool carries `command`; a sample mixing both would prove a denial no real `PreToolUse`
+  // payload could trigger, on a page whose whole claim is that it shows genuine hook behaviour.
   const denyPayload = matchesBash
     ? { tool_name: "Bash", tool_input: { command: "git reset --hard" } }
-    : { tool_name: matchingTool, tool_input: { file_path: protectedPath, command: "git reset --hard" } };
+    : { tool_name: matchingTool, tool_input: { file_path: protectedPath } };
   const allowPayload =
     matchingTool === "Bash"
       ? { tool_name: "Bash", tool_input: { command: "python -V" } }
-      : { tool_name: matchingTool, tool_input: { file_path: "src/example.py" } };
+      : { tool_name: matchingTool, tool_input: { file_path: ordinaryPath(protectedPaths) } };
   return [
     { label: "Destructive action", payload: denyPayload, expected: "deny" },
     { label: "Ordinary action", payload: allowPayload, expected: "allow" }

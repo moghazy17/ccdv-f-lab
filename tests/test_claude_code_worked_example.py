@@ -57,6 +57,24 @@ def test_discovered_file_changes_export_without_a_site_edit(tmp_path: Path) -> N
     assert site_marker.read_text(encoding="utf-8") == "unchanged\n"
 
 
+def test_local_override_files_never_reach_the_inventory(tmp_path: Path) -> None:
+    """A personal, untracked override cannot make the generated data machine-dependent.
+
+    Claude Code writes ``.claude/settings.local.json`` the first time someone answers "allow
+    always" here. Sweeping it in would fail the freshness gate for that contributor on an
+    unrelated change, and regenerating would commit their machine's choices to public site data.
+    """
+    _copy_export_sources(tmp_path)
+    (tmp_path / ".claude" / "settings.local.json").write_text(
+        '{"permissions": {"allow": ["Bash(ls)"]}}\n', encoding="utf-8"
+    )
+
+    paths = {component["path"] for component in worked_example(tmp_path)}
+
+    assert ".claude/settings.local.json" not in paths
+    assert ".claude/settings.json" in paths
+
+
 def test_publication_rejects_a_missing_repository_target() -> None:
     """Every inventory link must still name a file within the repository."""
     components = worked_example(ROOT)

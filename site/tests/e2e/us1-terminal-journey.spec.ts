@@ -48,4 +48,17 @@ test.describe("Claude Code terminal journey", () => {
     await page.locator("[data-terminal-form]").press("Enter");
     await expect(page.getByText(/Hook denial: this is the hook's decision/)).toBeVisible();
   });
+
+  test("clearing completes its guided task like every other invocation", async ({ page }) => {
+    // Clearing returns early from the input handler, so it once skipped the event the guided list
+    // listens for. The task then stayed "Not done" forever and the list was uncompletable.
+    await page.goto("./claude-code/terminal/");
+    const clearTask = page.locator('[data-guided-task="clear-session"]');
+    await expect(clearTask.locator("[data-guided-state]")).toHaveText("Not done");
+
+    await page.locator("[data-terminal-input]").fill("/clear");
+    await page.locator("[data-terminal-form]").press("Enter");
+
+    await expect(clearTask.locator("[data-guided-state]")).not.toHaveText("Not done");
+  });
 });

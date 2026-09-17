@@ -116,6 +116,14 @@ const typeableCommands = commands.filter((command) => command.kind !== "componen
       input.value = "";
       if (resolved.operation === "clear") {
         clearTranscript();
+        // Clearing completes its guided task like any other invocation. Returning without this
+        // dispatch left "Run /clear" permanently unfinished, so the guided list was uncompletable.
+        root.dispatchEvent(
+          new CustomEvent("claude-code:command-run", {
+            bubbles: true,
+            detail: { id: "clear-session" }
+          })
+        );
         return;
       }
       if (resolved.operation === "compact") {

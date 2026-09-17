@@ -40,10 +40,49 @@ describe("configuration file generator", () => {
     ["an empty matcher", (draft: ConfigDraft) => ({ ...draft, hook: { ...draft.hook, matcher: "" } }), "matches nothing"],
     ["a missing hook command", (draft: ConfigDraft) => ({ ...draft, hook: { ...draft.hook, command: "" } }), "not a hook"],
     ["overlapping permission", (draft: ConfigDraft) => ({ ...draft, allow: "Read", deny: "Read" }), "both allow and deny"],
-    ["empty settings", (draft: ConfigDraft) => ({ ...draft, hook: { ...draft.hook, enabled: false } }), "nothing to generate"]
+    ["empty settings", (draft: ConfigDraft) => ({ ...draft, hook: { ...draft.hook, enabled: false } }), "nothing to generate"],
+    [
+      "a file-only matcher protecting nothing",
+      (draft: ConfigDraft) => ({
+        ...draft,
+        hook: { ...draft.hook, matcher: "Write|Edit", protectedPaths: "" }
+      }),
+      "can never deny anything"
+    ]
   ])("refuses %s rather than emitting files", (_label, amend, explanation) => {
     const result = generateConfiguration(amend(defaultConfigDraft()));
     expect("errors" in result).toBe(true);
     if ("errors" in result) expect(result.errors.join(" ")).toContain(explanation);
+  });
+
+  test("a file-tool denial sample carries no shell command it could never have", () => {
+    const draft = defaultConfigDraft();
+    const result = generateConfiguration({
+      ...draft,
+      hook: { ...draft.hook, matcher: "Write", protectedPaths: "package-lock.json" }
+    });
+
+    expect("errors" in result).toBe(false);
+    if ("errors" in result) return;
+    const denial = result.samples.find((sample) => sample.expected === "deny");
+    expect(denial?.payload).toEqual({
+      tool_name: "Write",
+      tool_input: { file_path: "package-lock.json" }
+    });
+  });
+
+  test("the permitted sample avoids a path the candidate chose to protect", () => {
+    const draft = defaultConfigDraft();
+    const result = generateConfiguration({
+      ...draft,
+      hook: { ...draft.hook, matcher: "Write", protectedPaths: "example.py" }
+    });
+
+    expect("errors" in result).toBe(false);
+    if ("errors" in result) return;
+    const permitted = result.samples.find((sample) => sample.expected === "allow");
+    const filePath = (permitted?.payload as { tool_input: { file_path: string } }).tool_input
+      .file_path;
+    expect(filePath.split("/").at(-1)).not.toBe("example.py");
   });
 });

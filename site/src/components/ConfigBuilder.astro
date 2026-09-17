@@ -227,7 +227,12 @@
         // This dynamic import is intentionally the first runtime touch on this page.
         runtime ??= await import("../lib/runtime");
       } catch {
+        // The `finally` below belongs to the second `try`, so this early return would skip it and
+        // latch `running` on for the rest of the page's life, disabling every later proof attempt
+        // and leaving a dead Stop control behind. Reset here instead.
         executionUnavailable(unavailableMessage, runtimeMessage, draft.hook.name);
+        running = false;
+        stopControl.hidden = true;
         return;
       }
       const unsubscribeStatus = runtime.subscribeStatus((next: RuntimeStatus) => {
@@ -314,6 +319,11 @@
   }
 
   function renderGeneratedFiles(target: HTMLElement, generatedFiles: readonly GeneratedFile[], status: HTMLElement): void {
+    // Each render mints one object URL per file. Revoke the previous batch first, or a candidate
+    // iterating on a draft accumulates three dead blobs per regeneration for the page's lifetime.
+    target.querySelectorAll<HTMLAnchorElement>("a[href^='blob:']").forEach((anchor) => {
+      URL.revokeObjectURL(anchor.href);
+    });
     target.replaceChildren(...generatedFiles.map((file) => {
       const article = document.createElement("article"); article.className = "config-builder__file";
       const title = document.createElement("h3"); title.textContent = file.path; article.append(title);

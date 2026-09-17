@@ -294,15 +294,32 @@ def _representative_paths(paths: list[Path], root: Path, claude_root: Path) -> s
     return representatives
 
 
+def _is_local_override(path: Path) -> bool:
+    """Match Claude Code's personal, untracked override files by their naming convention."""
+    return ".local." in path.name
+
+
 def worked_example(root: Path = REPOSITORY_ROOT) -> list[dict[str, str]]:
-    """Discover every configuration file and embed one representative per teaching type."""
+    """Discover every shared configuration file and embed one representative per teaching type."""
     claude_root = root / ".claude"
+    # A local override is a personal, untracked file. Claude Code writes `settings.local.json` the
+    # first time someone answers "allow always" in this repository, so sweeping it in would make
+    # the generated data depend on who ran the exporter: the freshness gate would fail for that
+    # contributor on an unrelated change, and regenerating would commit their machine's choices
+    # into public site data. The worked example documents the configuration the repository shares.
     if not claude_root.is_dir():
         raise ClaudeCodeDataError("The repository .claude directory is missing.")
     instruction_path = root / "CLAUDE.md"
     if not instruction_path.is_file():
         raise ClaudeCodeDataError("The repository project instruction file is missing: CLAUDE.md.")
-    paths = [instruction_path, *(path for path in claude_root.rglob("*") if path.is_file())]
+    paths = [
+        instruction_path,
+        *(
+            path
+            for path in claude_root.rglob("*")
+            if path.is_file() and not _is_local_override(path)
+        ),
+    ]
     paths = sorted(paths, key=lambda path: path.relative_to(root).as_posix())
     representatives = _representative_paths(paths, root, claude_root)
     components = []
@@ -411,9 +428,19 @@ def run_hook(path: Path, payload: object) -> tuple[int, str, str]:
 def hook_recording(root: Path = REPOSITORY_ROOT) -> dict[str, object]:
     """Record the repository hook's decisions across the required fixture battery."""
     hook_path = root / ".claude" / "hooks" / "prevent_destructive_actions.py"
+    if not hook_path.is_file():
+        raise ClaudeCodeDataError(f"The repository hook is missing: {hook_path.relative_to(root)}.")
     recorded_cases = []
     for label, payload in HOOK_FIXTURES:
         exit_code, stdout, stderr = run_hook(hook_path, payload)
+        # A traceback is not a decision. Recording one would publish this machine's absolute paths
+        # on a public page and dress a crash up as a deliberate denial, which is precisely the
+        # confusion the recording exists to prevent.
+        if "Traceback (most recent call last)" in stderr:
+            raise ClaudeCodeDataError(
+                f"The repository hook raised while recording {label!r}; "
+                "the recording publishes decisions, not failures."
+            )
         recorded_cases.append(
             {
                 "label": label,

@@ -65,6 +65,7 @@ export interface HookRunResult {
 
 interface PendingHook {
   resolve: (result: HookRunResult) => void;
+  reject: (reason: Error) => void;
 }
 
 let worker: Worker | null = null;
@@ -135,9 +136,9 @@ export async function runHook(source: string, payload: unknown): Promise<HookRun
     await load("stdlib");
   }
   setStatus("running");
-  return new Promise<HookRunResult>((resolve) => {
+  return new Promise<HookRunResult>((resolve, reject) => {
     settleStoppedHook();
-    pendingHook = { resolve };
+    pendingHook = { resolve, reject };
     worker?.postMessage({ type: "run-hook", source, payload } satisfies InboundMessage);
   });
 }
@@ -267,6 +268,16 @@ function handleFailure(message: FailedMessage): void {
     const failedInit = pendingInit;
     pendingInit = null;
     failedInit.reject(new Error(message.message));
+    return;
+  }
+  // A hook run must settle here too. The worker always posts `hook-result` today, so this is
+  // unreachable — but an unsettled hook promise would hang `runHook` forever and latch the
+  // configuration builder's proof control off, so the branch closes rather than relying on that.
+  if (pendingHook !== null) {
+    const failedHook = pendingHook;
+    pendingHook = null;
+    setStatus("ready");
+    failedHook.reject(new Error(message.message));
     return;
   }
   const finished = pendingRun;
