@@ -21,10 +21,11 @@ Use `/verify-triage` to run the triage verification sequence. Use the `triage-se
 reviewing the untrusted-input boundary, secret handling, or tool permissions.
 
 <!-- SPECKIT START -->
-The active feature is `003-claude-code-domain`. For the technologies in use, the project structure,
+The active feature is `004-item-bank-expansion`. For the technologies in use, the project structure,
 and the shell commands that verify a change, read [the implementation
-plan](specs/003-claude-code-domain/plan.md) and [its
-quickstart](specs/003-claude-code-domain/quickstart.md). Feature 002's
+plan](specs/004-item-bank-expansion/plan.md) and [its
+quickstart](specs/004-item-bank-expansion/quickstart.md). Feature 003's
+[plan](specs/003-claude-code-domain/plan.md) describes the Claude Code module, feature 002's
 [plan](specs/002-lab-runner-mock-exam/plan.md) describes the lab runner and the mock exam, and
 feature 001's [plan](specs/001-study-site-foundation/plan.md) still describes the site's
 foundation.
