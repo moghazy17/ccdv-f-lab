@@ -100,8 +100,13 @@ def test_link_checker_rejects_a_broken_built_fragment(tmp_path: Path) -> None:
     ]
 
 
-def test_blueprint_consistency_gate_passes_for_the_repository() -> None:
-    """The checked-in blueprint and every dependent tree currently agree."""
+def test_blueprint_consistency_gate_passes_against_this_repository() -> None:
+    """The repository it guards is consistent, so the gate's clean run is itself a regression test.
+
+    The failure paths are covered by fixtures below and in ``test_claude_code_export``, which is
+    where they belong: a test that asserted this gate fails would pass only while the repository
+    was incomplete, and would break the moment the missing work landed.
+    """
     assert consistency_main([]) == 0
 
 
@@ -198,16 +203,21 @@ def test_flashcard_generator_preserves_exact_blueprint_labels(tmp_path: Path) ->
 
 
 def test_flashcard_generator_uses_stable_source_position_identifiers(tmp_path: Path) -> None:
-    """Thirty cards retain unique identities even where the visible fields collide four ways."""
+    """Every card retains a unique identity even where the visible fields collide four ways.
+
+    The deck's size is a property of how many notes are authored, so it grows whenever a domain
+    is written. Asserting a fixed count would make authoring a note look like a regression; what
+    must hold at any size is that no two cards share an identifier.
+    """
     output = tmp_path / "ccdv-f.tsv"
 
     build_flashcards(ROOT / "notes", output)
     rows = [line.split("\t") for line in output.read_text(encoding="utf-8").splitlines()]
     identifiers = [row[1].split("Card: ")[-1] for row in rows]
 
-    assert len(rows) == 30
+    assert rows
     assert all(len(row) == 2 for row in rows)
-    assert len(set(identifiers)) == 30
+    assert len(set(identifiers)) == len(rows)
 
     technical = [
         identifier
@@ -258,13 +268,10 @@ def test_flashcard_generation_is_deterministic_and_platform_independent(tmp_path
     build_flashcards(ROOT / "notes", second)
 
     assert first.read_bytes() == second.read_bytes()
-    # Uppercase sorts before lowercase by code point, which is the order both platforms now take.
-    assert (
-        first.read_text(encoding="utf-8")
-        .splitlines()[0]
-        .split("\t")[1]
-        .endswith("Card: 05-technical-fundamentals-readme-1")
-    )
+    # Uppercase sorts before lowercase by code point, which is the order both platforms now take:
+    # `README.md` precedes `decision-tables.md`, so the deck opens on a README card. Which domain
+    # that card belongs to depends on which notes are authored, so only the suffix is pinned.
+    assert first.read_text(encoding="utf-8").splitlines()[0].split("\t")[1].endswith("-readme-1")
 
 
 def test_committed_flashcard_deck_matches_a_fresh_generation(tmp_path: Path) -> None:

@@ -6,7 +6,7 @@ type AxePage = ConstructorParameters<typeof AxeBuilder>[0]["page"];
 interface PageTypeCheck {
   name: string;
   route: string;
-  type: "content" | "scaffold" | "diagnostic" | "progress" | "search" | "index" | "reserved" | "lab" | "mock" | "quiz" | "flashcards";
+  type: "content" | "scaffold" | "diagnostic" | "progress" | "search" | "index" | "claude-code" | "lab" | "mock" | "quiz" | "flashcards";
 }
 
 const pageTypesToCheck: PageTypeCheck[] = [
@@ -36,10 +36,10 @@ const pageTypesToCheck: PageTypeCheck[] = [
   // Progress
   { name: "progress page", route: "./progress/", type: "progress" },
 
-  // Reserved page types
-  { name: "reserved terminal", route: "./claude-code/terminal/", type: "reserved" },
-  { name: "reserved config builder", route: "./claude-code/config/", type: "reserved" },
-  { name: "reserved playground", route: "./playground/", type: "reserved" },
+  // Claude Code learning surfaces
+  { name: "terminal simulator", route: "./claude-code/terminal/", type: "claude-code" },
+  { name: "configuration builder", route: "./claude-code/config/", type: "claude-code" },
+  { name: "playground", route: "./playground/", type: "claude-code" },
 
   // Lab page types: one that runs, and the one that shows its source instead
   { name: "runnable lab", route: "./labs/router/", type: "lab" },

@@ -1,0 +1,277 @@
+---
+import type {
+  HookRecording,
+  WorkedExampleComponent,
+  WorkedExampleComponentType
+} from "../lib/claude-code/commands";
+
+interface Props {
+  components: readonly WorkedExampleComponent[];
+  recording: HookRecording;
+}
+
+const { components, recording } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const teachingTypeLabels = {
+  rules: "Rules",
+  settings: "Settings",
+  command: "Command",
+  skill: "Skill",
+  agent: "Agent",
+  hook: "Hook"
+} as const;
+type TeachingType = keyof typeof teachingTypeLabels;
+const teachingTypes = Object.keys(teachingTypeLabels) as TeachingType[];
+const teachingGroups = teachingTypes.map((componentType) => {
+  const files = components.filter((component) => component.componentType === componentType);
+  if (files.length === 0) {
+    throw new Error(`Worked example has no ${componentType} teaching component.`);
+  }
+  const representative = files.find((component) => component.contents !== undefined);
+  if (representative === undefined) {
+    throw new Error(`Worked example has no representative ${componentType} contents.`);
+  }
+  return { componentType, files, representative };
+});
+const inventoryTypes: WorkedExampleComponentType[] = ["documentation", "unrecognized"];
+const inventoryGroups = inventoryTypes
+  .map((componentType) => ({
+    componentType,
+    files: components.filter((component) => component.componentType === componentType)
+  }))
+  .filter((group) => group.files.length > 0);
+const repositoryUrl = (path: string): string =>
+  `https://github.com/moghazy17/ccdv-f-lab/blob/main/${path
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/")}`;
+const noteUrl = (component: WorkedExampleComponent): string =>
+  `${base}domains/03-claude-code/#${component.noteAnchor}`;
+---
+
+<section class="worked-example" data-worked-example aria-labelledby="worked-example-title">
+  <header class="worked-example__heading">
+    <h2 id="worked-example-title">Repository worked example</h2>
+    <p>
+      This inventory is generated from the repository files at publication time. One representative
+      file per teaching type is open for inspection; every discovered path remains listed.
+    </p>
+  </header>
+
+  <div class="worked-example__groups">
+    {
+      teachingGroups.map(({ componentType, files, representative }) => (
+        <section
+          class="worked-example__group"
+          data-teaching-type={componentType}
+          aria-labelledby={`worked-example-${componentType}`}
+        >
+          <h3 id={`worked-example-${componentType}`}>{teachingTypeLabels[componentType]}</h3>
+          <p class="worked-example__count">
+            {files.length} {files.length === 1 ? "file" : "files"} in the inventory
+          </p>
+          <ul class="worked-example__paths">
+            {files.map((component) => (
+              <li data-worked-example-path>
+                <code>{component.path}</code>
+                <span class="worked-example__links">
+                  <a
+                    href={repositoryUrl(component.path)}
+                    data-repository-link
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Repository file
+                  </a>
+                  <a href={noteUrl(component)} data-note-link>Study note</a>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <details data-worked-example-contents>
+            <summary>Representative source: <code>{representative.path}</code></summary>
+            <pre tabindex="0" aria-label={`${representative.path} contents`}><code>{representative.contents}</code></pre>
+          </details>
+        </section>
+      ))
+    }
+  </div>
+
+  {
+    inventoryGroups.length > 0 && (
+      <section class="worked-example__inventory" aria-labelledby="worked-example-inventory-title">
+        <h3 id="worked-example-inventory-title">Supporting inventory</h3>
+        <p>Supporting and unrecognized files stay visible without being presented as teaching types.</p>
+        {inventoryGroups.map(({ componentType, files }) => (
+          <div data-inventory-type={componentType}>
+            <h4>{componentType === "documentation" ? "Documentation" : "Unrecognized"}</h4>
+            <ul class="worked-example__paths">
+              {files.map((component) => (
+                <li data-worked-example-path>
+                  <code>{component.path}</code>
+                  <span class="worked-example__links">
+                    <a
+                      href={repositoryUrl(component.path)}
+                      data-repository-link
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Repository file
+                    </a>
+                    <a href={noteUrl(component)} data-note-link>Study note</a>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </section>
+    )
+  }
+
+  <section class="worked-example__recording" aria-labelledby="hook-recording-title">
+    <h3 id="hook-recording-title">Recorded hook decisions</h3>
+    <p>
+      Each payload and result below was captured by executing <code>{recording.hookPath}</code> at
+      publication time. Decision details and output are rendered from that recording.
+    </p>
+    <div class="worked-example__cases">
+      {
+        recording.recordedCases.map((recordedCase) => (
+          <article data-hook-recording-case>
+            <h4>{recordedCase.label}</h4>
+            <dl>
+              <div>
+                <dt>Decision</dt>
+                <dd data-recorded-decision>{recordedCase.decision}</dd>
+              </div>
+              <div>
+                <dt>Exit code</dt>
+                <dd data-recorded-exit-code>{recordedCase.exitCode}</dd>
+              </div>
+            </dl>
+            <h5>Payload</h5>
+            <pre data-recorded-payload tabindex="0"><code>{JSON.stringify(recordedCase.payload, null, 2)}</code></pre>
+            <h5>Hook message</h5>
+            <pre data-recorded-message tabindex="0"><code>{recordedCase.message}</code></pre>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+</section>
+
+<style>
+  .worked-example {
+    margin-top: 2rem;
+    padding: clamp(1rem, 3vw, 1.5rem);
+    border: 0.0625rem solid var(--rule);
+    background: var(--panel);
+  }
+
+  .worked-example__heading h2,
+  .worked-example__group h3,
+  .worked-example__inventory h3,
+  .worked-example__recording h3 {
+    margin-top: 0;
+  }
+
+  .worked-example__groups,
+  .worked-example__cases {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .worked-example__group,
+  .worked-example__inventory,
+  .worked-example__recording,
+  .worked-example__cases article {
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 0.0625rem solid var(--rule);
+    background: var(--paper);
+  }
+
+  .worked-example__count {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .worked-example__paths {
+    display: grid;
+    gap: 0.6rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .worked-example__paths li {
+    display: grid;
+    gap: 0.35rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 0.0625rem solid var(--rule);
+  }
+
+  .worked-example__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1rem;
+  }
+
+  .worked-example details {
+    margin-top: 1rem;
+  }
+
+  .worked-example summary {
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .worked-example pre {
+    max-height: 30rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .worked-example__cases {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  }
+
+  .worked-example__cases article {
+    min-width: 0;
+    margin-top: 0;
+    background: var(--panel);
+  }
+
+  .worked-example__cases h4 {
+    margin-top: 0;
+  }
+
+  .worked-example__cases dl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.5rem;
+  }
+
+  .worked-example__cases dt {
+    color: var(--muted);
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+
+  .worked-example__cases dd {
+    margin: 0;
+    font-weight: 750;
+    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (forced-colors: active) {
+    .worked-example,
+    .worked-example__group,
+    .worked-example__inventory,
+    .worked-example__recording,
+    .worked-example__cases article {
+      border-color: CanvasText;
+    }
+  }
+</style>

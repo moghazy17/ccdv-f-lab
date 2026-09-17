@@ -32,6 +32,25 @@ const quizFigures = quizAvailability(itemsData.items as PracticeItem[], mock.quo
 const quizAsked = quizFigures.asked;
 const quizAvailable = quizFigures.available;
 const mockSize = mock.fullMockSize;
+const claudeCodeSurfaces = domain.name === "Claude Code"
+  ? [
+      {
+        href: `${base}claude-code/terminal/`,
+        name: "Terminal simulator",
+        description: "Work through the guided command and instruction-hierarchy exercises."
+      },
+      {
+        href: `${base}claude-code/config/`,
+        name: "Configuration builder",
+        description: "Generate, inspect, copy, and exercise project configuration files."
+      },
+      {
+        href: `${base}playground/`,
+        name: "Playground",
+        description: "Explore the same bounded terminal simulation without guided tasks."
+      }
+    ]
+  : [];
 ---
 
 <BaseLayout
@@ -119,6 +138,27 @@ const mockSize = mock.fullMockSize;
     )
   }
 
+  {
+    claudeCodeSurfaces.length > 0 && (
+      <section
+        class="domain-reserved-region"
+        data-testid="claude-code-surfaces"
+        aria-labelledby="claude-code-surfaces-title"
+      >
+        <h2 id="claude-code-surfaces-title">Claude Code learning surfaces</h2>
+        <p>Open the module's practical surfaces from this domain page.</p>
+        <ul class="claude-code-surfaces">
+          {claudeCodeSurfaces.map((surface) => (
+            <li>
+              <a href={surface.href}>{surface.name}</a>
+              <span>{surface.description}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
   <section
     class="domain-reserved-region"
     data-testid="domain-lab-region"
@@ -164,3 +204,27 @@ const mockSize = mock.fullMockSize;
     <p><a href={`${base}domains/${domain.slug}/quiz/`}>Open this domain's self-check</a></p>
   </section>
 </BaseLayout>
+
+<style>
+  .claude-code-surfaces {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .claude-code-surfaces li {
+    display: grid;
+    gap: 0.2rem;
+    padding-top: 0.75rem;
+    border-top: 0.0625rem solid var(--rule);
+  }
+
+  .claude-code-surfaces a {
+    font-weight: 700;
+  }
+
+  .claude-code-surfaces span {
+    color: var(--muted);
+  }
+</style>

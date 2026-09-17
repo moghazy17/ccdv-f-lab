@@ -1,0 +1,110 @@
+---
+interface GuidedTask {
+  id: string;
+  label: string;
+}
+
+interface Props {
+  tasks: readonly GuidedTask[];
+}
+
+const { tasks } = Astro.props;
+---
+
+<section class="guided-tasks" data-guided-tasks aria-labelledby="guided-tasks-title">
+  <h2 id="guided-tasks-title">Guided tasks</h2>
+  <p>
+    Task completion is neither a score nor part of any readiness signal. It only remembers your place
+    in this ordered guide.
+  </p>
+  <p data-guided-storage-notice hidden></p>
+  <ol>
+    {
+      tasks.map((task) => (
+        <li data-guided-task={task.id}>
+          <span>{task.label}</span>
+          <strong data-guided-state>Not done</strong>
+        </li>
+      ))
+    }
+  </ol>
+</section>
+
+<script>
+  import { checkStorageAvailability, createProgressStorage } from "../lib/storage";
+
+  const guide = document.querySelector<HTMLElement>("[data-guided-tasks]");
+  if (guide !== null) {
+    const availability = checkStorageAvailability();
+    const storage = availability === "available" ? createProgressStorage() : null;
+    const notice = guide.querySelector<HTMLElement>("[data-guided-storage-notice]");
+    const tasks = guide.querySelectorAll<HTMLElement>("[data-guided-task]");
+    const completed = storage?.claudeCodeProgress()?.guidedTasks ?? {};
+
+    const update = (task: HTMLElement, done: boolean): void => {
+      const state = task.querySelector<HTMLElement>("[data-guided-state]");
+      task.dataset.done = String(done);
+      if (state !== null) {
+        state.textContent = done ? "Done" : "Not done";
+      }
+    };
+
+    tasks.forEach((task) => update(task, completed[task.dataset.guidedTask ?? ""] === true));
+    if (storage === null && notice !== null) {
+      notice.hidden = false;
+      notice.textContent =
+        availability === "full"
+          ? "Browser storage is full, so completed tasks will not be remembered."
+          : "Browser storage is unavailable, so completed tasks will not be remembered.";
+    }
+    document.addEventListener("claude-code:command-run", (event) => {
+      const detail = (event as CustomEvent<{ id?: string }>).detail;
+      const id = detail?.id;
+      if (typeof id !== "string") {
+        return;
+      }
+      const task = guide.querySelector<HTMLElement>(`[data-guided-task="${id}"]`);
+      if (task === null) {
+        return;
+      }
+      update(task, true);
+      storage?.setGuidedTask(id, true);
+    });
+  }
+</script>
+
+<style>
+  .guided-tasks {
+    margin-top: 2rem;
+    padding: 1rem;
+    border: 0.0625rem solid var(--rule);
+    background: var(--panel);
+  }
+
+  .guided-tasks h2 {
+    margin-top: 0;
+  }
+
+  .guided-tasks ol {
+    display: grid;
+    gap: 0.65rem;
+    padding-inline-start: 1.4rem;
+  }
+
+  .guided-tasks li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    justify-content: space-between;
+    padding-bottom: 0.5rem;
+    border-bottom: 0.0625rem solid var(--rule);
+  }
+
+  .guided-tasks [data-guided-state] {
+    min-width: 5rem;
+  }
+
+  .guided-tasks [data-done="true"] [data-guided-state]::before {
+    content: "Completed: ";
+  }
+</style>

@@ -20,11 +20,19 @@ export {
   isRuntimeStoppedError,
   load,
   run,
+  runHook,
   stop,
   subscribeProgress,
   subscribeStatus
 } from "./client";
-export type { OutputChunk, OutputListener, OutputStream, ProgressListener, StatusListener } from "./client";
+export type {
+  HookRunResult,
+  OutputChunk,
+  OutputListener,
+  OutputStream,
+  ProgressListener,
+  StatusListener
+} from "./client";
 export { RuntimeStoppedError } from "./client";
 
 /** Where the runtime is in its lifecycle, from the caller's point of view. */

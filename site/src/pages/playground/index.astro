@@ -1,5 +1,40 @@
 ---
-import ReservedPage from "../../components/ReservedPage.astro";
+import SimulatedTerminal from "../../components/SimulatedTerminal.astro";
+import ServedSubskills from "../../components/ServedSubskills.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { simulatedCommands } from "../../lib/claude-code/commands";
+
+const guidedTerminalUrl = `${import.meta.env.BASE_URL}claude-code/terminal/`;
 ---
 
-<ReservedPage title="Playground" capability="the free-form playground" />
+<BaseLayout
+  title="Claude Code playground | CCDV-F community study kit"
+  description="Explore a bounded Claude Code simulation without execution, a credential, or stored terminal history."
+  searchRecord={{ type: "claude-code-playground" }}
+>
+  <header>
+    <h1>Claude Code playground</h1>
+    <p class="page-introduction">
+      Explore the simulation freely. It starts clean on every visit, and nothing typed here is
+      written to your device.
+    </p>
+  </header>
+
+  <ServedSubskills names={["Claude Code Operation"]} />
+
+  <SimulatedTerminal commands={simulatedCommands} surface="playground" />
+
+  <p class="playground-guidance">
+    Want instruction? Open the <a href={guidedTerminalUrl}>guided Claude Code terminal</a> for an
+    ordered task set.
+  </p>
+</BaseLayout>
+
+<style>
+  .playground-guidance {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border: 0.0625rem solid var(--rule);
+    background: var(--panel);
+  }
+</style>

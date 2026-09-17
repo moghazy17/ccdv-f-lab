@@ -1,5 +1,23 @@
 ---
-import ReservedPage from "../../../components/ReservedPage.astro";
+import ConfigBuilder from "../../../components/ConfigBuilder.astro";
+import ServedSubskills from "../../../components/ServedSubskills.astro";
+import BaseLayout from "../../../layouts/BaseLayout.astro";
 ---
 
-<ReservedPage title="Configuration builder" capability="the configuration builder" />
+<BaseLayout
+  title="Configuration builder | CCDV-F community study kit"
+  description="Generate inspectable Claude Code instruction, settings, and Python hook files."
+  searchRecord={{ type: "claude-code-config" }}
+>
+  <header>
+    <h1>Configuration builder</h1>
+    <p class="page-introduction">
+      Build a project instruction file, settings file, and Python hook. Then execute the hook against
+      sample actions to see the difference between context and enforcement.
+    </p>
+  </header>
+  <ServedSubskills
+    names={["Configuration Management", "Claude Code Operation", "Claude Hooks"]}
+  />
+  <ConfigBuilder />
+</BaseLayout>

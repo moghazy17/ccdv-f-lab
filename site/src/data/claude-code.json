@@ -1,0 +1,587 @@
+{
+  "commands": [
+    {
+      "id": "rules-component",
+      "guidedTask": null,
+      "invocation": null,
+      "kind": "component",
+      "where": "CLAUDE.md",
+      "scope": null,
+      "definedBy": null,
+      "blueprintFeature": "Rules",
+      "explanation": "CLAUDE.md instructions are context that shapes behavior; they do not enforce actions.\n",
+      "sourceAnchor": "memory",
+      "sourceUrl": "https://code.claude.com/docs/en/memory",
+      "transcript": [
+        {
+          "stream": "stdout",
+          "text": "Project rules: CLAUDE.md is loaded as context."
+        }
+      ]
+    },
+    {
+      "id": "skills-component",
+      "guidedTask": null,
+      "invocation": null,
+      "kind": "component",
+      "where": ".claude/skills/",
+      "scope": null,
+      "definedBy": null,
+      "blueprintFeature": "Skills",
+      "explanation": "A Skill is a loaded, prompt-based Markdown bundle that Claude uses with its tools.",
+      "sourceAnchor": "skills-docs",
+      "sourceUrl": "https://code.claude.com/docs/en/skills",
+      "transcript": [
+        {
+          "stream": "stdout",
+          "text": "Project skill: .claude/skills/triage-security/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "help-command",
+      "guidedTask": 1,
+      "invocation": "/help",
+      "kind": "built-in",
+      "where": null,
+      "scope": null,
+      "definedBy": null,
+      "blueprintFeature": "Commands",
+      "explanation": "The built-in help command shows help and the available commands.",
+      "sourceAnchor": "cc-commands",
+      "sourceUrl": "https://code.claude.com/docs/en/commands",
+      "transcript": [
+        {
+          "stream": "stdout",
+          "text": "Help: available commands are shown."
+        }
+      ]
+    },
+    {
+      "id": "agents-component",
+      "guidedTask": null,
+      "invocation": null,
+      "kind": "component",
+      "where": ".claude/agents/",
+      "scope": null,
+      "definedBy": null,
+      "blueprintFeature": "Agents",
+      "explanation": "A subagent works in a separate context window and returns a summary to the main conversation.\n",
+      "sourceAnchor": "sub-agents",
+      "sourceUrl": "https://code.claude.com/docs/en/sub-agents",
+      "transcript": [
+        {
+          "stream": "stdout",
+          "text": "Project subagent: .claude/agents/triage-security-reviewer.md"
+        }
+      ]
+    },
+    {
+      "id": "agent-memory-component",
+      "guidedTask": null,
+      "invocation": null,
+      "kind": "component",
+      "where": "~/.claude/",
+      "scope": null,
+      "definedBy": null,
+      "blueprintFeature": "Agent Memory",
+      "explanation": "Auto memory is loaded as context alongside CLAUDE.md instructions.",
+      "sourceAnchor": "memory",
+      "sourceUrl": "https://code.claude.com/docs/en/memory",
+      "transcript": [
+        {
+          "stream": "stdout",
+          "text": "Agent memory contributes context; it is not enforced configuration."
+        }
+      ]
+    },
+    {
+      "id": "clear-session",
+      "guidedTask": 3,
+      "invocation": "/clear",
+      "kind": "built-in",
+      "where": null,
+      "scope": null,
+      "definedBy": null,
+      "blueprintFeature": "session management",
+      "explanation": "Clear starts a new conversation with empty context.",
+      "sourceAnchor": "cc-commands",
+      "sourceUrl": "https://code.claude.com/docs/en/commands",
+      "transcript": [
+        {
+          "stream": "stdout",
+          "text": "Started a new conversation with empty context."
+        }
+      ]
+    },
+    {
+      "id": "compact-session",
+      "guidedTask": 4,
+      "invocation": "/compact",
+      "kind": "built-in",
+      "where": null,
+      "scope": null,
+      "definedBy": null,
+      "blueprintFeature": "session management",
+      "explanation": "Compact summarizes the conversation so far and continues the same conversation.",
+      "sourceAnchor": "cc-commands",
+      "sourceUrl": "https://code.claude.com/docs/en/commands",
+      "transcript": [
+        {
+          "stream": "stdout",
+          "text": "Conversation summarized; continuing the same conversation."
+        }
+      ]
+    },
+    {
+      "id": "verify-triage",
+      "guidedTask": 2,
+      "invocation": "/verify-triage",
+      "kind": "custom",
+      "where": null,
+      "scope": "project",
+      "definedBy": ".claude/commands/verify-triage.md",
+      "blueprintFeature": "built-in and custom slash commands",
+      "explanation": "This project command is loaded from .claude/commands/verify-triage.md at repository scope.\n",
+      "sourceAnchor": "slash",
+      "sourceUrl": "https://code.claude.com/docs/en/slash-commands",
+      "transcript": [
+        {
+          "stream": "stdout",
+          "text": "Loaded project command: /verify-triage"
+        }
+      ]
+    },
+    {
+      "id": "headless-json",
+      "guidedTask": 5,
+      "invocation": "claude -p \"Summarize this diff\" --output-format json",
+      "kind": "mode",
+      "where": null,
+      "scope": null,
+      "definedBy": null,
+      "blueprintFeature": "headless mode",
+      "explanation": "Print mode runs non-interactively, can read standard input, and exits zero on success or non-zero on failure. JSON output carries response text in the result field; --continue uses the most recent conversation and --resume <session-id> uses a specific conversation.\n",
+      "sourceAnchor": "cc-headless",
+      "sourceUrl": "https://code.claude.com/docs/en/headless",
+      "transcript": [
+        {
+          "stream": "stdout",
+          "text": "{\"result\":\"<response>\"}"
+        },
+        {
+          "stream": "stdout",
+          "text": "Session options: --continue or --resume <session-id>."
+        }
+      ]
+    },
+    {
+      "id": "streaming-json",
+      "guidedTask": 6,
+      "invocation": "claude -p \"Summarize this diff\" --output-format stream-json --verbose --include-partial-messages",
+      "kind": "mode",
+      "where": null,
+      "scope": null,
+      "definedBy": null,
+      "blueprintFeature": "streaming mode",
+      "explanation": "Stream JSON emits one JSON event per line, beginning with system/init and ending with a result message. Streaming requires verbose and partial-message output.\n",
+      "sourceAnchor": "cc-headless",
+      "sourceUrl": "https://code.claude.com/docs/en/headless",
+      "transcript": [
+        {
+          "stream": "event",
+          "text": "{\"type\":\"system\",\"subtype\":\"init\"}"
+        },
+        {
+          "stream": "event",
+          "text": "{\"type\":\"result\",\"result\":\"<response>\"}"
+        }
+      ]
+    },
+    {
+      "id": "auto-permission-mode",
+      "guidedTask": null,
+      "invocation": null,
+      "kind": "component",
+      "where": "settings.json",
+      "scope": null,
+      "definedBy": null,
+      "blueprintFeature": "auto-mode",
+      "explanation": "In Auto mode a second model, the classifier, reviews actions instead of the user; in Manual mode Claude Code asks before most file edits, shell commands, and network actions.\n",
+      "sourceAnchor": "cc-permission-modes",
+      "sourceUrl": "https://code.claude.com/docs/en/permission-modes",
+      "transcript": [
+        {
+          "stream": "stdout",
+          "text": "Permission mode: Auto; classifier review is active."
+        }
+      ]
+    },
+    {
+      "id": "instruction-hierarchy",
+      "guidedTask": null,
+      "invocation": null,
+      "kind": "component",
+      "where": "CLAUDE.md",
+      "scope": null,
+      "definedBy": null,
+      "blueprintFeature": "`CLAUDE.md` hierarchy",
+      "explanation": "Instruction scopes load as managed policy, user, project, and local; discovered files are concatenated from the filesystem root toward the working directory.\n",
+      "sourceAnchor": "memory",
+      "sourceUrl": "https://code.claude.com/docs/en/memory",
+      "transcript": [
+        {
+          "stream": "stdout",
+          "text": "Load order: managed policy, user, project, local."
+        }
+      ]
+    },
+    {
+      "id": "initialize-repository",
+      "guidedTask": null,
+      "invocation": "/init",
+      "kind": "built-in",
+      "where": null,
+      "scope": null,
+      "definedBy": null,
+      "blueprintFeature": "repository initialization",
+      "explanation": "Init initializes a project with a CLAUDE.md guide.",
+      "sourceAnchor": "cc-commands",
+      "sourceUrl": "https://code.claude.com/docs/en/commands",
+      "transcript": [
+        {
+          "stream": "stdout",
+          "text": "Initialized the project with a CLAUDE.md guide."
+        }
+      ]
+    },
+    {
+      "id": "permissions-command",
+      "guidedTask": null,
+      "invocation": "/permissions",
+      "kind": "built-in",
+      "where": null,
+      "scope": null,
+      "definedBy": null,
+      "blueprintFeature": "settings.json",
+      "explanation": "Permissions manages allow, ask, and deny rules by scope.",
+      "sourceAnchor": "cc-commands",
+      "sourceUrl": "https://code.claude.com/docs/en/commands",
+      "transcript": [
+        {
+          "stream": "stdout",
+          "text": "Permission rules: allow, ask, and deny."
+        }
+      ]
+    },
+    {
+      "id": "model-command",
+      "guidedTask": null,
+      "invocation": "/model",
+      "kind": "built-in",
+      "where": null,
+      "scope": null,
+      "definedBy": null,
+      "blueprintFeature": "Commands",
+      "explanation": "Model switches the model and saves it as the default for new sessions.",
+      "sourceAnchor": "cc-commands",
+      "sourceUrl": "https://code.claude.com/docs/en/commands",
+      "transcript": [
+        {
+          "stream": "stdout",
+          "text": "Choose a model for this session and as the default for new sessions."
+        }
+      ]
+    },
+    {
+      "id": "cost-command",
+      "guidedTask": null,
+      "invocation": "/cost",
+      "kind": "built-in",
+      "where": null,
+      "scope": null,
+      "definedBy": null,
+      "blueprintFeature": "Commands",
+      "explanation": "Cost is an alias for the usage command.",
+      "sourceAnchor": "cc-commands",
+      "sourceUrl": "https://code.claude.com/docs/en/commands",
+      "transcript": [
+        {
+          "stream": "stdout",
+          "text": "/usage"
+        }
+      ]
+    },
+    {
+      "id": "hook-denial-simulation",
+      "guidedTask": 7,
+      "invocation": "/simulate-hook-denial",
+      "kind": "mode",
+      "where": null,
+      "scope": null,
+      "definedBy": null,
+      "blueprintFeature": "hooks",
+      "explanation": "This simulation shows a PreToolUse hook blocking a destructive tool action before it runs.",
+      "sourceAnchor": "agent-hooks",
+      "sourceUrl": "https://code.claude.com/docs/en/agent-sdk/hooks",
+      "transcript": [
+        {
+          "stream": "stderr",
+          "denial": true,
+          "text": "Hook denial: the destructive tool action was blocked before it ran."
+        }
+      ]
+    }
+  ],
+  "scopes": [
+    {
+      "id": "managed-policy",
+      "name": "managed policy",
+      "order": 1,
+      "path": "managed policy"
+    },
+    {
+      "id": "user",
+      "name": "user",
+      "order": 2,
+      "path": "~/.claude/CLAUDE.md"
+    },
+    {
+      "id": "project",
+      "name": "project",
+      "order": 3,
+      "path": "./CLAUDE.md"
+    },
+    {
+      "id": "local",
+      "name": "local",
+      "order": 4,
+      "path": "./subdirectory/CLAUDE.md"
+    }
+  ],
+  "fragments": [
+    {
+      "id": "managed-named-exports",
+      "scope_id": "managed-policy",
+      "text": "Use named exports in source modules.",
+      "conflicts_with": "project-default-exports",
+      "enforceable": true,
+      "enforced_by": null
+    },
+    {
+      "id": "user-tests",
+      "scope_id": "user",
+      "text": "Write tests alongside code changes.",
+      "conflicts_with": null,
+      "enforceable": true,
+      "enforced_by": null
+    },
+    {
+      "id": "project-default-exports",
+      "scope_id": "project",
+      "text": "Use default exports in source modules.",
+      "conflicts_with": "managed-named-exports",
+      "enforceable": true,
+      "enforced_by": null
+    },
+    {
+      "id": "local-destructive-action",
+      "scope_id": "local",
+      "text": "Do not run destructive shell commands.",
+      "conflicts_with": null,
+      "enforceable": false,
+      "enforced_by": "hook"
+    }
+  ],
+  "workedExample": [
+    {
+      "path": ".claude/README.md",
+      "componentType": "documentation",
+      "noteAnchor": "worked-example-inventory"
+    },
+    {
+      "path": ".claude/agents/triage-security-reviewer.md",
+      "componentType": "agent",
+      "noteAnchor": "subagents",
+      "contents": "---\nname: triage-security-reviewer\ndescription: >-\n  Use this agent to review a triage security change for untrusted-input boundaries, least-privilege\n  tool exposure, PII or secret leakage, and keyless test coverage.\nmodel: inherit\ncolor: red\ntools: [\"Read\", \"Grep\", \"Glob\", \"Bash\"]\n---\n\nReview the change without editing files. Read `AGENTS.md` and `BLUEPRINT.md` first. Inspect the\nrequest boundary in `lab/ingest.py`, the four security layers in `lab/security.py`, credential\nhandling in `lab/secrets.py`, and tool dispatch in `lab/tools/dispatcher.py`.\n\nReport only concrete findings with file paths and concise evidence. Verify that untrusted ticket\ntext cannot forge the nonce-bound closing delimiter, write tools require both trusted capability\nexposure and explicit approval, diagnostics redact PII and credentials, and tests remain keyless.\nRun the requested test subset or the complete verification gates when useful.\n"
+    },
+    {
+      "path": ".claude/commands/verify-triage.md",
+      "componentType": "command",
+      "noteAnchor": "custom-slash-commands",
+      "contents": "---\ndescription: Run the triage lab's keyless lint, format, and test gates\nallowed-tools:\n  [\"Bash(ruff check .)\", \"Bash(ruff format --check .)\", \"Bash(pytest -q)\"]\n---\n\nRun these commands from the repository root, in order:\n\n1. `ruff check .`\n2. `ruff format --check .`\n3. `pytest -q`\n\nReport each command's outcome. Do not change files while this command is running; use the normal\nediting workflow to fix a failure, then invoke `/verify-triage` again.\n"
+    },
+    {
+      "path": ".claude/hooks/prevent_destructive_actions.py",
+      "componentType": "hook",
+      "noteAnchor": "hooks-as-safety-controls",
+      "contents": "#!/usr/bin/env python3\n\"\"\"Deny protected-file writes and destructive shell commands from Claude Code PreToolUse hooks.\"\"\"\n\nfrom __future__ import annotations\n\nimport json\nimport re\nimport sys\nfrom pathlib import PurePath\nfrom typing import Any\n\nPROTECTED_FILES = frozenset({\"LICENSE\"})\n_DESTRUCTIVE_COMMAND = re.compile(\n    r\"(?:\\brm\\s+-[a-z]*[rf]|\\brmdir\\s+/[sq]|\\bdel\\s+/[a-z]*[sqf]|\"\n    r\"\\bremove-item\\b.{0,80}\\b-recurse\\b|\\bgit\\s+reset\\s+--hard\\b|\"\n    r\"\\bgit\\s+clean\\s+-[a-z]*f|\\bformat\\s+[a-z]:|\\bmkfs\\b|\\bdd\\s+if=)\",\n    re.IGNORECASE,\n)\n\n\ndef _deny(message: str) -> int:\n    \"\"\"Tell Claude Code that the PreToolUse action is denied, then return a failing status.\"\"\"\n    print(\n        json.dumps(\n            {\n                \"hookSpecificOutput\": {\"permissionDecision\": \"deny\"},\n                \"systemMessage\": message,\n            }\n        ),\n        file=sys.stderr,\n    )\n    return 2\n\n\ndef _protected_path(value: object) -> bool:\n    \"\"\"Match a protected basename from a relative or absolute write path.\"\"\"\n    if not isinstance(value, str):\n        return False\n    return PurePath(value.replace(\"\\\\\", \"/\")).name.upper() in PROTECTED_FILES\n\n\ndef _protected_file_in_command(command: str) -> str | None:\n    \"\"\"Return the protected filename referenced by a shell command, if any.\"\"\"\n    for filename in PROTECTED_FILES:\n        if re.search(rf\"(?<![A-Z0-9_]){re.escape(filename)}(?![A-Z0-9_])\", command, re.IGNORECASE):\n            return filename\n    return None\n\n\ndef decide(payload: dict[str, Any]) -> int:\n    \"\"\"Return the hook status code for one Claude Code PreToolUse payload.\"\"\"\n    tool_input = payload.get(\"tool_input\", {})\n    if not isinstance(tool_input, dict):\n        return 0\n    file_path = tool_input.get(\"file_path\")\n    if _protected_path(file_path):\n        return _deny(f\"Protected ground-truth file write denied: {file_path}\")\n    command = tool_input.get(\"command\")\n    if not isinstance(command, str):\n        return 0\n    protected_file = _protected_file_in_command(command)\n    if protected_file is not None:\n        return _deny(f\"Protected ground-truth file write denied: {protected_file}\")\n    if _DESTRUCTIVE_COMMAND.search(command):\n        return _deny(\"Destructive shell command denied by the project safety hook.\")\n    return 0\n\n\ndef main() -> int:\n    \"\"\"Parse JSON from standard input, allowing empty or malformed unrelated hook input to pass.\"\"\"\n    try:\n        payload = json.load(sys.stdin)\n    except json.JSONDecodeError:\n        return 0\n    if not isinstance(payload, dict):\n        return 0\n    return decide(payload)\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n"
+    },
+    {
+      "path": ".claude/settings.json",
+      "componentType": "settings",
+      "noteAnchor": "settings-and-permissions",
+      "contents": "{\n  \"permissions\": {\n    \"allow\": [\n      \"Bash(ruff check .)\",\n      \"Bash(ruff format --check .)\",\n      \"Bash(pytest -q)\",\n      \"Bash(python -c:*)\"\n    ],\n    \"deny\": [\n      \"Read(.env)\",\n      \"Read(.env.*)\"\n    ]\n  },\n  \"hooks\": {\n    \"PreToolUse\": [\n      {\n        \"matcher\": \"Write|Edit\",\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"python \\\"$CLAUDE_PROJECT_DIR/.claude/hooks/prevent_destructive_actions.py\\\"\",\n            \"timeout\": 5\n          }\n        ]\n      },\n      {\n        \"matcher\": \"Bash\",\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"python \\\"$CLAUDE_PROJECT_DIR/.claude/hooks/prevent_destructive_actions.py\\\"\",\n            \"timeout\": 5\n          }\n        ]\n      }\n    ]\n  }\n}\n"
+    },
+    {
+      "path": ".claude/skills/speckit-analyze/SKILL.md",
+      "componentType": "skill",
+      "noteAnchor": "skills"
+    },
+    {
+      "path": ".claude/skills/speckit-checklist/SKILL.md",
+      "componentType": "skill",
+      "noteAnchor": "skills"
+    },
+    {
+      "path": ".claude/skills/speckit-clarify/SKILL.md",
+      "componentType": "skill",
+      "noteAnchor": "skills"
+    },
+    {
+      "path": ".claude/skills/speckit-constitution/SKILL.md",
+      "componentType": "skill",
+      "noteAnchor": "skills"
+    },
+    {
+      "path": ".claude/skills/speckit-git-commit/SKILL.md",
+      "componentType": "skill",
+      "noteAnchor": "skills"
+    },
+    {
+      "path": ".claude/skills/speckit-git-feature/SKILL.md",
+      "componentType": "skill",
+      "noteAnchor": "skills"
+    },
+    {
+      "path": ".claude/skills/speckit-git-initialize/SKILL.md",
+      "componentType": "skill",
+      "noteAnchor": "skills"
+    },
+    {
+      "path": ".claude/skills/speckit-git-remote/SKILL.md",
+      "componentType": "skill",
+      "noteAnchor": "skills"
+    },
+    {
+      "path": ".claude/skills/speckit-git-validate/SKILL.md",
+      "componentType": "skill",
+      "noteAnchor": "skills"
+    },
+    {
+      "path": ".claude/skills/speckit-implement/SKILL.md",
+      "componentType": "skill",
+      "noteAnchor": "skills"
+    },
+    {
+      "path": ".claude/skills/speckit-plan/SKILL.md",
+      "componentType": "skill",
+      "noteAnchor": "skills"
+    },
+    {
+      "path": ".claude/skills/speckit-specify/SKILL.md",
+      "componentType": "skill",
+      "noteAnchor": "skills"
+    },
+    {
+      "path": ".claude/skills/speckit-tasks/SKILL.md",
+      "componentType": "skill",
+      "noteAnchor": "skills"
+    },
+    {
+      "path": ".claude/skills/speckit-taskstoissues/SKILL.md",
+      "componentType": "skill",
+      "noteAnchor": "skills"
+    },
+    {
+      "path": ".claude/skills/triage-security/SKILL.md",
+      "componentType": "skill",
+      "noteAnchor": "skills",
+      "contents": "---\nname: triage-security\ndescription: >-\n  Use when reviewing or changing triage untrusted-input boundaries, PII redaction, output leakage\n  checks, API-key handling, or tool exposure policy.\n---\n\n# Triage security review\n\nRead `AGENTS.md`, `BLUEPRINT.md`, `lab/ingest.py`, `lab/security.py`, and `lab/secrets.py` before\nmaking a security change. Preserve the four layers: input inspection is a recorded signal;\n`lab.ingest` provides the nonce-bound JSON data boundary; `ToolExposurePolicy` is the capability\nboundary; output checking prevents trusted-content leakage.\n\nDo not treat pattern matching or approval as a substitute for least privilege. Untrusted tickets\nmust keep read-only tool exposure even when an approval decision is present. Redact PII before logs\nor traces, resolve live credentials only from the environment, and never add a secret to fixtures,\nprompts, exception text, or documentation.\n\nRun `/verify-triage` after changes. For hook changes, also execute\n`python .claude/hooks/prevent_destructive_actions.py` with representative `PreToolUse` JSON input.\n"
+    },
+    {
+      "path": "CLAUDE.md",
+      "componentType": "rules",
+      "noteAnchor": "rules-and-instruction-hierarchy",
+      "contents": "# Project Claude Code instructions\n\nThis is the project-level Claude Code instruction file. Claude Code composes instructions from the\nenterprise, user, project, and subdirectory levels; nearer subdirectory instructions refine the\nproject rules for their subtree. This file supplies the project-level configuration and does not\noverride enterprise or user policy.\n\nFollow [AGENTS.md](AGENTS.md) for the repository's content, security, test, and commit rules. Read\n[BLUEPRINT.md](BLUEPRINT.md) before changing study material. Keep lab tests keyless, use Python\n3.11+ standard-library-first code, and run `ruff check .`, `ruff format --check .`, and `pytest -q`\nafter changes.\n\nClaude Opus 5, acting as the orchestrator in Claude Code, may run `git add` and `git commit`, and\nonly after the full gate set passes. The permission is scoped to that model in that role: every\ndelegated implementer — Codex, Antigravity, or any other CLI — leaves its work uncommitted in the\nworking tree for the orchestrator to review, re-gate, and commit. This paragraph overrides the\ncommit rule in [AGENTS.md](AGENTS.md), which still states the older blanket prohibition.\n\nUse `/verify-triage` to run the triage verification sequence. Use the `triage-security` skill when\nreviewing the untrusted-input boundary, secret handling, or tool permissions.\n\n<!-- SPECKIT START -->\nThe active feature is `003-claude-code-domain`. For the technologies in use, the project structure,\nand the shell commands that verify a change, read [the implementation\nplan](specs/003-claude-code-domain/plan.md) and [its\nquickstart](specs/003-claude-code-domain/quickstart.md). Feature 002's\n[plan](specs/002-lab-runner-mock-exam/plan.md) describes the lab runner and the mock exam, and\nfeature 001's [plan](specs/001-study-site-foundation/plan.md) still describes the site's\nfoundation.\n\nThe site is an Astro 7 and TypeScript project in `site/`, rendering this repository's existing\nmarkdown in place — copying study text into `site/` fails the build. Exam figures come from\n`site/src/data/blueprint.json`, generated from `BLUEPRINT.md` by `tools/export_site_data.py`; never\nedit that file or type a weight by hand. The same rule now covers `site/src/data/mock.json` and\n`site/src/data/items.json`, generated by `tools/export_mock_data.py` and\n`tools/export_item_bank.py`.\n\nPyodide runs `lab/` and `drills/` in a Web Worker on lab pages only, fetched after an explicit Run\nand never before; the mock exam and the quizzes are plain TypeScript over build-time data and must\nnever import the runtime client. Per-domain quotas come from `drills.engine.mock.apportion_items` at\nbuild time — never reimplement apportionment in TypeScript. Practice items live in `drills/bank/`\nand must be original, validated by `python -m drills.engine validate`.\n\nThe Claude Code module adds `site/src/data/claude-code.json`, generated by\n`tools/export_claude_code_data.py` from `claude-code/commands.yml`, this repository's own `.claude/`\ndirectory, and a recording of what its hook actually decides — never hand-edit it, and never write a\nsentence in `site/` describing what that hook denies. Only the configuration builder may reach the\nruntime client, through a `run-hook` message whose exit code is a decision: a hook exiting `2` is\nthe hook working, not a failure. The instruction hierarchy is concatenated root-down, never\noverridden, and terminal transcripts are never written to the candidate's device.\n<!-- SPECKIT END -->\n"
+    }
+  ],
+  "hookRecording": {
+    "hookPath": ".claude/hooks/prevent_destructive_actions.py",
+    "recordedCases": [
+      {
+        "label": "a write to a protected ground-truth file",
+        "payload": {
+          "tool_name": "Write",
+          "tool_input": {
+            "file_path": "LICENSE"
+          }
+        },
+        "exitCode": 2,
+        "decision": "deny",
+        "message": "{\"hookSpecificOutput\": {\"permissionDecision\": \"deny\"}, \"systemMessage\": \"Protected ground-truth file write denied: LICENSE\"}\n",
+        "stdout": ""
+      },
+      {
+        "label": "a write to an ordinary source file",
+        "payload": {
+          "tool_name": "Write",
+          "tool_input": {
+            "file_path": "lab/security.py"
+          }
+        },
+        "exitCode": 0,
+        "decision": "allow",
+        "message": "",
+        "stdout": ""
+      },
+      {
+        "label": "a destructive shell command",
+        "payload": {
+          "tool_name": "Bash",
+          "tool_input": {
+            "command": "git reset --hard"
+          }
+        },
+        "exitCode": 2,
+        "decision": "deny",
+        "message": "{\"hookSpecificOutput\": {\"permissionDecision\": \"deny\"}, \"systemMessage\": \"Destructive shell command denied by the project safety hook.\"}\n",
+        "stdout": ""
+      },
+      {
+        "label": "an ordinary shell command",
+        "payload": {
+          "tool_name": "Bash",
+          "tool_input": {
+            "command": "python -V"
+          }
+        },
+        "exitCode": 0,
+        "decision": "allow",
+        "message": "",
+        "stdout": ""
+      },
+      {
+        "label": "a shell command that only mentions a protected filename",
+        "payload": {
+          "tool_name": "Bash",
+          "tool_input": {
+            "command": "echo LICENSE"
+          }
+        },
+        "exitCode": 2,
+        "decision": "deny",
+        "message": "{\"hookSpecificOutput\": {\"permissionDecision\": \"deny\"}, \"systemMessage\": \"Protected ground-truth file write denied: LICENSE\"}\n",
+        "stdout": ""
+      },
+      {
+        "label": "a malformed or empty payload",
+        "payload": [],
+        "exitCode": 0,
+        "decision": "allow",
+        "message": "",
+        "stdout": ""
+      }
+    ]
+  }
+}

@@ -1,13 +1,5 @@
 import { expect, test } from "@playwright/test";
 
-// Feature 002 filled the lab, mock, domain-quiz, and flashcard addresses, so they are asserted as
-// live pages below rather than as inert fixtures. The remaining three are still reserved.
-const reservedAddressPatterns = [
-  { pattern: "/claude-code/terminal/", route: "./claude-code/terminal/", label: "Terminal simulator" },
-  { pattern: "/claude-code/config/", route: "./claude-code/config/", label: "Settings builder" },
-  { pattern: "/playground/", route: "./playground/", label: "Playground" }
-];
-
 const establishedRoutes = [
   { name: "Landing", route: "./" },
   { name: "Blueprint", route: "./blueprint/" },
@@ -54,26 +46,21 @@ test.describe("Reserved extension safety and route stability (SC-010, FR-020, FR
     expect(flashcardsResponse?.status()).toBe(200);
     await expect(page).toHaveURL(/\/ccdv-f-lab\/flashcards\/$/);
     await expect(page.getByRole("heading", { name: "Review the deck" })).toBeVisible();
-  });
 
-  test("the remaining reserved address patterns resolve at their contracted paths as inert fixtures", async ({
-    page
-  }) => {
-    for (const item of reservedAddressPatterns) {
-      const response = await page.goto(item.route);
-      expect(response?.status()).toBe(200);
+    const terminalResponse = await page.goto("./claude-code/terminal/");
+    expect(terminalResponse?.status()).toBe(200);
+    await expect(page).toHaveURL(/\/ccdv-f-lab\/claude-code\/terminal\/$/);
+    await expect(page.locator("[data-simulated-terminal]")).toBeVisible();
 
-      // Verify URL conforms to configured base and trailing slash
-      await expect(page).toHaveURL(/\/ccdv-f-lab\/.+\/$/);
+    const configResponse = await page.goto("./claude-code/config/");
+    expect(configResponse?.status()).toBe(200);
+    await expect(page).toHaveURL(/\/ccdv-f-lab\/claude-code\/config\/$/);
+    await expect(page.locator("[data-config-builder]")).toBeVisible();
 
-      // Verify inert placeholder content
-      const reservedPage = page.locator(".reserved-page");
-      await expect(reservedPage).toBeVisible();
-      await expect(page.getByText(/contains no interactive capability|arrives in a later feature/i)).toBeVisible();
-
-      // Verify no interactive form controls or runtime scripts
-      await expect(page.locator("form, button.action-button, input:not([type='hidden'])")).toHaveCount(0);
-    }
+    const playgroundResponse = await page.goto("./playground/");
+    expect(playgroundResponse?.status()).toBe(200);
+    await expect(page).toHaveURL(/\/ccdv-f-lab\/playground\/$/);
+    await expect(page.locator("[data-simulated-terminal]")).toBeVisible();
   });
 
   test("domain layout contains both reserved regions (lab and practice) without shifting existing content", async ({
