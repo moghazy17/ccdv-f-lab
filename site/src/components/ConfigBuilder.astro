@@ -1,0 +1,410 @@
+---
+---
+
+<section class="config-builder" data-config-builder aria-labelledby="config-builder-title">
+  <header class="config-builder__heading">
+    <h2 id="config-builder-title">Build a configuration you can inspect</h2>
+    <p>
+      Create three files for a project. The instruction file supplies context; the settings rule and
+      hook are the configuration that can enforce a decision.
+    </p>
+    <p class="config-builder__privacy">
+      Draft answers stay on this device. This builder has no credential fields; do not put secrets in
+      project instructions or configuration files.
+    </p>
+  </header>
+
+  <form class="config-builder__form" data-config-form>
+    <fieldset>
+      <legend>Project instructions</legend>
+      <label>
+        Project name
+        <input data-config-project-name name="projectName" autocomplete="organization" />
+      </label>
+      <label>
+        Instructions for the project
+        <textarea data-config-instructions name="instructions" rows="4"></textarea>
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Settings permissions</legend>
+      <p>Enter permission entries separated by commas or lines. Do not place the same entry in both lists.</p>
+      <label>
+        Allow
+        <textarea data-config-allow name="allow" rows="3" spellcheck="false"></textarea>
+      </label>
+      <label>
+        Deny
+        <textarea data-config-deny name="deny" rows="3" spellcheck="false"></textarea>
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Safety hook</legend>
+      <label class="config-builder__toggle">
+        <input data-config-hook-enabled name="hookEnabled" type="checkbox" />
+        Register a PreToolUse hook
+      </label>
+      <div data-config-hook-fields>
+        <label>
+          Hook filename
+          <span class="config-builder__input-prefix">.claude/hooks/</span>
+          <input data-config-hook-name name="hookName" autocomplete="off" spellcheck="false" />
+          <span class="config-builder__input-suffix">.py</span>
+        </label>
+        <label>
+          Matcher
+          <input data-config-matcher name="matcher" autocomplete="off" spellcheck="false" />
+          <span class="config-builder__hint">For example: <code>Bash|Write|Edit</code>.</span>
+        </label>
+        <label>
+          Hook command
+          <input data-config-command name="command" autocomplete="off" spellcheck="false" />
+        </label>
+        <label>
+          Protected file names (optional)
+          <input data-config-protected-paths name="protectedPaths" autocomplete="off" spellcheck="false" />
+          <span class="config-builder__hint">Separate names with commas or lines.</span>
+        </label>
+      </div>
+    </fieldset>
+
+    <div class="config-builder__actions">
+      <button class="action-button" type="submit" data-config-generate>Generate files</button>
+      <button class="action-button" type="button" data-config-discard>Discard saved draft</button>
+    </div>
+    <p data-config-status role="status" aria-live="polite">
+      Files are generated only when you ask. Running a hook is a separate action and downloads the
+      browser runtime only then.
+    </p>
+    <ul class="config-builder__errors" data-config-errors aria-live="assertive" hidden></ul>
+  </form>
+
+  <section data-config-results hidden aria-labelledby="generated-files-title">
+    <h2 id="generated-files-title">Generated files</h2>
+    <p>These files are shown in full. Copy and download remain available even if the proof runtime cannot load.</p>
+    <div data-config-readback class="config-builder__readback" aria-labelledby="settings-readback-title">
+      <h3 id="settings-readback-title">Settings read-back</h3>
+      <ul data-config-readback-list></ul>
+    </div>
+    <div data-config-files></div>
+  </section>
+
+  <section data-config-proof hidden class="config-builder__proof" aria-labelledby="hook-proof-title">
+    <h2 id="hook-proof-title">Prove the hook decision</h2>
+    <p>
+      Run the generated Python file against these sample PreToolUse payloads. The output below comes
+      from the hook, not from this page.
+    </p>
+    <div class="config-builder__proof-actions" data-config-proof-actions></div>
+    <button class="action-button" type="button" data-config-stop hidden>Stop hook run</button>
+    <p data-config-runtime-status role="status" aria-live="polite">
+      The runtime has not been downloaded. It is fetched when you run a sample.
+    </p>
+    <p data-config-runtime-unavailable hidden></p>
+    <div data-config-proof-results aria-live="polite"></div>
+    <p data-config-local-instructions></p>
+  </section>
+</section>
+
+<script>
+  import {
+    defaultConfigDraft,
+    generateConfiguration,
+    type ConfigDraft,
+    type GeneratedConfiguration,
+    type GeneratedFile,
+    type HookSample
+  } from "../lib/claude-code/generate";
+  import { checkStorageAvailability, createProgressStorage } from "../lib/storage";
+  import type { RuntimeStatus } from "../lib/runtime";
+
+  type RuntimeModule = typeof import("../lib/runtime");
+
+  const builder = document.querySelector<HTMLElement>("[data-config-builder]");
+  if (builder !== null) setUpBuilder(builder);
+
+  function setUpBuilder(root: HTMLElement): void {
+    const form = root.querySelector<HTMLFormElement>("[data-config-form]");
+    const status = root.querySelector<HTMLElement>("[data-config-status]");
+    const errors = root.querySelector<HTMLUListElement>("[data-config-errors]");
+    const results = root.querySelector<HTMLElement>("[data-config-results]");
+    const files = root.querySelector<HTMLElement>("[data-config-files]");
+    const readback = root.querySelector<HTMLUListElement>("[data-config-readback-list]");
+    const proof = root.querySelector<HTMLElement>("[data-config-proof]");
+    const proofActions = root.querySelector<HTMLElement>("[data-config-proof-actions]");
+    const proofResults = root.querySelector<HTMLElement>("[data-config-proof-results]");
+    const runtimeStatus = root.querySelector<HTMLElement>("[data-config-runtime-status]");
+    const unavailable = root.querySelector<HTMLElement>("[data-config-runtime-unavailable]");
+    const localInstructions = root.querySelector<HTMLElement>("[data-config-local-instructions]");
+    const stopButton = root.querySelector<HTMLButtonElement>("[data-config-stop]");
+    const discardButton = root.querySelector<HTMLButtonElement>("[data-config-discard]");
+    const hookEnabled = root.querySelector<HTMLInputElement>("[data-config-hook-enabled]");
+    const hookFields = root.querySelector<HTMLElement>("[data-config-hook-fields]");
+    if (
+      form === null || status === null || errors === null || results === null || files === null ||
+      readback === null || proof === null || proofActions === null || proofResults === null ||
+      runtimeStatus === null || unavailable === null || localInstructions === null || stopButton === null ||
+      discardButton === null || hookEnabled === null || hookFields === null
+    ) return;
+
+    const proofOutput = proofResults;
+    const runtimeMessage = runtimeStatus;
+    const unavailableMessage = unavailable;
+    const stopControl = stopButton;
+
+    const availability = checkStorageAvailability();
+    const storage = availability === "available" ? createProgressStorage() : null;
+    let draft = storedDraft(storage?.claudeCodeProgress()?.configDraft) ?? defaultConfigDraft();
+    let generated: GeneratedConfiguration | null = null;
+    let runtime: RuntimeModule | null = null;
+    let running = false;
+
+    applyDraft(root, draft);
+    setHookFields(hookFields, hookEnabled.checked);
+    if (availability !== "available") {
+      status.textContent = "Browser storage is unavailable, so this draft will not be kept between visits.";
+    }
+
+    form.addEventListener("input", () => {
+      draft = draftFromForm(root);
+      storage?.setConfigDraft(draft as unknown as Record<string, unknown>);
+    });
+    hookEnabled.addEventListener("change", () => setHookFields(hookFields, hookEnabled.checked));
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      draft = draftFromForm(root);
+      const result = generateConfiguration(draft);
+      if ("errors" in result) {
+        errors.replaceChildren(...result.errors.map(errorItem));
+        errors.hidden = false;
+        results.hidden = true;
+        proof.hidden = true;
+        status.textContent = "The form needs changes before it can emit working files.";
+        return;
+      }
+      generated = result;
+      errors.hidden = true;
+      renderGeneratedFiles(files, result.files, status);
+      readback.replaceChildren(...result.readback.map(textItem));
+      renderProofButtons(proofActions, result.samples, () => void runSamples());
+      proofResults.replaceChildren();
+      results.hidden = false;
+      proof.hidden = !draft.hook.enabled;
+      unavailable.hidden = true;
+      runtimeStatus.textContent = "The runtime has not been downloaded. It is fetched when you run a sample.";
+      localInstructions.textContent = `To run locally, save the hook and pipe a PreToolUse JSON document to python .claude/hooks/${draft.hook.name}.py.`;
+      status.textContent = "Generated three files. Review the settings read-back before copying them.";
+    });
+    discardButton.addEventListener("click", () => {
+      storage?.setConfigDraft(null);
+      draft = defaultConfigDraft();
+      applyDraft(root, draft);
+      setHookFields(hookFields, draft.hook.enabled);
+      generated = null;
+      results.hidden = true;
+      proof.hidden = true;
+      errors.hidden = true;
+      status.textContent = "Saved configuration draft discarded. Existing downloads and copied text are unchanged.";
+    });
+    stopButton.addEventListener("click", () => {
+      runtime?.stop();
+      running = false;
+      stopButton.hidden = true;
+      runtimeStatus.textContent = "Stopped. Another sample can reload the runtime from the browser cache.";
+    });
+
+    async function runSamples(): Promise<void> {
+      if (generated === null || running) return;
+      const hook = generated.files.find((file) => file.language === "python");
+      if (hook === undefined) return;
+      running = true;
+      stopControl.hidden = false;
+      unavailableMessage.hidden = true;
+      proofOutput.replaceChildren();
+      try {
+        // This dynamic import is intentionally the first runtime touch on this page.
+        runtime ??= await import("../lib/runtime");
+      } catch {
+        // The `finally` below belongs to the second `try`, so this early return would skip it and
+        // latch `running` on for the rest of the page's life, disabling every later proof attempt
+        // and leaving a dead Stop control behind. Reset here instead.
+        executionUnavailable(unavailableMessage, runtimeMessage, draft.hook.name);
+        running = false;
+        stopControl.hidden = true;
+        return;
+      }
+      const unsubscribeStatus = runtime.subscribeStatus((next: RuntimeStatus) => {
+        if (next === "loading") runtimeMessage.textContent = "Downloading the standard-library runtime.";
+        if (next === "running") runtimeMessage.textContent = "Running the generated hook.";
+      });
+      const unsubscribeProgress = runtime.subscribeProgress((progress) => {
+        runtimeMessage.textContent = progress.total > 0
+          ? `Preparing runtime: ${progress.stage} (${progress.loaded} of ${progress.total}).`
+          : `Preparing runtime: ${progress.stage}.`;
+      });
+      try {
+        for (const sample of generated.samples) {
+          const result = await runtime.runHook(hook.contents, sample.payload);
+          if (result.stopped) {
+            runtimeMessage.textContent = "Stopped before the hook finished.";
+            break;
+          }
+          proofOutput.append(renderHookResult(sample, result.exitCode, result.stdout, result.stderr));
+        }
+        if (!runtime.currentStatus || runtime.currentStatus() !== "idle") {
+          runtimeMessage.textContent = "Hook proof completed. A denial is the hook working, not an error.";
+        }
+      } catch {
+        executionUnavailable(unavailableMessage, runtimeMessage, draft.hook.name);
+      } finally {
+        unsubscribeStatus();
+        unsubscribeProgress();
+        running = false;
+        stopControl.hidden = true;
+      }
+    }
+  }
+
+  function storedDraft(value: Record<string, unknown> | null | undefined): ConfigDraft | null {
+    if (value === null || value === undefined) return null;
+    const fallback = defaultConfigDraft();
+    const hook = isRecord(value.hook) ? value.hook : {};
+    return {
+      projectName: stringValue(value.projectName, fallback.projectName),
+      instructions: stringValue(value.instructions, fallback.instructions),
+      allow: stringValue(value.allow, fallback.allow),
+      deny: stringValue(value.deny, fallback.deny),
+      hook: {
+        enabled: typeof hook.enabled === "boolean" ? hook.enabled : fallback.hook.enabled,
+        name: stringValue(hook.name, fallback.hook.name),
+        matcher: stringValue(hook.matcher, fallback.hook.matcher),
+        command: stringValue(hook.command, fallback.hook.command),
+        protectedPaths: stringValue(hook.protectedPaths, fallback.hook.protectedPaths)
+      }
+    };
+  }
+
+  function draftFromForm(root: HTMLElement): ConfigDraft {
+    const value = (selector: string): string => root.querySelector<HTMLInputElement | HTMLTextAreaElement>(selector)?.value ?? "";
+    return {
+      projectName: value("[data-config-project-name]"), instructions: value("[data-config-instructions]"),
+      allow: value("[data-config-allow]"), deny: value("[data-config-deny]"),
+      hook: {
+        enabled: root.querySelector<HTMLInputElement>("[data-config-hook-enabled]")?.checked ?? false,
+        name: value("[data-config-hook-name]"), matcher: value("[data-config-matcher]"),
+        command: value("[data-config-command]"), protectedPaths: value("[data-config-protected-paths]")
+      }
+    };
+  }
+
+  function applyDraft(root: HTMLElement, draft: ConfigDraft): void {
+    setValue(root, "[data-config-project-name]", draft.projectName); setValue(root, "[data-config-instructions]", draft.instructions);
+    setValue(root, "[data-config-allow]", draft.allow); setValue(root, "[data-config-deny]", draft.deny);
+    const enabled = root.querySelector<HTMLInputElement>("[data-config-hook-enabled]");
+    if (enabled !== null) enabled.checked = draft.hook.enabled;
+    setValue(root, "[data-config-hook-name]", draft.hook.name); setValue(root, "[data-config-matcher]", draft.hook.matcher);
+    setValue(root, "[data-config-command]", draft.hook.command); setValue(root, "[data-config-protected-paths]", draft.hook.protectedPaths);
+  }
+
+  function setValue(root: HTMLElement, selector: string, value: string): void {
+    const element = root.querySelector<HTMLInputElement | HTMLTextAreaElement>(selector);
+    if (element !== null) element.value = value;
+  }
+
+  function setHookFields(fields: HTMLElement, enabled: boolean): void {
+    fields.hidden = !enabled;
+    fields.querySelectorAll<HTMLInputElement>("input").forEach((input) => { input.disabled = !enabled; });
+  }
+
+  function renderGeneratedFiles(target: HTMLElement, generatedFiles: readonly GeneratedFile[], status: HTMLElement): void {
+    // Each render mints one object URL per file. Revoke the previous batch first, or a candidate
+    // iterating on a draft accumulates three dead blobs per regeneration for the page's lifetime.
+    target.querySelectorAll<HTMLAnchorElement>("a[href^='blob:']").forEach((anchor) => {
+      URL.revokeObjectURL(anchor.href);
+    });
+    target.replaceChildren(...generatedFiles.map((file) => {
+      const article = document.createElement("article"); article.className = "config-builder__file";
+      const title = document.createElement("h3"); title.textContent = file.path; article.append(title);
+      const actions = document.createElement("div"); actions.className = "config-builder__file-actions";
+      const copy = document.createElement("button"); copy.type = "button"; copy.className = "action-button"; copy.textContent = `Copy ${file.path}`;
+      copy.addEventListener("click", () => void copyFile(file.contents, file.path, status));
+      const download = document.createElement("a"); download.className = "action-button"; download.textContent = `Download ${file.path}`;
+      download.href = URL.createObjectURL(new Blob([file.contents], { type: mimeType(file.language) })); download.download = file.path.split("/").at(-1) ?? file.path;
+      actions.append(copy, download); article.append(actions);
+      const pre = document.createElement("pre"); pre.tabIndex = 0; pre.setAttribute("aria-label", `${file.path} contents`);
+      const code = document.createElement("code"); code.textContent = file.contents; pre.append(code); article.append(pre);
+      return article;
+    }));
+  }
+
+  async function copyFile(contents: string, path: string, status: HTMLElement): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(contents);
+      status.textContent = `${path} copied. The full selectable file remains below.`;
+    } catch {
+      status.textContent = `Clipboard access was unavailable for ${path}. Select the visible file text or use Download.`;
+    }
+  }
+
+  function renderProofButtons(target: HTMLElement, samples: readonly HookSample[], run: () => void): void {
+    target.replaceChildren();
+    const button = document.createElement("button"); button.type = "button"; button.className = "action-button"; button.textContent = "Run denial and permission proof";
+    button.addEventListener("click", run); target.append(button);
+    for (const sample of samples) {
+      const detail = document.createElement("details"); const summary = document.createElement("summary"); summary.textContent = `${sample.label} payload`;
+      const pre = document.createElement("pre"); pre.textContent = JSON.stringify(sample.payload, null, 2); detail.append(summary, pre); target.append(detail);
+    }
+  }
+
+  function renderHookResult(sample: HookSample, exitCode: number, stdout: string, stderr: string): HTMLElement {
+    const article = document.createElement("article"); article.className = "config-builder__decision";
+    const decision = exitCode === 2 ? "DENIED — hook exit code 2" : exitCode === 0 ? "PERMITTED — hook exit code 0" : `HOOK EXIT CODE ${exitCode}`;
+    const heading = document.createElement("h3"); heading.textContent = `${sample.label}: ${decision}`; article.append(heading);
+    const attribution = document.createElement("p"); attribution.textContent = "Evidence from the generated hook:"; article.append(attribution);
+    const output = document.createElement("pre"); output.textContent = stderr || stdout || "The hook produced no output."; article.append(output);
+    return article;
+  }
+
+  function executionUnavailable(unavailable: HTMLElement, runtimeStatus: HTMLElement, hookName: string): void {
+    unavailable.hidden = false;
+    unavailable.textContent = `Execution is unavailable because the browser runtime could not load. Save the visible file, then run python .claude/hooks/${hookName}.py with a PreToolUse JSON payload on standard input.`;
+    runtimeStatus.textContent = "Execution unavailable. File generation, copying, and downloads still work.";
+  }
+
+  function errorItem(text: string): HTMLLIElement { const item = document.createElement("li"); item.textContent = text; return item; }
+  function textItem(text: string): HTMLLIElement { const item = document.createElement("li"); item.textContent = text; return item; }
+  function mimeType(language: GeneratedFile["language"]): string { return language === "json" ? "application/json" : language === "python" ? "text/x-python" : "text/markdown"; }
+  function isRecord(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null && !Array.isArray(value); }
+  function stringValue(value: unknown, fallback: string): string { return typeof value === "string" ? value : fallback; }
+</script>
+
+<style>
+  .config-builder { padding: clamp(1rem, 3vw, 1.5rem); border: 0.0625rem solid var(--rule); background: var(--panel); }
+  .config-builder__heading > :first-child, .config-builder__file h3, .config-builder__proof h2, .config-builder__readback h3 { margin-top: 0; }
+  .config-builder__privacy, .config-builder__hint { color: var(--muted); }
+  .config-builder fieldset, .config-builder__file, .config-builder__readback, .config-builder__proof, .config-builder__decision { margin-top: 1rem; padding: 1rem; border: 0.0625rem solid var(--rule); background: var(--paper); }
+  .config-builder fieldset { display: grid; gap: 0.8rem; }
+  .config-builder label { display: grid; gap: 0.3rem; font-weight: 600; }
+  .config-builder input, .config-builder textarea { min-width: 0; padding: 0.55rem; border: 0.0625rem solid var(--ink); border-radius: 0.25rem; color: var(--ink); background: var(--panel); font: inherit; }
+  .config-builder textarea, .config-builder pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .config-builder__toggle { grid-template-columns: auto 1fr; align-items: center; }
+  .config-builder__toggle input { min-width: auto; }
+  .config-builder__input-prefix, .config-builder__input-suffix { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 400; }
+  .config-builder__actions, .config-builder__file-actions, .config-builder__proof-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+  .config-builder__errors { padding: 0.75rem 0.75rem 0.75rem 2rem; border-inline-start: 0.25rem solid currentColor; }
+  .config-builder__file pre, .config-builder__decision pre, .config-builder__proof details pre { max-height: 26rem; overflow: auto; padding: 0.75rem; border: 0.0625rem solid var(--rule); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .config-builder__decision { border-width: 0.125rem; }
+  .config-builder__decision h3 { font-weight: 700; }
+  @media (forced-colors: active) {
+    .config-builder,
+    .config-builder fieldset,
+    .config-builder__file,
+    .config-builder__readback,
+    .config-builder__proof,
+    .config-builder__decision {
+      border-color: CanvasText;
+    }
+  }
+</style>

@@ -10,6 +10,7 @@
 import type {
   DoneMessage,
   FailedMessage,
+  HookResultMessage,
   InboundMessage,
   OutboundMessage
 } from "./worker";
@@ -53,11 +54,26 @@ interface PendingRun {
   onOutput: OutputListener | undefined;
 }
 
+export interface HookRunResult {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+  durationMs: number;
+  stopped: boolean;
+  truncated: boolean;
+}
+
+interface PendingHook {
+  resolve: (result: HookRunResult) => void;
+  reject: (reason: Error) => void;
+}
+
 let worker: Worker | null = null;
 let status: RuntimeStatus = "idle";
 let awaitingReinitialisation = false;
 let pendingInit: PendingInit | null = null;
 let pendingRun: PendingRun | null = null;
+let pendingHook: PendingHook | null = null;
 const statusListeners = new Set<StatusListener>();
 const progressListeners = new Set<ProgressListener>();
 
@@ -79,7 +95,7 @@ export function subscribeProgress(listener: ProgressListener): () => void {
 }
 
 /** Load the runtime if it is not already ready. Safe to call more than once. */
-export async function load(): Promise<void> {
+export async function load(profile: "labs" | "stdlib" = "labs"): Promise<void> {
   if (status === "ready") {
     return;
   }
@@ -94,7 +110,7 @@ export async function load(): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     pendingInit?.reject(new RuntimeStoppedError());
     pendingInit = { resolve, reject };
-    worker?.postMessage({ type: "init", bundleUrl: bundleUrl() } satisfies InboundMessage);
+    worker?.postMessage({ type: "init", bundleUrl: bundleUrl(), profile } satisfies InboundMessage);
   });
 }
 
@@ -114,6 +130,19 @@ export async function run(source: string, onOutput?: OutputListener): Promise<Ru
   });
 }
 
+/** Run a generated hook with its PreToolUse payload and preserve its exit-code decision. */
+export async function runHook(source: string, payload: unknown): Promise<HookRunResult> {
+  if (status !== "ready") {
+    await load("stdlib");
+  }
+  setStatus("running");
+  return new Promise<HookRunResult>((resolve, reject) => {
+    settleStoppedHook();
+    pendingHook = { resolve, reject };
+    worker?.postMessage({ type: "run-hook", source, payload } satisfies InboundMessage);
+  });
+}
+
 /**
  * Terminate the worker and prepare a fresh one. There is no interrupt: `SharedArrayBuffer`
  * requires cross-origin isolation headers GitHub Pages cannot set. The next `load()` or `run()`
@@ -121,12 +150,22 @@ export async function run(source: string, onOutput?: OutputListener): Promise<Ru
  */
 export function stop(): void {
   settleStoppedRun();
+  settleStoppedHook();
   pendingInit?.reject(new RuntimeStoppedError());
   pendingInit = null;
   worker?.terminate();
   worker = null;
   awaitingReinitialisation = true;
   setStatus("idle");
+}
+
+function settleStoppedHook(): void {
+  if (pendingHook === null) {
+    return;
+  }
+  const finished = pendingHook;
+  pendingHook = null;
+  finished.resolve({ exitCode: 1, stdout: "", stderr: "", durationMs: 0, stopped: true, truncated: false });
 }
 
 function settleStoppedRun(): void {
@@ -175,10 +214,23 @@ function handleWorkerMessage(message: OutboundMessage): void {
     case "done":
       finishRun(message);
       return;
+    case "hook-result":
+      finishHook(message);
+      return;
     case "failed":
       handleFailure(message);
       return;
   }
+}
+
+function finishHook(message: HookResultMessage): void {
+  setStatus("ready");
+  const finished = pendingHook;
+  if (finished === null) {
+    return;
+  }
+  pendingHook = null;
+  finished.resolve({ ...message, stopped: false });
 }
 
 function appendOutput(stream: OutputStream, chunk: string): void {
@@ -216,6 +268,16 @@ function handleFailure(message: FailedMessage): void {
     const failedInit = pendingInit;
     pendingInit = null;
     failedInit.reject(new Error(message.message));
+    return;
+  }
+  // A hook run must settle here too. The worker always posts `hook-result` today, so this is
+  // unreachable — but an unsettled hook promise would hang `runHook` forever and latch the
+  // configuration builder's proof control off, so the branch closes rather than relying on that.
+  if (pendingHook !== null) {
+    const failedHook = pendingHook;
+    pendingHook = null;
+    setStatus("ready");
+    failedHook.reject(new Error(message.message));
     return;
   }
   const finished = pendingRun;

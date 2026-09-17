@@ -1,0 +1,68 @@
+---
+import { domains, type SubSkill } from "../lib/blueprint";
+
+interface Props {
+  names: readonly string[];
+}
+
+const { names } = Astro.props;
+const allSubSkills = domains.flatMap((domain) => domain.subSkills);
+const subSkills: SubSkill[] = names.map((name) => {
+  const matches = allSubSkills.filter((subSkill) => subSkill.name === name);
+  if (matches.length !== 1) {
+    throw new Error(`Expected one blueprint sub-skill named ${name}, found ${matches.length}.`);
+  }
+  return matches[0];
+});
+---
+
+<section class="served-subskills" data-served-subskills aria-labelledby="served-subskills-title">
+  <h2 id="served-subskills-title">Blueprint coverage</h2>
+  <p>This surface serves these published sub-skills. The percentages come from the blueprint.</p>
+  <ul>
+    {
+      subSkills.map((subSkill) => (
+        <li>
+          <strong>{subSkill.name}</strong>
+          <span>{subSkill.weight.toFixed(1)}% of the exam</span>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<style>
+  .served-subskills {
+    margin-block: 1.5rem;
+    padding: 1rem;
+    border: 0.0625rem solid var(--rule);
+    background: var(--panel);
+  }
+
+  .served-subskills h2 {
+    margin-top: 0;
+    font-size: 1.25rem;
+  }
+
+  .served-subskills ul {
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .served-subskills li {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.35rem 1rem;
+    padding-top: 0.5rem;
+    border-top: 0.0625rem solid var(--rule);
+  }
+
+  .served-subskills span {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+</style>

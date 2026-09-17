@@ -12,6 +12,7 @@
 export interface InitMessage {
   type: "init";
   bundleUrl: string;
+  profile?: "labs" | "stdlib";
 }
 
 /** Sent once per Run, to execute candidate source as `__main__`. */
@@ -20,7 +21,14 @@ export interface RunMessage {
   source: string;
 }
 
-export type InboundMessage = InitMessage | RunMessage;
+/** Sent once per hook execution, preserving the hook's stdin-based contract. */
+export interface RunHookMessage {
+  type: "run-hook";
+  source: string;
+  payload: unknown;
+}
+
+export type InboundMessage = InitMessage | RunMessage | RunHookMessage;
 
 /** Reported while the runtime downloads and unpacks, so the wait is never silent. */
 export interface ProgressMessage {
@@ -59,12 +67,23 @@ export interface FailedMessage {
   traceback: string;
 }
 
+/** A hook outcome, including a deliberate non-zero denial decision. */
+export interface HookResultMessage {
+  type: "hook-result";
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+  durationMs: number;
+  truncated: boolean;
+}
+
 export type OutboundMessage =
   | ProgressMessage
   | ReadyMessage
   | StdoutMessage
   | StderrMessage
   | DoneMessage
+  | HookResultMessage
   | FailedMessage;
 
 /** The subset of the Pyodide API this worker calls, kept narrow so it is easy to audit. */
@@ -127,29 +146,37 @@ let outputTruncated = false;
 self.onmessage = (event: MessageEvent<InboundMessage>) => {
   const message = event.data;
   if (message.type === "init") {
-    void handleInit(message.bundleUrl);
-  } else {
+    void handleInit(message.bundleUrl, message.profile ?? "labs");
+  } else if (message.type === "run") {
     void handleRun(message.source);
+  } else {
+    void handleHook(message.source, message.payload);
   }
 };
 
-async function handleInit(bundleUrl: string): Promise<void> {
+async function handleInit(bundleUrl: string, profile: "labs" | "stdlib"): Promise<void> {
   try {
     postMessage({ type: "progress", stage: LOAD_STAGES[0], loaded: 0, total: LOAD_STAGES.length });
     const pyodideModule = await importPyodideModule(bundleUrl);
 
     postMessage({ type: "progress", stage: LOAD_STAGES[1], loaded: 1, total: LOAD_STAGES.length });
     const runtime = await pyodideModule.loadPyodide({ indexURL: bundleUrl });
-    await runtime.loadPackage(DIRECT_PACKAGES);
+    if (profile === "labs") {
+      await runtime.loadPackage(DIRECT_PACKAGES);
+    }
 
     postMessage({ type: "progress", stage: LOAD_STAGES[2], loaded: 2, total: LOAD_STAGES.length });
-    await unpackLabDrillsBundle(runtime, bundleUrl);
+    if (profile === "labs") {
+      await unpackLabDrillsBundle(runtime, bundleUrl);
+    }
 
     postMessage({ type: "progress", stage: LOAD_STAGES[3], loaded: 3, total: LOAD_STAGES.length });
     disableNetworkAndScriptLoading();
     runtime.setStdout({ batched: (chunk) => forwardOutput("stdout", chunk) });
     runtime.setStderr({ batched: (chunk) => forwardOutput("stderr", chunk) });
-    await runtime.runPythonAsync(BOOTSTRAP_SOURCE);
+    if (profile === "labs") {
+      await runtime.runPythonAsync(BOOTSTRAP_SOURCE);
+    }
 
     postMessage({ type: "progress", stage: LOAD_STAGES[3], loaded: 4, total: LOAD_STAGES.length });
     pyodide = runtime;
@@ -159,6 +186,43 @@ async function handleInit(bundleUrl: string): Promise<void> {
       type: "failed",
       message: "The runtime failed to load.",
       traceback: describeError(error)
+    });
+  }
+}
+
+async function handleHook(source: string, payload: unknown): Promise<void> {
+  if (pyodide === null) {
+    postMessage({
+      type: "hook-result",
+      exitCode: 1,
+      stdout: "",
+      stderr: "The runtime has not finished loading.",
+      durationMs: 0,
+      truncated: false
+    });
+    return;
+  }
+  const startedAt = performance.now();
+  try {
+    const result = await pyodide.runPythonAsync(hookDriverSource(source, payload));
+    const parsed = JSON.parse(String(result)) as { exitCode: number; stdout: string; stderr: string };
+    const bounded = boundHookOutput(parsed.stdout, parsed.stderr);
+    postMessage({
+      type: "hook-result",
+      exitCode: parsed.exitCode,
+      stdout: bounded.stdout,
+      stderr: bounded.stderr,
+      durationMs: performance.now() - startedAt,
+      truncated: bounded.truncated
+    });
+  } catch (error) {
+    postMessage({
+      type: "hook-result",
+      exitCode: 1,
+      stdout: "",
+      stderr: describeError(error),
+      durationMs: performance.now() - startedAt,
+      truncated: false
     });
   }
 }
@@ -212,6 +276,55 @@ function forwardOutput(stream: "stdout" | "stderr", chunk: string): void {
     return;
   }
   postMessage(stream === "stdout" ? { type: "stdout", chunk } : { type: "stderr", chunk });
+}
+
+function hookDriverSource(source: string, payload: unknown): string {
+  const payloadText = JSON.stringify(payload) ?? "null";
+  return `
+import contextlib
+import io
+import json
+import runpy
+import sys
+import traceback
+
+path = "/tmp/generated_hook.py"
+with open(path, "w", encoding="utf-8") as hook_file:
+    hook_file.write(${JSON.stringify(source)})
+stdout, stderr = io.StringIO(), io.StringIO()
+saved_stdin, saved_argv = sys.stdin, sys.argv
+sys.stdin = io.StringIO(${JSON.stringify(payloadText)})
+sys.argv = [path]
+code = 0
+try:
+    with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+        runpy.run_path(path, run_name="__main__")
+except SystemExit as exit_signal:
+    code = exit_signal.code if isinstance(exit_signal.code, int) else 1
+except BaseException:
+    traceback.print_exc(file=stderr)
+    code = 1
+finally:
+    sys.stdin, sys.argv = saved_stdin, saved_argv
+json.dumps({"exitCode": code, "stdout": stdout.getvalue(), "stderr": stderr.getvalue()})
+`;
+}
+
+function boundHookOutput(stdout: string, stderr: string): {
+  stdout: string;
+  stderr: string;
+  truncated: boolean;
+} {
+  const combined = stdout + stderr;
+  if (combined.length <= MAX_OUTPUT_CHARACTERS) {
+    return { stdout, stderr, truncated: false };
+  }
+  const stdoutLength = Math.min(stdout.length, MAX_OUTPUT_CHARACTERS);
+  return {
+    stdout: stdout.slice(0, stdoutLength),
+    stderr: stderr.slice(0, Math.max(0, MAX_OUTPUT_CHARACTERS - stdoutLength)),
+    truncated: true
+  };
 }
 
 /** The names removed from the worker before any candidate code runs. */

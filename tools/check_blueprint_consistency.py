@@ -22,6 +22,16 @@ from drills.engine.blueprint import (  # noqa: E402
 )
 from drills.engine.mock import apportion_items, domain_quota_difference  # noqa: E402
 from drills.engine.validation import find_bank_items  # noqa: E402
+from tools.export_claude_code_data import (  # noqa: E402
+    ClaudeCodeDataError,
+    load_command_data,
+    validate_command_data,
+    validate_worked_example_targets,
+    worked_example,
+)
+from tools.export_claude_code_data import (  # noqa: E402
+    check_freshness as check_claude_code_freshness,
+)
 from tools.export_mock_data import MockDataExportError, export_mock_data  # noqa: E402
 from tools.export_site_data import BlueprintExportError, export_blueprint_data  # noqa: E402
 
@@ -46,6 +56,20 @@ def check_consistency(root: Path, blueprint_path: Path) -> None:
         blueprint_path, root / "notes", root / "site" / "src" / "data" / "blueprint.json"
     )
     check_site_mock_data(blueprint_path, root / "site" / "src" / "data" / "mock.json")
+    check_site_claude_code_data(root, blueprint_path)
+
+
+def check_site_claude_code_data(root: Path, blueprint_path: Path) -> None:
+    """Run the Claude Code citation, coverage, definition, and generated-data freshness gates."""
+    try:
+        data = load_command_data(root / "claude-code" / "commands.yml")
+        validate_command_data(data, root, root / "SOURCES.md", blueprint_path)
+        validate_worked_example_targets(
+            worked_example(root), root, root / "notes" / "03-claude-code"
+        )
+        check_claude_code_freshness(root)
+    except ClaudeCodeDataError as error:
+        raise ConsistencyError(str(error)) from error
 
 
 def check_site_blueprint_data(blueprint_path: Path, notes_path: Path, data_path: Path) -> None:

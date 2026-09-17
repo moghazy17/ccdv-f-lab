@@ -12,6 +12,12 @@ const site = process.env.SITE ?? "https://moghazy17.github.io";
 const configuredBase = process.env.BASE ?? "/ccdv-f-lab/";
 const base = configuredBase.endsWith("/") ? configuredBase : `${configuredBase}/`;
 const outDir = process.env.SITE_OUTPUT_DIRECTORY;
+// `public/` holds only the vendored Python runtime, and Astro copies all of it into every build.
+// The content-propagation fixtures build the site eight times behind one lock and never load the
+// runtime, so they point this at an empty directory: fourteen megabytes copied eight times is
+// pure latency in the one place the suite is serialized, and it is what pushed that queue past
+// its ceiling on a slow runner.
+const publicDir = process.env.SITE_PUBLIC_DIRECTORY;
 const blueprintPath = fileURLToPath(new URL("../BLUEPRINT.md", import.meta.url));
 const blueprintDataPath = fileURLToPath(new URL("./src/data/blueprint.json", import.meta.url));
 
@@ -36,6 +42,7 @@ export default defineConfig({
   site,
   base,
   outDir,
+  ...(publicDir === undefined ? {} : { publicDir }),
   output: "static",
   trailingSlash: "always",
   vite: {

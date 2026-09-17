@@ -113,6 +113,13 @@ export interface FlashcardsProgress {
   state: Record<string, FlashcardState>;
 }
 
+/** The deliberately small persisted record for the Claude Code learning surfaces. */
+export interface ClaudeCodeProgress {
+  guidedTasks: Record<string, boolean>;
+  scopeExercise: Record<string, string[]>;
+  configDraft: Record<string, unknown> | null;
+}
+
 export interface ProgressEnvelope {
   schemaVersion: number;
   updatedAt: string;
@@ -122,6 +129,7 @@ export interface ProgressEnvelope {
     mock: MockProgress;
     quiz: QuizProgress;
     flashcards: FlashcardsProgress;
+    claudeCode: ClaudeCodeProgress;
   };
 }
 
@@ -180,7 +188,8 @@ export function emptyProgress(updatedAt: string): ProgressEnvelope {
       labs: { edits: {} },
       mock: { current: null, reports: [], summaries: [] },
       quiz: { results: {}, recall: {} },
-      flashcards: { state: {} }
+      flashcards: { state: {} },
+      claudeCode: { guidedTasks: {}, scopeExercise: {}, configDraft: null }
     }
   };
 }
@@ -207,10 +216,11 @@ export function migrateProgress(value: unknown): StorageResult {
   const mock = mockProgress(namespaces.mock);
   const quiz = quizProgress(namespaces.quiz);
   const flashcards = flashcardsProgress(namespaces.flashcards);
+  const claudeCode = claudeCodeProgress(namespaces.claudeCode);
   const migrated: ProgressEnvelope = {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     updatedAt: value.updatedAt,
-    namespaces: { ...namespaces, foundation, labs, mock, quiz, flashcards }
+    namespaces: { ...namespaces, foundation, labs, mock, quiz, flashcards, claudeCode }
   };
   return { kind: "ok", value: migrated };
 }
@@ -297,6 +307,64 @@ export class ProgressStorage {
     return current.value.namespaces.mock;
   }
 
+  claudeCodeProgress(): ClaudeCodeProgress | null {
+    // Read only this module's bounded progress; terminal output is never persisted here.
+    const current = this.read();
+    if (current.kind !== "ok" || current.value === undefined) {
+      return null;
+    }
+    return current.value.namespaces.claudeCode;
+  }
+
+  setGuidedTask(taskId: string, completed: boolean): StorageResult {
+    if (taskId.length === 0) {
+      return { kind: "malformed" };
+    }
+    return this.mergeAndRetry(
+      (envelope) => {
+        envelope.namespaces.claudeCode.guidedTasks[taskId] = completed;
+      },
+      (envelope) => envelope.namespaces.claudeCode.guidedTasks[taskId] === completed
+    );
+  }
+
+  setScopeExercise(scopeId: string, fragmentIds: readonly string[]): StorageResult {
+    if (scopeId.length === 0 || fragmentIds.some((fragmentId) => fragmentId.length === 0)) {
+      return { kind: "malformed" };
+    }
+    const selected = [...new Set(fragmentIds)];
+    return this.mergeAndRetry(
+      (envelope) => {
+        envelope.namespaces.claudeCode.scopeExercise[scopeId] = selected;
+      },
+      (envelope) =>
+        JSON.stringify(envelope.namespaces.claudeCode.scopeExercise[scopeId]) === JSON.stringify(selected)
+    );
+  }
+
+  setConfigDraft(configDraft: Record<string, unknown> | null): StorageResult {
+    return this.mergeAndRetry(
+      (envelope) => {
+        envelope.namespaces.claudeCode.configDraft = configDraft === null ? null : cloneRecord(configDraft);
+      },
+      (envelope) =>
+        JSON.stringify(envelope.namespaces.claudeCode.configDraft) === JSON.stringify(configDraft)
+    );
+  }
+
+  clearClaudeCode(): StorageResult {
+    // Clear this module without affecting the independent learning and practice namespaces.
+    return this.mergeAndRetry(
+      (envelope) => {
+        envelope.namespaces.claudeCode = emptyProgress(envelope.updatedAt).namespaces.claudeCode;
+      },
+      (envelope) =>
+        Object.keys(envelope.namespaces.claudeCode.guidedTasks).length === 0 &&
+        Object.keys(envelope.namespaces.claudeCode.scopeExercise).length === 0 &&
+        envelope.namespaces.claudeCode.configDraft === null
+    );
+  }
+
   setMockAttempt(attempt: MockAttempt | null): StorageResult {
     // Persist the attempt in progress, including its absolute deadline, so a reload or a browser
     // restart resumes it with the time it actually has left (FR-027).
@@ -347,8 +415,10 @@ export class ProgressStorage {
   }
 
   clearPracticeResults(): StorageResult {
-    // Clear the four namespaces this feature owns and leave `foundation` untouched (FR-051):
-    // a candidate discarding practice keeps their theme, plan marks, and diagnostic outcome.
+    // Clear the five practice namespaces and leave `foundation` untouched (FR-051): a candidate
+    // discarding practice keeps their theme, plan marks, and diagnostic outcome. `claudeCode`
+    // joins them because FR-048 requires this module's record to be clearable without discarding
+    // plans, diagnostic, or mock history, and this is the control that offers that.
     const result = this.mergeAndRetry(
       (envelope) => {
         const empty = emptyProgress(envelope.updatedAt).namespaces;
@@ -356,13 +426,17 @@ export class ProgressStorage {
         envelope.namespaces.mock = empty.mock;
         envelope.namespaces.quiz = empty.quiz;
         envelope.namespaces.flashcards = empty.flashcards;
+        envelope.namespaces.claudeCode = empty.claudeCode;
       },
       (envelope) =>
         envelope.namespaces.mock.reports.length === 0 &&
         envelope.namespaces.mock.current === null &&
         Object.keys(envelope.namespaces.labs.edits).length === 0 &&
         Object.keys(envelope.namespaces.quiz.results).length === 0 &&
-        Object.keys(envelope.namespaces.flashcards.state).length === 0
+        Object.keys(envelope.namespaces.flashcards.state).length === 0 &&
+        Object.keys(envelope.namespaces.claudeCode.guidedTasks).length === 0 &&
+        Object.keys(envelope.namespaces.claudeCode.scopeExercise).length === 0 &&
+        envelope.namespaces.claudeCode.configDraft === null
     );
     if (result.kind === "ok") {
       try {
@@ -699,8 +773,21 @@ function flashcardsProgress(value: unknown): FlashcardsProgress {
   return { state: recordOf(source.state, isFlashcardState) };
 }
 
+function claudeCodeProgress(value: unknown): ClaudeCodeProgress {
+  const source = isRecord(value) ? value : {};
+  return {
+    guidedTasks: recordOf(source.guidedTasks, (item): item is boolean => typeof item === "boolean"),
+    scopeExercise: recordOf(source.scopeExercise, isStringArray),
+    configDraft: isRecord(source.configDraft) ? cloneRecord(source.configDraft) : null
+  };
+}
+
 function stringRecord(value: unknown): Record<string, string> {
   return recordOf(value, (item): item is string => typeof item === "string");
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
 }
 
 function recordOf<T>(value: unknown, guard: (item: unknown) => item is T): Record<string, T> {

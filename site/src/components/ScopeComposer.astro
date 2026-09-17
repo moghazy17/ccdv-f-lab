@@ -1,0 +1,271 @@
+---
+import { embedJson } from "../lib/embed";
+import type { InstructionFragment, InstructionScope } from "../lib/claude-code/hierarchy";
+
+interface Props {
+  fragments: readonly InstructionFragment[];
+  scopes: readonly InstructionScope[];
+  sourceUrl: string;
+}
+
+const { fragments, scopes, sourceUrl } = Astro.props;
+---
+
+<section class="scope-composer" data-scope-composer aria-labelledby="scope-composer-title">
+  <script
+    is:inline
+    type="application/json"
+    data-scope-composer-data
+    data-pagefind-ignore
+    set:html={embedJson({ fragments, scopes })}
+  />
+  <header class="scope-composer__heading">
+    <h2 id="scope-composer-title">Assemble the instruction hierarchy</h2>
+    <p>
+      Assign every prepared fragment to a scope. Claude Code concatenates discovered instruction
+      files from the filesystem root down to the working directory: managed policy, user, project,
+      then local.
+    </p>
+    <p>
+      <a href={sourceUrl} target="_blank" rel="noreferrer">Read the dated source for the load order</a>.
+    </p>
+  </header>
+
+  <fieldset class="scope-composer__assignments">
+    <legend>Fragment placement</legend>
+    <p>Each select works with a keyboard. Every fragment remains in the composed result.</p>
+    {
+      fragments.map((fragment) => (
+        <label class="scope-composer__assignment">
+          <span>{fragment.text}</span>
+          <select data-scope-fragment={fragment.id} aria-label={`Assign: ${fragment.text}`}>
+            {scopes.map((scope) => <option value={scope.id} selected={scope.id === fragment.scopeId}>{scope.name}</option>)}
+          </select>
+        </label>
+      ))
+    }
+  </fieldset>
+
+  <section class="scope-composer__result" aria-labelledby="composed-result-title">
+    <h3 id="composed-result-title">Composed result</h3>
+    <p data-scope-composer-status role="status" aria-live="polite">
+      Every selected contribution is shown in root-down load order.
+    </p>
+    <div class="scope-composer__panes" data-scope-panes>
+      {
+        scopes.map((scope) => (
+          <section class="scope-composer__pane" data-scope-pane={scope.id} aria-labelledby={`scope-${scope.id}`}>
+            <h4 id={`scope-${scope.id}`}>{scope.name}</h4>
+            <p><code>{scope.path}</code></p>
+            <ol data-scope-contributions aria-label={`${scope.name} contributions`}></ol>
+          </section>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="scope-composer__finding" data-scope-conflicts aria-labelledby="scope-conflicts-title">
+    <h3 id="scope-conflicts-title">Conflicting instructions remain present</h3>
+    <p data-scope-conflict-copy></p>
+  </section>
+
+  <section class="scope-composer__finding" data-scope-enforcement aria-labelledby="scope-enforcement-title">
+    <h3 id="scope-enforcement-title">Context is not enforcement</h3>
+    <p data-scope-enforcement-copy></p>
+  </section>
+</section>
+
+<script>
+  import {
+    compose,
+    placementByScope,
+    type ComposedContribution,
+    type InstructionFragment,
+    type InstructionScope
+  } from "../lib/claude-code/hierarchy";
+  import { checkStorageAvailability, createProgressStorage } from "../lib/storage";
+
+  interface ScopePayload {
+    fragments: readonly InstructionFragment[];
+    scopes: readonly InstructionScope[];
+  }
+
+  const composer = document.querySelector<HTMLElement>("[data-scope-composer]");
+  if (composer !== null) {
+    const payloadElement = composer.querySelector<HTMLScriptElement>("[data-scope-composer-data]");
+    const status = composer.querySelector<HTMLElement>("[data-scope-composer-status]");
+    if (payloadElement === null || status === null) {
+      throw new Error("Scope composer is missing required elements.");
+    }
+    const payload = JSON.parse(payloadElement.textContent ?? "{}") as ScopePayload;
+    const availability = checkStorageAvailability();
+    const storage = availability === "available" ? createProgressStorage() : null;
+    const placement: Record<string, string> = Object.fromEntries(
+      payload.fragments.map((fragment) => [fragment.id, fragment.scopeId])
+    );
+    const remembered = storage?.claudeCodeProgress()?.scopeExercise ?? {};
+    const knownFragments = new Set(payload.fragments.map((fragment) => fragment.id));
+    for (const scope of payload.scopes) {
+      for (const fragmentId of remembered[scope.id] ?? []) {
+        if (knownFragments.has(fragmentId) && placement[fragmentId] === payload.fragments.find((fragment) => fragment.id === fragmentId)?.scopeId) {
+          placement[fragmentId] = scope.id;
+        }
+      }
+    }
+
+    const selects = composer.querySelectorAll<HTMLSelectElement>("[data-scope-fragment]");
+    selects.forEach((select) => {
+      const fragmentId = select.dataset.scopeFragment;
+      if (fragmentId !== undefined) {
+        select.value = placement[fragmentId];
+      }
+      select.addEventListener("change", () => {
+        if (fragmentId === undefined) {
+          return;
+        }
+        placement[fragmentId] = select.value;
+        persistPlacement(payload.scopes, payload.fragments, placement, storage);
+        renderComposition(composer, payload.scopes, payload.fragments, placement, status);
+      });
+    });
+    renderComposition(composer, payload.scopes, payload.fragments, placement, status);
+  }
+
+  function persistPlacement(
+    scopes: readonly InstructionScope[],
+    fragments: readonly InstructionFragment[],
+    placement: Record<string, string>,
+    storage: ReturnType<typeof createProgressStorage> | null
+  ): void {
+    const grouped = placementByScope(scopes, fragments, placement);
+    for (const scope of scopes) {
+      storage?.setScopeExercise(scope.id, grouped[scope.id]);
+    }
+  }
+
+  function renderComposition(
+    root: HTMLElement,
+    scopes: readonly InstructionScope[],
+    fragments: readonly InstructionFragment[],
+    placement: Record<string, string>,
+    status: HTMLElement
+  ): void {
+    const result = compose(scopes, fragments, placement);
+    const byScope = new Map<string, ComposedContribution[]>(
+      scopes.map((scope) => [scope.id, []])
+    );
+    result.contributions.forEach((contribution) => byScope.get(contribution.scope.id)?.push(contribution));
+    for (const scope of scopes) {
+      const list = root.querySelector<HTMLOListElement>(`[data-scope-pane="${scope.id}"] [data-scope-contributions]`);
+      if (list === null) {
+        continue;
+      }
+      const contributions = byScope.get(scope.id) ?? [];
+      const items = contributions.map((contribution) => {
+        const item = document.createElement("li");
+        item.textContent = contribution.fragment.text;
+        return item;
+      });
+      if (items.length === 0) {
+        const item = document.createElement("li");
+        item.textContent = "No fragment assigned.";
+        items.push(item);
+      }
+      list.replaceChildren(...items);
+    }
+    const conflictCopy = root.querySelector<HTMLElement>("[data-scope-conflict-copy]");
+    if (conflictCopy !== null) {
+      conflictCopy.textContent = result.conflicts.map((conflict) => `“${conflict.first.text}” and “${conflict.second.text}” both remain present. Neither file overrides the other.`).join(" ");
+    }
+    const enforcementCopy = root.querySelector<HTMLElement>("[data-scope-enforcement-copy]");
+    if (enforcementCopy !== null) {
+      enforcementCopy.textContent = result.unenforceable.map((fragment) => `Instruction files are context rather than enforced configuration. “${fragment.text}” would need a ${fragment.enforcedBy === "hook" ? "hook" : "settings rule"} to enforce it.`).join(" ");
+    }
+    status.textContent = `Composed ${result.contributions.length} contributions in managed policy, user, project, then local order.`;
+  }
+</script>
+
+<style>
+  .scope-composer {
+    margin-top: 2rem;
+    padding: clamp(1rem, 3vw, 1.5rem);
+    border: 0.0625rem solid var(--rule);
+    background: var(--panel);
+  }
+
+  .scope-composer__heading > :first-child,
+  .scope-composer__result h3,
+  .scope-composer__finding h3 {
+    margin-top: 0;
+  }
+
+  .scope-composer__assignments,
+  .scope-composer__finding {
+    margin-top: 1.25rem;
+    padding: 1rem;
+    border: 0.0625rem solid var(--rule);
+    background: var(--paper);
+  }
+
+  .scope-composer__assignments {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .scope-composer__assignment {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(9rem, 12rem);
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .scope-composer select {
+    min-width: 0;
+    padding: 0.45rem;
+    border: 0.0625rem solid var(--ink);
+    border-radius: 0.25rem;
+    color: var(--ink);
+    background: var(--panel);
+  }
+
+  .scope-composer__result {
+    margin-top: 1.5rem;
+  }
+
+  .scope-composer__panes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .scope-composer__pane {
+    min-width: 0;
+    padding: 0.9rem;
+    border: 0.0625rem solid var(--rule);
+    background: var(--paper);
+  }
+
+  .scope-composer__pane h4,
+  .scope-composer__pane p {
+    margin: 0;
+  }
+
+  .scope-composer__pane ol {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0.75rem 0 0;
+    padding-inline-start: 1.25rem;
+  }
+
+  .scope-composer__finding p,
+  .scope-composer__heading p {
+    color: var(--muted);
+  }
+
+  @media (max-width: 38rem) {
+    .scope-composer__assignment,
+    .scope-composer__panes {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

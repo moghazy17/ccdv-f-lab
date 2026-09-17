@@ -39,10 +39,18 @@ GENERATED_RUNTIME_DIRECTORY = Path("public") / "runtime"
 # loading the runtime. Carrying item text is what the export is for (contracts/mock-data.md), so
 # this gate never looks inside them. Every other file under site/ is still checked, which is what
 # keeps a hand-copied item out of the tree.
+# tools/export_claude_code_data.py joins them, writing the simulator's behaviour, the worked
+# example, and the recorded hook decisions from claude-code/, .claude/, and CLAUDE.md. It is
+# tracked rather than git-ignored, because the hook-recording freshness gate compares a committed
+# recording against a regeneration, so it is the first generated data file this gate ever sees.
+# What it flags there are component paths and documentation URLs that legitimately appear in both
+# the export and the notes citing them — derivation, which the freshness gate already guards, not
+# the hand-copied prose this gate exists to catch.
 GENERATED_DATA_FILES = frozenset(
     {
         Path("src") / "data" / "mock.json",
         Path("src") / "data" / "items.json",
+        Path("src") / "data" / "claude-code.json",
     }
 )
 RUNTIME_SOURCE_ROOTS = (Path("lab"), Path("drills"))

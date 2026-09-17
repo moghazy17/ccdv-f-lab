@@ -81,10 +81,17 @@ export async function buildCustomContentFixture(
     new URL("../../node_modules/astro/bin/astro.mjs", import.meta.url)
   );
 
+  // These fixtures assert that content propagates, and never load the Python runtime. Astro would
+  // otherwise copy the fourteen-megabyte `public/runtime/` into each of the eight builds this lock
+  // serializes, which is latency in the one place the suite cannot parallelize.
+  const emptyPublicDirectory = await mkdtemp(join(siteRoot, `.us2-public-${label}-`));
+  trackedDirectories.add(emptyPublicDirectory);
+
   const env: Record<string, string> = {
     ...(process.env as Record<string, string>),
     BASE: "/",
     SITE_OUTPUT_DIRECTORY: outputDirectory,
+    SITE_PUBLIC_DIRECTORY: emptyPublicDirectory,
     ...(options.extraEnv ?? {})
   };
 
@@ -120,10 +127,26 @@ export async function buildCustomContentFixture(
   try {
     const releaseBuildLock = await acquireFixtureBuildLock(siteRoot);
     try {
-      await executeFile(process.execPath, [astroCli, "build"], {
-        cwd: siteRoot,
-        env
-      });
+      // Bound the build and keep what it said. Without a timeout a build that never returns is
+      // indistinguishable from a slow queue: it consumes the whole fifteen-minute test budget and
+      // reports only "Test timeout exceeded", naming neither the build nor its output. Five
+      // minutes is far beyond any healthy build of this site and still leaves the waiter's
+      // ceiling intact.
+      try {
+        await executeFile(process.execPath, [astroCli, "build"], {
+          cwd: siteRoot,
+          env,
+          timeout: 300_000,
+          maxBuffer: 32 * 1024 * 1024
+        });
+      } catch (buildError) {
+        const details = buildError as { stdout?: string; stderr?: string; killed?: boolean };
+        const tail = `${details.stdout ?? ""}${details.stderr ?? ""}`.trim().slice(-4000);
+        throw new Error(
+          `Fixture build for ${label} failed` +
+            `${details.killed === true ? " and was killed after exceeding its timeout" : ""}:\n${tail}`
+        );
+      }
     } finally {
       await releaseBuildLock();
     }
@@ -131,11 +154,29 @@ export async function buildCustomContentFixture(
     trackedDirectories.delete(outputDirectory);
     await rm(outputDirectory, { force: true, recursive: true });
     throw error;
+  } finally {
+    // The empty public directory is only needed while the build reads it.
+    trackedDirectories.delete(emptyPublicDirectory);
+    await rm(emptyPublicDirectory, { force: true, recursive: true });
   }
+
+  // Keep this directory visibly alive to the other worker.
+  //
+  // `trackedDirectories` is per-process, and Playwright gives each spec file its own worker, so
+  // the other worker's `cleanOrphanedDirectories` judges this directory only by age. While the
+  // whole suite finished inside the ten-minute threshold that was survivable; once it does not,
+  // one worker deletes a fixture the other is still serving, its pages start 404ing, and the spec
+  // hangs until its timeout — which then makes the suite slower still. The lock already solves
+  // exactly this with a heartbeat, so a live output directory gets one too.
+  const heartbeat = setInterval(() => {
+    utimes(outputDirectory, new Date(), new Date()).catch(() => {});
+  }, 5000);
+  heartbeat.unref?.();
 
   const server = await serveDirectory(outputDirectory);
   return {
     close: async () => {
+      clearInterval(heartbeat);
       try {
         await new Promise<void>((resolveClose, rejectClose) => {
           server.close((error) => (error === undefined ? resolveClose() : rejectClose(error)));

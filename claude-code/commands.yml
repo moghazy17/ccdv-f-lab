@@ -1,0 +1,280 @@
+commands:
+  - id: rules-component
+    invocation: null
+    kind: component
+    where: CLAUDE.md
+    scope: null
+    defined_by: null
+    blueprint_feature: Rules
+    explanation: >
+      CLAUDE.md instructions are context that shapes behavior; they do not enforce actions.
+    source_anchor: memory
+    transcript:
+      - stream: stdout
+        text: "Project rules: CLAUDE.md is loaded as context."
+
+  - id: skills-component
+    invocation: null
+    kind: component
+    where: .claude/skills/
+    scope: null
+    defined_by: null
+    blueprint_feature: Skills
+    explanation: A Skill is a loaded, prompt-based Markdown bundle that Claude uses with its tools.
+    source_anchor: skills-docs
+    transcript:
+      - stream: stdout
+        text: "Project skill: .claude/skills/triage-security/SKILL.md"
+
+  - id: help-command
+    guided_task: 1
+    invocation: /help
+    kind: built-in
+    scope: null
+    defined_by: null
+    blueprint_feature: Commands
+    explanation: The built-in help command shows help and the available commands.
+    source_anchor: cc-commands
+    transcript:
+      - stream: stdout
+        text: "Help: available commands are shown."
+
+  - id: agents-component
+    invocation: null
+    kind: component
+    where: .claude/agents/
+    scope: null
+    defined_by: null
+    blueprint_feature: Agents
+    explanation: >
+      A subagent works in a separate context window and returns a summary to the main conversation.
+    source_anchor: sub-agents
+    transcript:
+      - stream: stdout
+        text: "Project subagent: .claude/agents/triage-security-reviewer.md"
+
+  - id: agent-memory-component
+    invocation: null
+    kind: component
+    where: ~/.claude/
+    scope: null
+    defined_by: null
+    blueprint_feature: Agent Memory
+    explanation: Auto memory is loaded as context alongside CLAUDE.md instructions.
+    source_anchor: memory
+    transcript:
+      - stream: stdout
+        text: "Agent memory contributes context; it is not enforced configuration."
+
+  - id: clear-session
+    guided_task: 3
+    invocation: /clear
+    kind: built-in
+    scope: null
+    defined_by: null
+    blueprint_feature: session management
+    explanation: Clear starts a new conversation with empty context.
+    source_anchor: cc-commands
+    transcript:
+      - stream: stdout
+        text: "Started a new conversation with empty context."
+
+  - id: compact-session
+    guided_task: 4
+    invocation: /compact
+    kind: built-in
+    scope: null
+    defined_by: null
+    blueprint_feature: session management
+    explanation: Compact summarizes the conversation so far and continues the same conversation.
+    source_anchor: cc-commands
+    transcript:
+      - stream: stdout
+        text: "Conversation summarized; continuing the same conversation."
+
+  - id: verify-triage
+    guided_task: 2
+    invocation: /verify-triage
+    kind: custom
+    scope: project
+    defined_by: .claude/commands/verify-triage.md
+    blueprint_feature: built-in and custom slash commands
+    explanation: >
+      This project command is loaded from .claude/commands/verify-triage.md at repository scope.
+    source_anchor: slash
+    transcript:
+      - stream: stdout
+        text: "Loaded project command: /verify-triage"
+
+  - id: headless-json
+    guided_task: 5
+    invocation: 'claude -p "Summarize this diff" --output-format json'
+    kind: mode
+    scope: null
+    defined_by: null
+    blueprint_feature: headless mode
+    explanation: >
+      Print mode runs non-interactively, can read standard input, and exits zero on success or
+      non-zero on failure. JSON output carries response text in the result field; --continue uses
+      the most recent conversation and --resume <session-id> uses a specific conversation.
+    source_anchor: cc-headless
+    transcript:
+      - stream: stdout
+        text: '{"result":"<response>"}'
+      - stream: stdout
+        text: "Session options: --continue or --resume <session-id>."
+
+  - id: streaming-json
+    guided_task: 6
+    invocation: >-
+      claude -p "Summarize this diff" --output-format stream-json --verbose
+      --include-partial-messages
+    kind: mode
+    scope: null
+    defined_by: null
+    blueprint_feature: streaming mode
+    explanation: >
+      Stream JSON emits one JSON event per line, beginning with system/init and ending with a
+      result message. Streaming requires verbose and partial-message output.
+    source_anchor: cc-headless
+    transcript:
+      - stream: event
+        text: '{"type":"system","subtype":"init"}'
+      - stream: event
+        text: '{"type":"result","result":"<response>"}'
+
+  - id: auto-permission-mode
+    invocation: null
+    kind: component
+    where: settings.json
+    scope: null
+    defined_by: null
+    blueprint_feature: auto-mode
+    explanation: >
+      In Auto mode a second model, the classifier, reviews actions instead of the user; in Manual
+      mode Claude Code asks before most file edits, shell commands, and network actions.
+    source_anchor: cc-permission-modes
+    transcript:
+      - stream: stdout
+        text: "Permission mode: Auto; classifier review is active."
+
+  - id: instruction-hierarchy
+    invocation: null
+    kind: component
+    where: CLAUDE.md
+    scope: null
+    defined_by: null
+    blueprint_feature: "`CLAUDE.md` hierarchy"
+    explanation: >
+      Instruction scopes load as managed policy, user, project, and local; discovered files are
+      concatenated from the filesystem root toward the working directory.
+    source_anchor: memory
+    transcript:
+      - stream: stdout
+        text: "Load order: managed policy, user, project, local."
+
+  - id: initialize-repository
+    invocation: /init
+    kind: built-in
+    scope: null
+    defined_by: null
+    blueprint_feature: repository initialization
+    explanation: Init initializes a project with a CLAUDE.md guide.
+    source_anchor: cc-commands
+    transcript:
+      - stream: stdout
+        text: "Initialized the project with a CLAUDE.md guide."
+
+  - id: permissions-command
+    invocation: /permissions
+    kind: built-in
+    scope: null
+    defined_by: null
+    blueprint_feature: settings.json
+    explanation: Permissions manages allow, ask, and deny rules by scope.
+    source_anchor: cc-commands
+    transcript:
+      - stream: stdout
+        text: "Permission rules: allow, ask, and deny."
+
+  - id: model-command
+    invocation: /model
+    kind: built-in
+    scope: null
+    defined_by: null
+    blueprint_feature: Commands
+    explanation: Model switches the model and saves it as the default for new sessions.
+    source_anchor: cc-commands
+    transcript:
+      - stream: stdout
+        text: "Choose a model for this session and as the default for new sessions."
+
+  - id: cost-command
+    invocation: /cost
+    kind: built-in
+    scope: null
+    defined_by: null
+    blueprint_feature: Commands
+    explanation: Cost is an alias for the usage command.
+    source_anchor: cc-commands
+    transcript:
+      - stream: stdout
+        text: "/usage"
+
+  - id: hook-denial-simulation
+    guided_task: 7
+    invocation: /simulate-hook-denial
+    kind: mode
+    scope: null
+    defined_by: null
+    blueprint_feature: hooks
+    explanation: This simulation shows a PreToolUse hook blocking a destructive tool action before it runs.
+    source_anchor: agent-hooks
+    transcript:
+      - stream: stderr
+        denial: true
+        text: "Hook denial: the destructive tool action was blocked before it ran."
+
+scopes:
+  - id: managed-policy
+    name: managed policy
+    order: 1
+    path: managed policy
+  - id: user
+    name: user
+    order: 2
+    path: ~/.claude/CLAUDE.md
+  - id: project
+    name: project
+    order: 3
+    path: ./CLAUDE.md
+  - id: local
+    name: local
+    order: 4
+    path: ./subdirectory/CLAUDE.md
+
+fragments:
+  - id: managed-named-exports
+    scope_id: managed-policy
+    text: Use named exports in source modules.
+    conflicts_with: project-default-exports
+    enforceable: true
+    enforced_by: null
+  - id: user-tests
+    scope_id: user
+    text: Write tests alongside code changes.
+    conflicts_with: null
+    enforceable: true
+    enforced_by: null
+  - id: project-default-exports
+    scope_id: project
+    text: Use default exports in source modules.
+    conflicts_with: managed-named-exports
+    enforceable: true
+    enforced_by: null
+  - id: local-destructive-action
+    scope_id: local
+    text: Do not run destructive shell commands.
+    conflicts_with: null
+    enforceable: false
+    enforced_by: hook

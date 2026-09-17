@@ -1,0 +1,388 @@
+---
+import { embedJson } from "../lib/embed";
+import type { SimulatedCommand } from "../lib/claude-code/commands";
+
+interface Props {
+  commands: readonly SimulatedCommand[];
+  surface?: "module" | "playground";
+}
+
+const { commands, surface = "module" } = Astro.props;
+const typeableCommands = commands.filter((command) => command.kind !== "component");
+---
+
+<section class="terminal" data-simulated-terminal data-terminal-surface={surface} aria-labelledby="terminal-title">
+  <script
+    is:inline
+    type="application/json"
+    data-terminal-commands
+    data-pagefind-ignore
+    set:html={embedJson(typeableCommands)}
+  />
+  <div class="terminal__heading">
+    <h2 id="terminal-title">Simulated terminal</h2>
+    <p>This is a simulation. It does not run Claude Code, execute input, request a credential, or send data.</p>
+  </div>
+
+  <form class="terminal__form" data-terminal-form>
+    <label for={`terminal-input-${surface}`}>Enter an implemented invocation</label>
+    <div class="terminal__entry">
+      <span aria-hidden="true">$</span>
+      <input
+        id={`terminal-input-${surface}`}
+        data-terminal-input
+        autocomplete="off"
+        autocapitalize="off"
+        autocorrect="off"
+        spellcheck="false"
+      />
+      <button class="action-button" type="submit" data-terminal-run>Run simulation</button>
+    </div>
+  </form>
+
+  <div class="terminal__actions">
+    <button class="action-button" type="button" data-terminal-clear>Clear transcript</button>
+    <p data-terminal-status role="status" aria-live="polite">
+      This visit starts with an empty transcript. Nothing typed here is stored on this device.
+    </p>
+  </div>
+
+  <p class="visually-hidden" data-terminal-complete role="status" aria-live="polite"></p>
+  <ol class="terminal__transcript" data-terminal-transcript aria-label="Terminal transcript">
+    <li class="terminal__empty" data-terminal-empty>No simulated command has run in this visit.</li>
+  </ol>
+</section>
+
+<script>
+  import type { SimulatedCommand, TranscriptStep } from "../lib/claude-code/commands";
+  import {
+    clearSession,
+    createSession,
+    resolveTurn,
+    type SessionTurn,
+    type SimulatedSession
+  } from "../lib/claude-code/session";
+
+  type CommandPayload = SimulatedCommand;
+
+  const terminals = document.querySelectorAll<HTMLElement>("[data-simulated-terminal]");
+  terminals.forEach(setUpTerminal);
+
+  function setUpTerminal(root: HTMLElement): void {
+    const payload = root.querySelector<HTMLScriptElement>("[data-terminal-commands]");
+    const form = root.querySelector<HTMLFormElement>("[data-terminal-form]");
+    const input = root.querySelector<HTMLInputElement>("[data-terminal-input]");
+    const clearButton = root.querySelector<HTMLButtonElement>("[data-terminal-clear]");
+    const status = root.querySelector<HTMLElement>("[data-terminal-status]");
+    const complete = root.querySelector<HTMLElement>("[data-terminal-complete]");
+    const transcript = root.querySelector<HTMLOListElement>("[data-terminal-transcript]");
+    const empty = root.querySelector<HTMLElement>("[data-terminal-empty]");
+    if (
+      payload === null ||
+      form === null ||
+      input === null ||
+      clearButton === null ||
+      status === null ||
+      complete === null ||
+      transcript === null ||
+      empty === null
+    ) {
+      return;
+    }
+
+    const commands = JSON.parse(payload.textContent ?? "[]") as readonly CommandPayload[];
+    const surface = root.dataset.terminalSurface === "playground" ? "playground" : "module";
+    let session: SimulatedSession = createSession(surface);
+
+    const setStatus = (message: string): void => {
+      status.textContent = message;
+    };
+
+    const clearTranscript = (): void => {
+      session = clearSession(session);
+      transcript.replaceChildren(empty);
+      empty.hidden = false;
+      setStatus("Transcript cleared. Clearing discards every earlier turn and starts an empty conversation.");
+      complete.textContent = "Transcript cleared.";
+    };
+
+    const runInput = (value: string): void => {
+      if (value.trim().length === 0) {
+        setStatus("Enter an implemented invocation, or choose one from the implemented set below.");
+        return;
+      }
+      const resolved = resolveTurn(session, value, commands);
+      session = resolved.session;
+      input.value = "";
+      if (resolved.operation === "clear") {
+        clearTranscript();
+        // Clearing completes its guided task like any other invocation. Returning without this
+        // dispatch left "Run /clear" permanently unfinished, so the guided list was uncompletable.
+        root.dispatchEvent(
+          new CustomEvent("claude-code:command-run", {
+            bubbles: true,
+            detail: { id: "clear-session" }
+          })
+        );
+        return;
+      }
+      if (resolved.operation === "compact") {
+        renderSession(transcript, empty, session, runInput, complete);
+        setStatus(
+          "Transcript compacted. Earlier turns are summarised while this same conversation continues."
+        );
+        complete.textContent = "Compaction completed; the same conversation continues.";
+        root.dispatchEvent(new CustomEvent("claude-code:command-run", { bubbles: true, detail: { id: "compact-session" } }));
+        return;
+      }
+      if (resolved.turn !== null) {
+        appendTurn(transcript, empty, resolved.turn, runInput, complete);
+        if (resolved.turn.command !== null) {
+          root.dispatchEvent(
+            new CustomEvent("claude-code:command-run", {
+              bubbles: true,
+              detail: { id: resolved.turn.command.id }
+            })
+          );
+        }
+      }
+    };
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      runInput(input.value);
+    });
+    clearButton.addEventListener("click", clearTranscript);
+  }
+
+  function renderSession(
+    transcript: HTMLOListElement,
+    empty: HTMLElement,
+    session: SimulatedSession,
+    runInput: (value: string) => void,
+    complete: HTMLElement
+  ): void {
+    transcript.replaceChildren();
+    empty.hidden = session.turns.length > 0;
+    if (session.turns.length === 0) {
+      transcript.append(empty);
+      return;
+    }
+    session.turns.forEach((turn) => appendTurn(transcript, empty, turn, runInput, complete));
+  }
+
+  function appendTurn(
+    transcript: HTMLOListElement,
+    empty: HTMLElement,
+    turn: SessionTurn,
+    runInput: (value: string) => void,
+    complete: HTMLElement
+  ): void {
+    empty.hidden = true;
+    const item = document.createElement("li");
+    item.className = `terminal__turn terminal__turn--${turn.kind}`;
+    const entered = document.createElement("p");
+    entered.className = "terminal__input";
+    entered.textContent = `$ ${turn.input}`;
+    item.appendChild(entered);
+
+    const output = document.createElement("pre");
+    output.className = "terminal__output";
+    output.setAttribute("data-terminal-output", "");
+    const outputCode = document.createElement("code");
+    output.appendChild(outputCode);
+    item.appendChild(output);
+
+    if (turn.command !== null) {
+      const metadata = document.createElement("p");
+      metadata.className = "terminal__metadata";
+      if (turn.command.kind === "custom") {
+        metadata.textContent = `Custom command from ${turn.command.definedBy} at ${turn.command.scope} scope. ${turn.command.explanation}`;
+      } else {
+        metadata.textContent = `${turn.command.kind === "built-in" ? "Built-in command" : "Simulated mode"}. ${turn.command.explanation}`;
+      }
+      const source = document.createElement("a");
+      source.href = turn.command.sourceUrl;
+      source.textContent = "Read the dated source";
+      source.target = "_blank";
+      source.rel = "noreferrer";
+      metadata.append(" ", source);
+      item.appendChild(metadata);
+    } else if (turn.kind === "summary") {
+      const metadata = document.createElement("p");
+      metadata.className = "terminal__metadata";
+      metadata.textContent = "Compaction keeps a summary and continues the same session; clearing does not.";
+      item.appendChild(metadata);
+    } else {
+      const guide = document.createElement("a");
+      guide.href = "#implemented-set";
+      guide.textContent = "See the implemented set.";
+      item.appendChild(guide);
+    }
+
+    const rerun = document.createElement("button");
+    rerun.type = "button";
+    rerun.className = "terminal__rerun";
+    rerun.textContent = `Re-run ${turn.input}`;
+    rerun.addEventListener("click", () => runInput(turn.input));
+    item.appendChild(rerun);
+    transcript.appendChild(item);
+    presentOutput(outputCode, turn.transcript, item, complete);
+  }
+
+  function presentOutput(
+    target: HTMLElement,
+    steps: readonly TranscriptStep[],
+    item: HTMLElement,
+    complete: HTMLElement
+  ): void {
+    const streaming = steps.some((step) => step.stream === "event");
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let index = 0;
+    const writeStep = (): void => {
+      const step = steps[index];
+      if (step === undefined) {
+        complete.textContent = streaming ? "Streaming result completed." : "Simulation result completed.";
+        return;
+      }
+      if (step.denial === true) {
+        item.classList.add("terminal__turn--denied");
+        const attribution = document.createElement("p");
+        attribution.className = "terminal__denial";
+        attribution.textContent = "Hook denial: this is the hook's decision, not a model refusal.";
+        const output = target.parentElement;
+        if (output !== null) {
+          item.insertBefore(attribution, output);
+        }
+      }
+      target.textContent = `${target.textContent ?? ""}${target.textContent ? "\n" : ""}${step.text}`;
+      index += 1;
+      if (streaming) {
+        window.setTimeout(writeStep, reduceMotion ? 0 : 220);
+      } else {
+        writeStep();
+      }
+    };
+    writeStep();
+  }
+</script>
+
+<style>
+  .terminal {
+    padding: clamp(1rem, 3vw, 1.5rem);
+    border: 0.0625rem solid var(--rule);
+    background: var(--panel);
+  }
+
+  .terminal__heading > :first-child {
+    margin-top: 0;
+  }
+
+  .terminal__heading p,
+  .terminal__actions p,
+  .terminal__metadata {
+    color: var(--muted);
+  }
+
+  .terminal__entry {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.35rem;
+  }
+
+  .terminal__entry input {
+    min-width: 0;
+    padding: 0.55rem;
+    border: 0.0625rem solid var(--ink);
+    border-radius: 0.25rem;
+    color: var(--ink);
+    background: var(--paper);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  .terminal__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    align-items: center;
+    margin-block: 1rem;
+  }
+
+  .terminal__actions p {
+    margin: 0;
+  }
+
+  .terminal__transcript {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .terminal__turn,
+  .terminal__empty {
+    padding: 0.75rem;
+    border-inline-start: 0.25rem solid var(--rule);
+    background: var(--paper);
+  }
+
+  .terminal__turn--summary {
+    border-inline-start-style: double;
+  }
+
+  .terminal__turn--denied {
+    border: 0.125rem solid currentColor;
+  }
+
+  .terminal__input {
+    margin: 0 0 0.5rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-weight: 700;
+  }
+
+  .terminal__output {
+    margin: 0;
+    white-space: pre-wrap;
+  }
+
+  .terminal__metadata,
+  .terminal__denial {
+    margin: 0.65rem 0;
+  }
+
+  .terminal__denial {
+    font-weight: 700;
+  }
+
+  .terminal__rerun {
+    padding: 0;
+    border: 0;
+    color: var(--signal-ink);
+    background: transparent;
+    text-decoration: underline;
+    text-underline-offset: 0.16em;
+    cursor: pointer;
+  }
+
+  @media (max-width: 38rem) {
+    .terminal__entry {
+      grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .terminal__entry button {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .terminal,
+    .terminal__turn,
+    .terminal__empty,
+    .terminal__turn--denied {
+      border-color: CanvasText;
+    }
+  }
+</style>

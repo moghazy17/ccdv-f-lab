@@ -44,9 +44,29 @@ test.describe("US5 - transfer every practice surface", () => {
     await first.getByRole("button", { name: "I did not know it" }).click();
     await expect(first.locator("[data-flashcard-status]")).toContainText("Marked not known");
 
+    await first.goto("./claude-code/terminal/");
+    await first.locator("[data-terminal-input]").fill("/help");
+    await first.locator("[data-terminal-form]").press("Enter");
+    await first.locator("[data-scope-fragment]").first().selectOption("local");
+
+    await first.goto("./claude-code/config/");
+    await first.locator("[data-config-project-name]").fill("Transferred configuration");
+
     await first.goto("./progress/");
     const exported = await downloadText(first);
-    const expected = JSON.parse(exported) as { namespaces: Record<string, unknown> };
+    const expected = JSON.parse(exported) as {
+      namespaces: {
+        claudeCode: {
+          guidedTasks: Record<string, boolean>;
+          scopeExercise: Record<string, string[]>;
+          configDraft: Record<string, unknown>;
+        };
+      } & Record<string, unknown>;
+    };
+    expect(Object.values(expected.namespaces.claudeCode.guidedTasks)).toContain(true);
+    expect(expected.namespaces.claudeCode.scopeExercise.local).not.toEqual([]);
+    expect(expected.namespaces.claudeCode.configDraft.projectName).toBe("Transferred configuration");
+    expect(JSON.stringify(expected.namespaces.claudeCode)).not.toContain("transcript");
     await firstContext.close();
 
     const secondContext = await browser.newContext();
@@ -71,6 +91,18 @@ test.describe("US5 - transfer every practice surface", () => {
 
     await second.goto("./flashcards/");
     expect(cardId).not.toBeNull();
+
+    await second.goto("./claude-code/terminal/");
+    await expect(
+      second.locator("[data-guided-task]").filter({ hasText: "Run /help" }).locator("[data-guided-state]")
+    ).toHaveText("Done");
+    await expect(second.locator("[data-scope-fragment]").first()).toHaveValue("local");
+
+    await second.goto("./claude-code/config/");
+    await expect(second.locator("[data-config-project-name]")).toHaveValue(
+      "Transferred configuration"
+    );
+
     const restored = await second.evaluate(() => {
       const raw = localStorage.getItem("ccdv-f:progress");
       return JSON.parse(raw ?? "{}").namespaces;

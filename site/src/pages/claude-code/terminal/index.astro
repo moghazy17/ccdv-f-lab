@@ -1,5 +1,145 @@
 ---
-import ReservedPage from "../../../components/ReservedPage.astro";
+import GuidedTasks from "../../../components/GuidedTasks.astro";
+import ServedSubskills from "../../../components/ServedSubskills.astro";
+import SimulatedTerminal from "../../../components/SimulatedTerminal.astro";
+import ScopeComposer from "../../../components/ScopeComposer.astro";
+import WorkedExample from "../../../components/WorkedExample.astro";
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import {
+  claudeCodeData,
+  instructionHierarchySource,
+  simulatedCommands
+} from "../../../lib/claude-code/commands";
+
+const typeable = simulatedCommands.filter((command) => command.kind !== "component");
+const components = simulatedCommands.filter((command) => command.kind === "component");
+const guidedTasks = typeable
+  .filter((command) => command.guidedTask !== null)
+  .sort((first, second) => {
+    if (first.guidedTask === null || second.guidedTask === null) {
+      throw new Error("Guided task data lost its validated position.");
+    }
+    return first.guidedTask - second.guidedTask;
+  })
+  .map((command) => ({ id: command.id, label: `Run ${command.invocation}` }));
+const scopes = claudeCodeData.scopes;
+const fragments = claudeCodeData.fragments;
 ---
 
-<ReservedPage title="Terminal simulator" capability="the Claude Code terminal simulator" />
+<BaseLayout
+  title="Claude Code terminal simulator | CCDV-F community study kit"
+  description="Practise a bounded, sourced Claude Code simulation without installation, a key, or execution."
+  searchRecord={{ type: "claude-code-terminal" }}
+>
+  <header>
+    <h1>Claude Code terminal simulator</h1>
+    <p class="page-introduction">
+      This is a bounded teaching simulation, not Claude Code. Nothing is executed, no credential is
+      requested or read, and no terminal transcript is written to your device.
+    </p>
+  </header>
+
+  <ServedSubskills names={["Claude Code Operation"]} />
+
+  <SimulatedTerminal commands={simulatedCommands} />
+  <GuidedTasks tasks={guidedTasks} />
+  <ScopeComposer fragments={fragments} scopes={scopes} sourceUrl={instructionHierarchySource.url} />
+
+  <section id="implemented-set" class="implemented-set" aria-labelledby="implemented-set-title">
+    <h2 id="implemented-set-title">Implemented set</h2>
+    <p>
+      These are the only invocations this simulator can show. Other input receives an explicit
+      “not implemented here” result; it never invents a model response.
+    </p>
+    <div class="table-scroll" tabindex="0" aria-label="Implemented terminal invocations">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">Invocation</th>
+            <th scope="col">Kind</th>
+            <th scope="col">What this simulation shows</th>
+            <th scope="col">Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            typeable.map((command) => (
+              <tr>
+                <th scope="row"><code>{command.invocation}</code></th>
+                <td>{command.kind === "custom" ? "Custom command" : command.kind}</td>
+                <td>
+                  {command.kind === "custom" ? (
+                    <>
+                      From <code>{command.definedBy}</code> at {command.scope} scope. {command.explanation}
+                    </>
+                  ) : (
+                    command.explanation
+                  )}
+                </td>
+                <td><a href={command.sourceUrl}>Read the dated source</a></td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="reference-components" aria-labelledby="reference-components-title">
+    <h2 id="reference-components-title">Reference components</h2>
+    <p>
+      These components count toward the module’s coverage, but they are reference material rather
+      than commands. They are intentionally not offered as terminal input.
+    </p>
+    <ul>
+      {
+        components.map((component) => (
+          <li>
+            <h3>{component.blueprintFeature}</h3>
+            <p><strong>Where it lives:</strong> <code>{component.where}</code></p>
+            <p>{component.explanation} <a href={component.sourceUrl}>Read the dated source</a></p>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <WorkedExample
+    components={claudeCodeData.workedExample}
+    recording={claudeCodeData.hookRecording}
+  />
+</BaseLayout>
+
+<style>
+  .implemented-set,
+  .reference-components {
+    margin-top: 2rem;
+    padding: 1rem;
+    border: 0.0625rem solid var(--rule);
+    background: var(--panel);
+  }
+
+  .implemented-set h2,
+  .reference-components h2 {
+    margin-top: 0;
+  }
+
+  .reference-components ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 0.75rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .reference-components li {
+    padding: 0.75rem;
+    border-inline-start: 0.25rem solid var(--rule);
+    background: var(--paper);
+  }
+
+  .reference-components h3 {
+    margin-top: 0;
+    font-size: 1.1rem;
+  }
+</style>

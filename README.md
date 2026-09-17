@@ -82,6 +82,9 @@ npm run test:e2e
 - **Generated data**: `site/src/data/blueprint.json` is generated directly from `BLUEPRINT.md` and
   `notes/` using `python tools/export_site_data.py`. The build rejects stale or missing exports.
   Never hand-edit this file.
+- **Generated Claude Code data**: `site/src/data/claude-code.json` is generated from
+  `claude-code/commands.yml`, the repository `.claude/` directory, and the executable hook. The
+  freshness gate rejects hand edits.
 - **Publication**: Pushes to `main` trigger `.github/workflows/pages.yml` to build and deploy to
   GitHub Pages. Publication executes only after all Python and static site gates pass; a failure
   blocks deployment and leaves the previously published site untouched. The base path defaults to

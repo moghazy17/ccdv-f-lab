@@ -302,6 +302,9 @@ describe("practice namespaces", () => {
       box: 2,
       dueAt: "2026-01-02T00:00:00.000Z"
     };
+    record.namespaces.claudeCode.guidedTasks["clear-session"] = true;
+    record.namespaces.claudeCode.scopeExercise["project"] = ["fragment-1"];
+    record.namespaces.claudeCode.configDraft = { projectName: "example" };
     storage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(record));
     const progress = createProgressStorage(storage);
 
@@ -313,6 +316,13 @@ describe("practice namespaces", () => {
     expect(cleared?.mock).toEqual({ current: null, reports: [], summaries: [] });
     expect(cleared?.quiz).toEqual({ results: {}, recall: {} });
     expect(cleared?.flashcards).toEqual({ state: {} });
+    // FR-048: this module's record must be clearable, and the control that offers that is the one
+    // above. Leaving it out made guided tasks and scope placements unclearable from the interface.
+    expect(cleared?.claudeCode).toEqual({
+      guidedTasks: {},
+      scopeExercise: {},
+      configDraft: null
+    });
   });
 
   test("records when practice results were cleared, where every tab can read it", () => {

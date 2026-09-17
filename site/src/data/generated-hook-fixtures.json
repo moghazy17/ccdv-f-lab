@@ -1,0 +1,82 @@
+{
+  "cases": [
+    {
+      "name": "shell-and-file-protection",
+      "hook": "#!/usr/bin/env python3\n\"\"\"Deny destructive PreToolUse actions selected by this project configuration.\"\"\"\n\nfrom __future__ import annotations\n\nimport json\nimport re\nimport sys\nfrom pathlib import PurePath\nfrom typing import Any\n\nMATCHER = re.compile(\"^(?:Bash|Write|Edit)$\")\nPROTECTED_FILES = frozenset([\"LICENSE\"])\nDESTRUCTIVE_COMMAND = re.compile(\"(?:\\\\brm\\\\s+-[a-z]*[rf]|\\\\brmdir\\\\s+/[sq]|\\\\bdel\\\\s+/[a-z]*[sqf]|\\\\bremove-item\\\\b.{0,80}\\\\b-recurse\\\\b|\\\\bgit\\\\s+reset\\\\s+--hard\\\\b|\\\\bgit\\\\s+clean\\\\s+-[a-z]*f|\\\\bformat\\\\s+[a-z]:|\\\\bmkfs\\\\b|\\\\bdd\\\\s+if=)\", re.IGNORECASE)\n\n\ndef deny(message: str) -> int:\n    \"\"\"Write the hook decision to standard error and return the denial exit code.\"\"\"\n    print(json.dumps({\"hookSpecificOutput\": {\"permissionDecision\": \"deny\"}, \"systemMessage\": message}), file=sys.stderr)\n    return 2\n\n\ndef protected_path(value: object) -> bool:\n    \"\"\"Return whether a tool path names one of this hook's protected files.\"\"\"\n    return isinstance(value, str) and PurePath(value.replace(\"\\\\\", \"/\")).name in PROTECTED_FILES\n\n\ndef decide(payload: dict[str, Any]) -> int:\n    \"\"\"Return 2 for a denied action and 0 for an allowed one.\"\"\"\n    tool_name = payload.get(\"tool_name\")\n    if not isinstance(tool_name, str) or MATCHER.fullmatch(tool_name) is None:\n        return 0\n    tool_input = payload.get(\"tool_input\", {})\n    if not isinstance(tool_input, dict):\n        return 0\n    if protected_path(tool_input.get(\"file_path\")):\n        return deny(f\"Protected file write denied by the hook: {tool_input['file_path']}\")\n    command = tool_input.get(\"command\")\n    if isinstance(command, str) and DESTRUCTIVE_COMMAND.search(command):\n        return deny(\"Destructive shell command denied by the hook.\")\n    print(\"Action permitted by the hook.\")\n    return 0\n\n\ndef main() -> int:\n    \"\"\"Read a PreToolUse JSON document from standard input.\"\"\"\n    try:\n        payload = json.load(sys.stdin)\n    except json.JSONDecodeError:\n        return 0\n    return decide(payload) if isinstance(payload, dict) else 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n",
+      "samples": [
+        {
+          "label": "Destructive action",
+          "payload": {
+            "tool_name": "Bash",
+            "tool_input": {
+              "command": "git reset --hard"
+            }
+          },
+          "expected": "deny"
+        },
+        {
+          "label": "Ordinary action",
+          "payload": {
+            "tool_name": "Bash",
+            "tool_input": {
+              "command": "python -V"
+            }
+          },
+          "expected": "allow"
+        }
+      ]
+    },
+    {
+      "name": "file-protection-only",
+      "hook": "#!/usr/bin/env python3\n\"\"\"Deny destructive PreToolUse actions selected by this project configuration.\"\"\"\n\nfrom __future__ import annotations\n\nimport json\nimport re\nimport sys\nfrom pathlib import PurePath\nfrom typing import Any\n\nMATCHER = re.compile(\"^(?:Write|Edit)$\")\nPROTECTED_FILES = frozenset([\"package-lock.json\"])\nDESTRUCTIVE_COMMAND = re.compile(\"(?:\\\\brm\\\\s+-[a-z]*[rf]|\\\\brmdir\\\\s+/[sq]|\\\\bdel\\\\s+/[a-z]*[sqf]|\\\\bremove-item\\\\b.{0,80}\\\\b-recurse\\\\b|\\\\bgit\\\\s+reset\\\\s+--hard\\\\b|\\\\bgit\\\\s+clean\\\\s+-[a-z]*f|\\\\bformat\\\\s+[a-z]:|\\\\bmkfs\\\\b|\\\\bdd\\\\s+if=)\", re.IGNORECASE)\n\n\ndef deny(message: str) -> int:\n    \"\"\"Write the hook decision to standard error and return the denial exit code.\"\"\"\n    print(json.dumps({\"hookSpecificOutput\": {\"permissionDecision\": \"deny\"}, \"systemMessage\": message}), file=sys.stderr)\n    return 2\n\n\ndef protected_path(value: object) -> bool:\n    \"\"\"Return whether a tool path names one of this hook's protected files.\"\"\"\n    return isinstance(value, str) and PurePath(value.replace(\"\\\\\", \"/\")).name in PROTECTED_FILES\n\n\ndef decide(payload: dict[str, Any]) -> int:\n    \"\"\"Return 2 for a denied action and 0 for an allowed one.\"\"\"\n    tool_name = payload.get(\"tool_name\")\n    if not isinstance(tool_name, str) or MATCHER.fullmatch(tool_name) is None:\n        return 0\n    tool_input = payload.get(\"tool_input\", {})\n    if not isinstance(tool_input, dict):\n        return 0\n    if protected_path(tool_input.get(\"file_path\")):\n        return deny(f\"Protected file write denied by the hook: {tool_input['file_path']}\")\n    command = tool_input.get(\"command\")\n    if isinstance(command, str) and DESTRUCTIVE_COMMAND.search(command):\n        return deny(\"Destructive shell command denied by the hook.\")\n    print(\"Action permitted by the hook.\")\n    return 0\n\n\ndef main() -> int:\n    \"\"\"Read a PreToolUse JSON document from standard input.\"\"\"\n    try:\n        payload = json.load(sys.stdin)\n    except json.JSONDecodeError:\n        return 0\n    return decide(payload) if isinstance(payload, dict) else 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n",
+      "samples": [
+        {
+          "label": "Destructive action",
+          "payload": {
+            "tool_name": "Write",
+            "tool_input": {
+              "file_path": "package-lock.json"
+            }
+          },
+          "expected": "deny"
+        },
+        {
+          "label": "Ordinary action",
+          "payload": {
+            "tool_name": "Write",
+            "tool_input": {
+              "file_path": "src/example.py"
+            }
+          },
+          "expected": "allow"
+        }
+      ]
+    },
+    {
+      "name": "permission-policy-with-shell-hook",
+      "hook": "#!/usr/bin/env python3\n\"\"\"Deny destructive PreToolUse actions selected by this project configuration.\"\"\"\n\nfrom __future__ import annotations\n\nimport json\nimport re\nimport sys\nfrom pathlib import PurePath\nfrom typing import Any\n\nMATCHER = re.compile(\"^(?:Bash)$\")\nPROTECTED_FILES = frozenset([])\nDESTRUCTIVE_COMMAND = re.compile(\"(?:\\\\brm\\\\s+-[a-z]*[rf]|\\\\brmdir\\\\s+/[sq]|\\\\bdel\\\\s+/[a-z]*[sqf]|\\\\bremove-item\\\\b.{0,80}\\\\b-recurse\\\\b|\\\\bgit\\\\s+reset\\\\s+--hard\\\\b|\\\\bgit\\\\s+clean\\\\s+-[a-z]*f|\\\\bformat\\\\s+[a-z]:|\\\\bmkfs\\\\b|\\\\bdd\\\\s+if=)\", re.IGNORECASE)\n\n\ndef deny(message: str) -> int:\n    \"\"\"Write the hook decision to standard error and return the denial exit code.\"\"\"\n    print(json.dumps({\"hookSpecificOutput\": {\"permissionDecision\": \"deny\"}, \"systemMessage\": message}), file=sys.stderr)\n    return 2\n\n\ndef protected_path(value: object) -> bool:\n    \"\"\"Return whether a tool path names one of this hook's protected files.\"\"\"\n    return isinstance(value, str) and PurePath(value.replace(\"\\\\\", \"/\")).name in PROTECTED_FILES\n\n\ndef decide(payload: dict[str, Any]) -> int:\n    \"\"\"Return 2 for a denied action and 0 for an allowed one.\"\"\"\n    tool_name = payload.get(\"tool_name\")\n    if not isinstance(tool_name, str) or MATCHER.fullmatch(tool_name) is None:\n        return 0\n    tool_input = payload.get(\"tool_input\", {})\n    if not isinstance(tool_input, dict):\n        return 0\n    if protected_path(tool_input.get(\"file_path\")):\n        return deny(f\"Protected file write denied by the hook: {tool_input['file_path']}\")\n    command = tool_input.get(\"command\")\n    if isinstance(command, str) and DESTRUCTIVE_COMMAND.search(command):\n        return deny(\"Destructive shell command denied by the hook.\")\n    print(\"Action permitted by the hook.\")\n    return 0\n\n\ndef main() -> int:\n    \"\"\"Read a PreToolUse JSON document from standard input.\"\"\"\n    try:\n        payload = json.load(sys.stdin)\n    except json.JSONDecodeError:\n        return 0\n    return decide(payload) if isinstance(payload, dict) else 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\n",
+      "samples": [
+        {
+          "label": "Destructive action",
+          "payload": {
+            "tool_name": "Bash",
+            "tool_input": {
+              "command": "git reset --hard"
+            }
+          },
+          "expected": "deny"
+        },
+        {
+          "label": "Ordinary action",
+          "payload": {
+            "tool_name": "Bash",
+            "tool_input": {
+              "command": "python -V"
+            }
+          },
+          "expected": "allow"
+        }
+      ]
+    }
+  ]
+}
