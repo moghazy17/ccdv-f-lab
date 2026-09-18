@@ -1,0 +1,60 @@
+id: per-model-exception-to-cache-aware-rate-limits
+domain: Model Selection and Optimization
+sub_skill: Technical Fundamentals
+difficulty: analysis
+select: 1
+stem: >-
+  A capacity model assumes that cached input never consumes the per-minute input allowance, and it
+  has held on every route the team operates. A new route on an older, cheaper model starts hitting
+  its input limit at a fraction of the predicted traffic, even though its cache hit rate is high.
+  What should the team check?
+options:
+  - id: a
+    text: >-
+      Whether output tokens are the binding limit, since a cheaper model produces longer answers to
+      compensate for lower capability.
+    correct: false
+    rationale: >-
+      Nothing makes a cheaper model systematically more verbose, and the team's symptom names the
+      input limit. This invents a behavior to explain the wrong meter.
+    trap_type: false-capability
+  - id: b
+    text: >-
+      Whether the workspace has a lower limit than the organization, which would throttle this route
+      earlier than the model's published limit.
+    correct: false
+    rationale: >-
+      A workspace limit is a genuine possibility worth ruling out, but it would throttle the route
+      regardless of caching. The clue here is that a high cache hit rate is not relieving pressure.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: >-
+      Whether that model is the documented exception whose cache reads do count toward the input
+      limit.
+    correct: true
+    rationale: >-
+      The exclusion of cache reads from the input limit is qualified: it holds for most models
+      rather than all of them, and at least one older model counts cache reads toward it. A capacity
+      model that treats the exclusion as universal will mispredict on exactly that route.
+  - id: d
+    text: >-
+      Whether the route exceeds the requests-per-minute limit instead, since token limits are only
+      enforced in aggregate across models.
+    correct: false
+    rationale: >-
+      Limits are applied separately per model, and the token limits are enforced in their own right.
+      Redirecting attention to request counts leaves the actual constraint unexamined.
+    trap_type: false-capability
+  - id: e
+    text: >-
+      Whether the cache entries are expiring before reuse, since an expired entry is billed and
+      counted as fresh input.
+    correct: false
+    rationale: >-
+      Expiry would show up as a falling cache hit rate, and the team has already observed that the
+      rate is high. This explains a symptom they do not have.
+    trap_type: right-idea-wrong-mechanism
+sources:
+  - title: Rate limits — Anthropic
+    url: https://platform.claude.com/docs/en/api/rate-limits
+    verified_on: "2026-09-17"

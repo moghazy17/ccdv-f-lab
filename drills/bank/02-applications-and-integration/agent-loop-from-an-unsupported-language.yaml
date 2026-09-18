@@ -1,0 +1,64 @@
+id: agent-loop-from-an-unsupported-language
+domain: Applications and Integration
+sub_skill: Claude Application Design
+difficulty: application
+select: 1
+stem: >-
+  A platform team's services are written in Go. They want an agent with the same behavior Claude Code
+  gives them — the agent loop, the built-in file and command tools, hooks, and the project's existing
+  `.claude/` configuration — invoked from a Go service, with structured output the service can parse.
+  They do not want to reimplement a tool-use loop. Which approach matches what the tooling supports?
+options:
+  - id: a
+    text: >-
+      Call the Messages API from Go with the Client SDK and implement the tool-use loop in the
+      service.
+    correct: false
+    rationale: >-
+      This is the option the team explicitly ruled out: the Client SDK gives direct API access and
+      leaves the loop to the caller. It also would not load the project's `.claude/` configuration
+      or provide the built-in tools.
+    trap_type: wrong-layer
+  - id: b
+    text: >-
+      Run the CLI as a subprocess with `-p` and `--output-format json`, since the library is
+      available for Python and TypeScript only.
+    correct: true
+    rationale: >-
+      The Agent SDK ships as a Python and TypeScript library, and the documented way to drive the
+      same agent loop from another language is to run the CLI as a subprocess in non-interactive
+      mode with JSON output. The Go service gets the loop, the tools, and the project configuration
+      without reimplementing any of it.
+  - id: c
+    text: >-
+      Write a thin Python wrapper around the Agent SDK and expose it to Go over a local HTTP
+      endpoint the team maintains.
+    correct: false
+    rationale: >-
+      This reaches the right loop, but it builds and operates a bespoke service to do what a
+      documented flag already does. The subprocess path needs no wrapper, no port, and no second
+      process to keep healthy.
+    trap_type: overkill
+  - id: d
+    text: >-
+      Port the project's `.claude/` configuration into the Go service as prompt text, so the service
+      reproduces the same behavior through ordinary API calls.
+    correct: false
+    rationale: >-
+      Configuration loaded as context is not the same as the agent loop, the built-in tools, or the
+      hooks that run in the harness. This copies the instructions while losing everything that acts
+      on them.
+    trap_type: right-idea-wrong-mechanism
+  - id: e
+    text: >-
+      Adopt Managed Agents, since a hosted agent removes the language question entirely.
+    correct: false
+    rationale: >-
+      Managed Agents is a separate hosted product for long-running agents where Anthropic runs the
+      agent and the sandbox. It answers "who operates the infrastructure", not "how does a Go
+      service drive the local agent loop over this repository's configuration".
+    trap_type: overkill
+sources:
+  - title: Agent SDK overview — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/agent-sdk/overview
+    verified_on: "2026-09-17"

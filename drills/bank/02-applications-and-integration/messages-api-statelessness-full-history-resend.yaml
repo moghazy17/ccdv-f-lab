@@ -10,15 +10,24 @@ stem: >-
 options:
   - id: a
     text: >-
-      The Messages API is documented as stateless: each request must include the full
-      conversation history in the messages array. The fix is to resend every prior turn (or an
-      equivalent summarized history) on each call, not only the newest message.
-    correct: true
+      Add a system-prompt instruction telling Claude to "remember what the user said earlier in
+      the conversation."
+    correct: false
     rationale: >-
-      Because the API does not retain conversation state between calls, sending only the newest
-      message on each request genuinely removes the earlier turns from what Claude sees; resending
-      the full history restores the context the model needs.
+      An instruction cannot make information available that was never included in the request;
+      the earlier turns are simply absent from the context Claude receives, and no wording changes
+      that.
+    trap_type: unenforceable-politeness
   - id: b
+    text: >-
+      Switch to a larger model, since a more capable model would remember the earlier turns
+      without being sent them again.
+    correct: false
+    rationale: >-
+      No model tier changes the API's stateless request/response contract; every model only
+      receives what is included in the request it is sent, regardless of its capability.
+    trap_type: bigger-model
+  - id: c
     text: >-
       Enable prompt caching on the request, since caching remembers the earlier turns for the
       model automatically.
@@ -28,25 +37,16 @@ options:
       already included in the request; it does not retain or reconstruct conversation state on the
       server, so it cannot substitute for actually including the prior turns in the request.
     trap_type: irrelevant-knob
-  - id: c
-    text: >-
-      Switch to a larger model, since a more capable model would remember the earlier turns
-      without being sent them again.
-    correct: false
-    rationale: >-
-      No model tier changes the API's stateless request/response contract; every model only
-      receives what is included in the request it is sent, regardless of its capability.
-    trap_type: bigger-model
   - id: d
     text: >-
-      Add a system-prompt instruction telling Claude to "remember what the user said earlier in
-      the conversation."
-    correct: false
+      The Messages API is stateless: resend every prior turn, or a summarized equivalent, on each
+      call.
+    correct: true
     rationale: >-
-      An instruction cannot make information available that was never included in the request;
-      the earlier turns are simply absent from the context Claude receives, and no wording changes
-      that.
-    trap_type: unenforceable-politeness
+      Because the API does not retain conversation state between calls, each request must carry the
+      full conversation history in its messages array. Sending only the newest message genuinely
+      removes the earlier turns from what Claude sees; resending them restores the context the model
+      needs.
 sources:
   - title: Messages API reference — Anthropic
     url: https://platform.claude.com/docs/en/api/messages

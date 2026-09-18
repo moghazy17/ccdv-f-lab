@@ -13,29 +13,6 @@ stem: >-
 options:
   - id: a
     text: >-
-      Editing "1.0.0" in place silently changes the instruction behind every caller that already
-      resolves that exact version, making it impossible to tell which wording produced any given
-      past or future result. The change should be published as a new explicit version (for
-      example "1.0.1"), leaving "1.0.0" resolvable and unchanged so results can be compared across
-      the two versions.
-    correct: true
-    rationale: >-
-      An explicit, comparable version string is only meaningful if resolving the same
-      name-and-version pair keeps returning the same instruction; editing the text under an
-      existing version number breaks that guarantee and erases the ability to compare behavior
-      before and after the wording change.
-  - id: b
-    text: >-
-      There is no problem, since version is purely cosmetic metadata that does not affect which
-      instruction text a caller receives.
-    correct: false
-    rationale: >-
-      The version is the lookup key that determines which instruction text a caller receives;
-      treating it as cosmetic ignores that every caller resolving "1.0.0" is depending on that
-      lookup returning stable text.
-    trap_type: false-capability
-  - id: c
-    text: >-
       Add a comment above the edited instruction text explaining that the wording changed on this
       date, and leave the version number as "1.0.0".
     correct: false
@@ -44,7 +21,17 @@ options:
       result; it does not restore the ability to compare outcomes across the old and new wording
       the way an actual version bump would.
     trap_type: cost-theater
-  - id: d
+  - id: b
+    text: >-
+      Publish the change as a new explicit version such as "1.0.1", leaving "1.0.0" resolvable and
+      unchanged so results from the two wordings stay comparable.
+    correct: true
+    rationale: >-
+      An explicit, comparable version string is only meaningful if resolving the same
+      name-and-version pair keeps returning the same instruction. Editing the text under an existing
+      version number changes it silently behind every caller already resolving that version, and
+      erases the ability to tell which wording produced any given past or future result.
+  - id: c
     text: >-
       Route the reworded instruction to a larger model instead of bumping the version, since a
       more capable model will produce fewer misclassifications regardless of wording.
@@ -54,7 +41,17 @@ options:
       produced which results, not a question of model capability; switching models does not
       restore that traceability.
     trap_type: bigger-model
+  - id: d
+    text: >-
+      There is no problem, since version is purely cosmetic metadata that does not affect which
+      instruction text a caller receives.
+    correct: false
+    rationale: >-
+      The version is the lookup key that determines which instruction text a caller receives;
+      treating it as cosmetic ignores that every caller resolving "1.0.0" is depending on that
+      lookup returning stable text.
+    trap_type: false-capability
 sources:
   - title: ccdv-f-lab reference app — lab/config.py PromptVersion and compare_prompt_versions
     url: https://github.com/moghazy17/ccdv-f-lab/blob/main/lab/config.py
-    verified_on: "2026-09-09"
+    verified_on: "2026-09-17"

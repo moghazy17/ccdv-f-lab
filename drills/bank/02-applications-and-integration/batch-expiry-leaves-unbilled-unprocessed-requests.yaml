@@ -1,0 +1,64 @@
+id: batch-expiry-leaves-unbilled-unprocessed-requests
+domain: Applications and Integration
+sub_skill: Claude API Mechanics
+difficulty: analysis
+select: 1
+stem: >-
+  A nightly job submits a very large batch and writes each result to a warehouse table keyed by the
+  request identifier. Most nights every row lands. On heavy nights the job reports success while
+  several thousand rows are missing, and the finance report shows the batch cost less than the row
+  count would imply. The job treats any result it can parse as a completed message. What is
+  happening?
+options:
+  - id: a
+    text: >-
+      Results are only retrievable once every request has finished, so on heavy nights the job is
+      reading a partial file before the batch completes.
+    correct: false
+    rationale: >-
+      Results become accessible when all requests finish or after 24 hours, whichever comes first, so
+      a long-running batch deliberately yields readable results at the deadline. The file is complete
+      for what the batch produced; some entries report expiry.
+    trap_type: false-capability
+  - id: b
+    text: >-
+      The batch exceeded the request limit, so the surplus was silently dropped at submission and
+      never appeared in the results.
+    correct: false
+    rationale: >-
+      Exceeding the cap of 100,000 requests or 256 MB is a submission-time failure, not a silent
+      drop, and it would fail identically on light nights. The variation with load points elsewhere.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      The 29-day retention window elapsed for the oldest entries, so their results were no longer
+      downloadable when the job read them.
+    correct: false
+    rationale: >-
+      Retention governs how long a completed batch's results stay downloadable, which has no bearing
+      on a batch read the morning after submission.
+    trap_type: irrelevant-knob
+  - id: d
+    text: >-
+      Requests still unprocessed at the 24-hour expiration come back as expired results, which are
+      not billed.
+    correct: true
+    rationale: >-
+      A batch expires if processing does not finish within 24 hours, and processing slows under
+      demand, so more requests expire on heavy nights. Expired and canceled requests are returned as
+      their own result types and are not billed, which explains both the missing rows and the lower
+      cost. The job must handle that outcome rather than assume every result is a message, and those
+      requests need resubmitting.
+  - id: e
+    text: >-
+      Results were matched to requests by position, so heavy nights reorder them and the tail rows
+      are written under the wrong keys.
+    correct: false
+    rationale: >-
+      Position matching is a real defect in batch consumers, and it produces mismatched rows rather
+      than missing ones with a lower bill. This job keys by identifier already.
+    trap_type: right-idea-wrong-mechanism
+sources:
+  - title: Batch processing — Anthropic
+    url: https://platform.claude.com/docs/en/build-with-claude/batch-processing
+    verified_on: "2026-09-17"

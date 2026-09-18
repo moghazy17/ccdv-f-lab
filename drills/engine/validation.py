@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import difflib
 import json
+import re
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from itertools import combinations
 from pathlib import Path
 from typing import Any
 
@@ -18,12 +21,34 @@ DEFAULT_BANK_PATH = REPOSITORY_ROOT / "drills" / "bank"
 SCHEMA_PATH = REPOSITORY_ROOT / "drills" / "schema.json"
 
 
+NEAR_DUPLICATE_RATIO = 0.75
+"""How alike two texts must read before an author is shown the pair."""
+
+
 @dataclass(frozen=True)
 class BankItem:
     """A parsed bank item and the file that defines it."""
 
     path: Path
     item: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class NearDuplicate:
+    """Two items in one domain whose text reads alike, offered to an author to judge."""
+
+    domain: str
+    first_id: str
+    second_id: str
+    basis: str
+    ratio: float
+
+    def describe(self) -> str:
+        """Render the pair as one advisory line."""
+        return (
+            f"{self.domain}: {self.first_id!r} and {self.second_id!r} have similar "
+            f"{self.basis} ({self.ratio:.0%})"
+        )
 
 
 def load_schema(path: Path = SCHEMA_PATH) -> dict[str, Any]:
@@ -70,6 +95,71 @@ def item_validation_errors(item: Any, blueprint: Blueprint) -> list[str]:
             errors.append(f"select: {select} does not equal the {correct_count} correct option(s)")
 
     return errors
+
+
+def _normalized(text: str) -> str:
+    return re.sub(r"[^a-z0-9 ]+", "", " ".join(str(text).split()).lower())
+
+
+def _correct_rationales(item: Mapping[str, Any]) -> str:
+    options = item.get("options")
+    if not isinstance(options, list):
+        return ""
+    return " ".join(
+        str(option.get("rationale", ""))
+        for option in options
+        if isinstance(option, Mapping) and option.get("correct") is True
+    )
+
+
+def near_duplicate_advisories(
+    bank_items: list[BankItem], ratio: float = NEAR_DUPLICATE_RATIO
+) -> list[NearDuplicate]:
+    """Report item pairs within one domain that read alike, without judging them.
+
+    Whether two items turn on the same distinguishing fact is a reading, not a measurement, so this
+    never fails validation. It exists so an author sees the neighbours of what they just wrote.
+    """
+    by_domain: dict[str, list[tuple[str, dict[str, Any]]]] = {}
+    for bank_item in bank_items:
+        item = bank_item.item
+        domain = item.get("domain")
+        item_id = item.get("id")
+        if isinstance(domain, str) and isinstance(item_id, str):
+            by_domain.setdefault(domain, []).append((item_id, item))
+
+    advisories: list[NearDuplicate] = []
+    for domain, entries in sorted(by_domain.items()):
+        for (first_id, first), (second_id, second) in combinations(entries, 2):
+            for basis, left, right in (
+                ("stems", first.get("stem", ""), second.get("stem", "")),
+                (
+                    "correct-option rationales",
+                    _correct_rationales(first),
+                    _correct_rationales(second),
+                ),
+            ):
+                left_text = _normalized(left)
+                right_text = _normalized(right)
+                if not left_text or not right_text:
+                    continue
+                # autojunk would treat any character appearing in more than 1% of a sequence of
+                # 200 or more as junk, which is every common letter once a stem reaches its usual
+                # length, and it drives a near-identical pair below the threshold.
+                measured = difflib.SequenceMatcher(
+                    None, left_text, right_text, autojunk=False
+                ).ratio()
+                if measured >= ratio:
+                    advisories.append(
+                        NearDuplicate(
+                            domain=domain,
+                            first_id=min(first_id, second_id),
+                            second_id=max(first_id, second_id),
+                            basis=basis,
+                            ratio=measured,
+                        )
+                    )
+    return advisories
 
 
 def load_item(path: Path) -> dict[str, Any]:

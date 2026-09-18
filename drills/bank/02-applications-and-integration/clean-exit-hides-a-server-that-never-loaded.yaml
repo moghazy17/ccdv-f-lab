@@ -1,0 +1,64 @@
+id: clean-exit-hides-a-server-that-never-loaded
+domain: Applications and Integration
+sub_skill: Software Engineering Foundations
+difficulty: analysis
+select: 1
+stem: >-
+  A scheduled job runs Claude Code non-interactively with a configuration file that supplies an MCP
+  server the task depends on. For two weeks the job exits 0 every night while quietly producing
+  results that ignore the server's data, because one configuration entry was invalid and the server
+  was skipped at startup. The job redirects standard error to a log nobody reads. What should the
+  team rely on to catch this, and why did the exit status not?
+options:
+  - id: a
+    text: >-
+      Setting a longer startup timeout, since the server was probably still connecting when the first
+      turn began.
+    correct: false
+    rationale: >-
+      A pending connection is a different failure from an entry rejected by validation, and more
+      time cannot validate an invalid entry. This tunes a parameter unrelated to the cause.
+    trap_type: irrelevant-knob
+  - id: b
+    text: >-
+      Gate on the `system/init` event's server error array, because a server skipped by
+      configuration validation does not fail the run and the exit status cannot report it.
+    correct: true
+    rationale: >-
+      Claude Code validates each configured entry at startup, skips the ones that fail, and
+      continues, so the run exits cleanly by design. The gate has to inspect the `system/init`
+      event's error arrays for plugins and servers instead; they are omitted when empty, which is
+      precisely what lets a pipeline fail on a non-empty array.
+  - id: c
+    text: >-
+      Standard error carries a startup warning, so the fix is to stop redirecting it and let the
+      warning surface in the job log.
+    correct: false
+    rationale: >-
+      The warning is printed when a person runs the command in a terminal; when the output is
+      captured by a runner, no warning is printed and the skipped entries are reported only in the
+      startup event. Relying on it leaves the gate blind in exactly the environment that needs it.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Running the job in bare mode, which would have prevented the invalid entry from being read at
+      all.
+    correct: false
+    rationale: >-
+      Bare mode does skip auto-discovered servers, but this job passes its server explicitly because
+      the task depends on it. Suppressing the dependency is not a way to detect that it failed to
+      load.
+    trap_type: wrong-layer
+  - id: e
+    text: >-
+      The exit status is unreliable in non-interactive mode, so the gate should parse the result text
+      for phrases indicating missing data.
+    correct: false
+    rationale: >-
+      The exit status is well defined — zero on success, non-zero on failure — and the run genuinely
+      succeeded. Grepping prose for a symptom replaces a structured signal with a fragile one.
+    trap_type: right-idea-wrong-mechanism
+sources:
+  - title: Run Claude Code programmatically — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/headless
+    verified_on: "2026-09-17"

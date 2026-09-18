@@ -1,0 +1,60 @@
+id: latency-is-not-a-property-of-the-model-alone
+domain: Model Selection and Optimization
+sub_skill: Model Selection and Tradeoffs
+difficulty: analysis
+select: 1
+stem: >-
+  A team misses a response-time target and moves the route from a mid-tier model to the one the
+  comparison table lists as fastest. Response times improve by less than they expected, and the worst
+  cases are still over target. The prompt sends a large retrieved context and the answers are long.
+  What does the published latency ordering actually tell them?
+options:
+  - id: a
+    text: >-
+      That the ordering is relative, and actual latency depends on the request's own shape.
+    correct: true
+    rationale: >-
+      The comparison marks latency as relative to the lineup and names what decides it in practice:
+      prompt length, output length, and thinking effort. With a large retrieved context and long
+      answers, those factors dominate, which is why changing tier moved the number far less than the
+      ordering suggested.
+  - id: b
+    text: >-
+      That the ordering is measured at a fixed prompt and output size, so any deviation from that
+      size invalidates it entirely.
+    correct: false
+    rationale: >-
+      No such fixed benchmark is published, and treating the ordering as void outside one shape
+      discards information that is genuinely useful for a first choice.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      That the table's ordering applies only to models with adaptive thinking, so a model without
+      effort support sits outside it.
+    correct: false
+    rationale: >-
+      The ordering covers the lineup, and thinking mode is a separate column of the same comparison.
+      This ties two independent properties together.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      That the team should have expected no improvement at all, since latency is determined entirely
+      by tokens rather than by model.
+    correct: false
+    rationale: >-
+      The tier does affect speed, which is why the ordering exists; it is simply not the only factor.
+      Overcorrecting to "tokens only" would rule out a legitimate lever.
+    trap_type: false-capability
+  - id: e
+    text: >-
+      That they should raise effort on the faster model, since more reasoning reaches an answer in
+      fewer passes.
+    correct: false
+    rationale: >-
+      More thinking adds latency rather than removing it, and the model in question does not take the
+      effort parameter at all. This pushes the measured time in the wrong direction.
+    trap_type: irrelevant-knob
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-17"

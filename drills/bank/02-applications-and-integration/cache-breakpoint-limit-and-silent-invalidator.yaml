@@ -11,14 +11,13 @@ stem: >-
 options:
   - id: a
     text: >-
-      The API permits at most 4 explicit cache breakpoints per request; confirming the request's
-      breakpoint count is within that ceiling is a correct step before assuming a missing
-      breakpoint, rather than an unrelated one, is the cause.
-    correct: true
+      Switch to a larger model, since a more capable model caches its own context more effectively
+      regardless of prefix content.
+    correct: false
     rationale: >-
-      The documented ceiling of 4 explicit breakpoints per request is a hard constraint on how
-      many prefix positions can be marked at all, so checking the request against that ceiling is
-      a correct diagnostic step when a caching failure needs isolating.
+      Prompt caching is a request-shape mechanism independent of which model receives the request;
+      no model tier changes whether a byte-for-byte prefix hash matches a prior entry.
+    trap_type: bigger-model
   - id: b
     text: >-
       The timestamp placed immediately before the breakpoint changes the exact content the prefix
@@ -33,14 +32,14 @@ options:
       that returns no error.
   - id: c
     text: >-
-      Enable automatic caching in addition to the 4 explicit breakpoints already in the request,
-      since more breakpoints always improve the hit rate.
-    correct: false
+      The API permits at most 4 explicit cache breakpoints per request; confirming the request's
+      breakpoint count is within that ceiling is a correct step before assuming a missing
+      breakpoint, rather than an unrelated one, is the cause.
+    correct: true
     rationale: >-
-      Adding a breakpoint beyond the documented ceiling of 4 explicit breakpoints returns a 400
-      error rather than improving anything, and it does not address the actual cause, which is
-      volatile content changing the hash at the existing breakpoint.
-    trap_type: irrelevant-knob
+      The documented ceiling of 4 explicit breakpoints per request is a hard constraint on how
+      many prefix positions can be marked at all, so checking the request against that ceiling is
+      a correct diagnostic step when a caching failure needs isolating.
   - id: d
     text: >-
       Retry the same request with exponential backoff until a cache read is eventually reported.
@@ -52,14 +51,15 @@ options:
     trap_type: wrong-layer
   - id: e
     text: >-
-      Switch to a larger model, since a more capable model caches its own context more effectively
-      regardless of prefix content.
+      Enable automatic caching in addition to the 4 explicit breakpoints already in the request,
+      since more breakpoints always improve the hit rate.
     correct: false
     rationale: >-
-      Prompt caching is a request-shape mechanism independent of which model receives the request;
-      no model tier changes whether a byte-for-byte prefix hash matches a prior entry.
-    trap_type: bigger-model
+      Adding a breakpoint beyond the documented ceiling of 4 explicit breakpoints returns a 400
+      error rather than improving anything, and it does not address the actual cause, which is
+      volatile content changing the hash at the existing breakpoint.
+    trap_type: irrelevant-knob
 sources:
   - title: Prompt caching — Anthropic (Claude Platform docs)
     url: https://platform.claude.com/docs/en/build-with-claude/prompt-caching
-    verified_on: "2026-09-09"
+    verified_on: "2026-09-17"

@@ -12,23 +12,22 @@ options:
   - id: a
     text: >-
       A PreToolUse hook that inspects the command and blocks execution before it runs delivers the
-      guarantee, because hooks execute in the harness's own process independent of what the model
-      decides.
+      guarantee.
     correct: true
     rationale: >-
-      Hooks run as callbacks in the harness, outside the model's control, and can block a
-      dangerous operation before it executes; that is what gives a hard guarantee regardless of
-      model behavior, as opposed to content that only shapes what the model decides to do.
+      Hooks run as callbacks in the harness's own process, outside the model's control, and can
+      block a dangerous operation before it executes. That is what gives a hard guarantee regardless
+      of model behavior, as opposed to content that only shapes what the model decides to do.
   - id: b
     text: >-
-      The CLAUDE.md instruction alone delivers the guarantee, since Claude reads and follows
-      CLAUDE.md on every session.
+      Switching to a larger, more capable model delivers the guarantee, since a more capable model
+      would better respect the CLAUDE.md instruction.
     correct: false
     rationale: >-
-      Anthropic's documentation states that Claude treats CLAUDE.md as context, not enforced
-      configuration, and that a PreToolUse hook is the mechanism to use instead when an action
-      must be blocked regardless of what Claude decides; the instruction alone gives no guarantee.
-    trap_type: false-capability
+      Model capability does not change whether CLAUDE.md is enforced configuration or context; the
+      documented distinction between hooks and CLAUDE.md is architectural, not a function of which
+      model is used.
+    trap_type: bigger-model
   - id: c
     text: >-
       Rewriting the CLAUDE.md instruction in stronger, more emphatic wording ("ABSOLUTELY NEVER
@@ -40,14 +39,14 @@ options:
     trap_type: unenforceable-politeness
   - id: d
     text: >-
-      Switching to a larger, more capable model delivers the guarantee, since a more capable model
-      would better respect the CLAUDE.md instruction.
+      The CLAUDE.md instruction alone delivers the guarantee, since Claude reads and follows
+      CLAUDE.md on every session.
     correct: false
     rationale: >-
-      Model capability does not change whether CLAUDE.md is enforced configuration or context; the
-      documented distinction between hooks and CLAUDE.md is architectural, not a function of which
-      model is used.
-    trap_type: bigger-model
+      Anthropic's documentation states that Claude treats CLAUDE.md as context, not enforced
+      configuration, and that a PreToolUse hook is the mechanism to use instead when an action
+      must be blocked regardless of what Claude decides; the instruction alone gives no guarantee.
+    trap_type: false-capability
 sources:
   - title: How Claude remembers your project — Anthropic (Claude Code docs)
     url: https://code.claude.com/docs/en/memory

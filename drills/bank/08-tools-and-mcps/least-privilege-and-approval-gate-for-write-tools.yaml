@@ -10,23 +10,22 @@ stem: >-
   is ever executed, which two dispatcher-side checks should gate it?
 options:
   - id: a
-    text: >-
-      Confirm the tool is in the capability set exposed to this ticket's trust level, denying it
-      outright for an untrusted ticket regardless of what the model requested.
-    correct: true
+    text: Route the ticket to a larger model that is less likely to be misled by injected text.
+    correct: false
     rationale: >-
-      Applying least privilege by binding a ticket's trust level to the exact tools it may use
-      limits what a successful injection can accomplish; an untrusted ticket should not have a
-      write tool available to call in the first place.
+      A more capable model can still be misled by an injection attempt; model capability is not a
+      substitute for the least-privilege exposure and approval checks that gate write execution.
+    trap_type: bigger-model
   - id: b
     text: >-
-      Require an explicit recorded human approval decision for that specific tool_use_id before
-      executing the write tool, and refuse to execute it if approval is missing or denied.
-    correct: true
+      Add a system-prompt instruction telling Claude not to call a write tool unless a human has
+      approved it.
+    correct: false
     rationale: >-
-      Write tools should execute only after an explicit human approval; gating dispatch on a
-      recorded approval decision, rather than the model's own request, is what keeps an
-      unapproved write action from actually running.
+      A prompt instruction is something Claude can fail to follow under a well-crafted injection
+      attempt; it is not an enforced precondition the dispatcher checks before running the write
+      tool.
+    trap_type: unenforceable-politeness
   - id: c
     text: >-
       Scan the ticket text for known injection phrases, and treat a call as safe to execute
@@ -40,21 +39,22 @@ options:
     trap_type: wrong-layer
   - id: d
     text: >-
-      Add a system-prompt instruction telling Claude not to call a write tool unless a human has
-      approved it.
-    correct: false
+      Require an explicit recorded human approval decision for that specific tool_use_id before
+      executing the write tool, and refuse to execute it if approval is missing or denied.
+    correct: true
     rationale: >-
-      A prompt instruction is something Claude can fail to follow under a well-crafted injection
-      attempt; it is not an enforced precondition the dispatcher checks before running the write
-      tool.
-    trap_type: unenforceable-politeness
+      Write tools should execute only after an explicit human approval; gating dispatch on a
+      recorded approval decision, rather than the model's own request, is what keeps an
+      unapproved write action from actually running.
   - id: e
-    text: Route the ticket to a larger model that is less likely to be misled by injected text.
-    correct: false
+    text: >-
+      Confirm the tool is in the capability set exposed to this ticket's trust level, denying it
+      outright for an untrusted ticket regardless of what the model requested.
+    correct: true
     rationale: >-
-      A more capable model can still be misled by an injection attempt; model capability is not a
-      substitute for the least-privilege exposure and approval checks that gate write execution.
-    trap_type: bigger-model
+      Applying least privilege by binding a ticket's trust level to the exact tools it may use
+      limits what a successful injection can accomplish; an untrusted ticket should not have a
+      write tool available to call in the first place.
 sources:
   - title: Mitigate jailbreaks and prompt injections — Anthropic (Claude Platform docs)
     url: https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/mitigate-jailbreaks

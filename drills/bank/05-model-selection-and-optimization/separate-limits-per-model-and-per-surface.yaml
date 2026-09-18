@@ -1,0 +1,58 @@
+id: separate-limits-per-model-and-per-surface
+domain: Model Selection and Optimization
+sub_skill: Technical Fundamentals
+difficulty: recall
+select: 1
+stem: >-
+  A team plans capacity for a service that calls two different models synchronously and also submits
+  nightly batches. Which statement about how the limits apply is accurate?
+options:
+  - id: a
+    text: >-
+      All models draw from a single organization-wide token pool, so adding a second model halves the
+      throughput of the first.
+    correct: false
+    rationale: >-
+      This is the assumption that makes teams avoid routing across models unnecessarily. Limits are
+      per model, so the second model brings its own allowance.
+    trap_type: false-capability
+  - id: b
+    text: >-
+      Only requests per minute is enforced; token limits are advisory and surface as slower responses
+      rather than errors.
+    correct: false
+    rationale: >-
+      Input and output token limits are enforced and produce a 429 naming the limit exceeded. Treating
+      them as advisory would leave the service unprepared for the error it will receive.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      Batch submissions consume the synchronous limits of whichever model each request names, so
+      nightly batches must be scheduled around daytime traffic.
+    correct: false
+    rationale: >-
+      The batch path has its own limits rather than borrowing each model's synchronous allowance.
+      Scheduling around the wrong constraint would waste the batch window.
+    trap_type: wrong-layer
+  - id: d
+    text: >-
+      Limits apply separately per model, and the batch path carries its own.
+    correct: true
+    rationale: >-
+      Per-model separation means two models can be driven to their respective limits at once, and the
+      batch path has its own request-rate and processing-queue limits, shared across models. The
+      three workloads therefore do not draw from one pool, and a capacity plan has three budgets
+      rather than one.
+  - id: e
+    text: >-
+      A workspace limit replaces the organization limit, so setting a generous workspace limit lifts
+      the organization ceiling for that team.
+    correct: false
+    rationale: >-
+      Organization-wide limits always apply even when workspace limits sum to more; a workspace limit
+      can only carve the existing allowance up, not enlarge it.
+    trap_type: false-capability
+sources:
+  - title: Rate limits — Anthropic
+    url: https://platform.claude.com/docs/en/api/rate-limits
+    verified_on: "2026-09-17"

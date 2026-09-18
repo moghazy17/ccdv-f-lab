@@ -1,0 +1,61 @@
+id: platform-lifecycle-dates-are-set-by-the-platform
+domain: Model Selection and Optimization
+sub_skill: Technical Fundamentals
+difficulty: analysis
+select: 1
+stem: >-
+  An organization runs the same model on Anthropic's first-party API and, for a separate business
+  unit, through a cloud marketplace. Planning the migration calendar, an architect proposes a single
+  retirement date for both, taken from Anthropic's published commitment. What is wrong with that
+  plan?
+options:
+  - id: a
+    text: >-
+      The architect should consolidate both business units onto the marketplace, so one vendor's
+      calendar governs everything.
+    correct: false
+    rationale: >-
+      Consolidation is a large organizational change proposed to simplify a calendar, and it also
+      trades away whichever platform's properties the first unit chose deliberately.
+    trap_type: overkill
+  - id: b
+    text: >-
+      The published commitment binds Anthropic-operated platforms; a cloud marketplace sets its own
+      lifecycle dates, so the two deployments need separate calendars.
+    correct: true
+    rationale: >-
+      Anthropic's retirement commitment covers its own platforms, while Amazon Bedrock and Google
+      Cloud set their own dates. A single calendar would leave one business unit either migrating
+      early for no reason or discovering a retirement it never tracked.
+  - id: c
+    text: >-
+      Nothing is wrong: a model identifier is a pinned snapshot, so its lifetime is a property of the
+      snapshot wherever it runs.
+    correct: false
+    rationale: >-
+      Pinning fixes which weights a request reaches, which is a different guarantee from how long a
+      platform will keep serving them. The two are easy to conflate and are not the same commitment.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Retirement dates are irrelevant while an alias is used, because an alias resolves to whatever
+      model is current.
+    correct: false
+    rationale: >-
+      For the current generation the dateless identifier is itself a pinned snapshot, not a floating
+      pointer, so no alias silently carries an integration to a successor.
+    trap_type: false-capability
+  - id: e
+    text: >-
+      The plan is too cautious: a marketplace never retires a model independently, since it would
+      break its own customers' integrations.
+    correct: false
+    rationale: >-
+      This substitutes an assumption about commercial incentives for the published position, which
+      is that those platforms set their own dates. Planning on an inference rather than a commitment
+      is the risk being taken.
+    trap_type: unenforceable-politeness
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-17"

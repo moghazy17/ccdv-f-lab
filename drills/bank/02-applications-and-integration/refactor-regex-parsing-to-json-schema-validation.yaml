@@ -11,15 +11,6 @@ stem: >-
 options:
   - id: a
     text: >-
-      Request output_config.format as a json_schema with the required fields, their types, and
-      additionalProperties set to false, replacing free-text generation with a schema Claude's
-      decoding is constrained to follow.
-    correct: true
-    rationale: >-
-      Structured output constrains decoding to the schema, replacing regex guesses about
-      free-text phrasing with a request-time contract for the response's shape.
-  - id: b
-    text: >-
       Decode the response with a JSON parser and validate the result against that same schema
       with a JSON Schema validator before building the application's result object.
     correct: true
@@ -27,7 +18,7 @@ options:
       Validating the decoded payload against the schema, rather than scraping fields out of text
       with a regex, gives the refactor a single explicit place where a malformed or incomplete
       response is caught with a readable error.
-  - id: c
+  - id: b
     text: >-
       Keep the regex, but add another alternative pattern to it each time a new phrasing breaks
       it.
@@ -37,6 +28,15 @@ options:
       fragile in the first place: it depends on free-text phrasing instead of a schema Claude's
       decoding is constrained to follow.
     trap_type: cost-theater
+  - id: c
+    text: >-
+      Request output_config.format as a json_schema with the required fields, their types, and
+      additionalProperties set to false, replacing free-text generation with a schema Claude's
+      decoding is constrained to follow.
+    correct: true
+    rationale: >-
+      Structured output constrains decoding to the schema, replacing regex guesses about
+      free-text phrasing with a request-time contract for the response's shape.
   - id: d
     text: >-
       Ask the model, in the prompt, to phrase its answer exactly the way the regex expects, and
@@ -58,4 +58,4 @@ options:
 sources:
   - title: Structured outputs — Anthropic (Claude Platform docs)
     url: https://platform.claude.com/docs/en/build-with-claude/structured-outputs
-    verified_on: "2026-09-09"
+    verified_on: "2026-09-17"

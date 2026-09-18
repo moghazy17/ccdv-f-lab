@@ -30,15 +30,6 @@ options:
     trap_type: wrong-layer
   - id: c
     text: >-
-      Package the capability as a Skill so any of the client applications can load it when
-      relevant.
-    correct: false
-    rationale: >-
-      A Skill is a bundle of prompt-based instructions loaded by a specific agent harness, not a
-      protocol other, unrelated client applications can connect to as a shared integration.
-    trap_type: false-capability
-  - id: d
-    text: >-
       Use one of Anthropic's built-in tools, since built-in tools are already available to any
       client without extra integration work.
     correct: false
@@ -46,6 +37,15 @@ options:
       Built-in, Anthropic-schema tools cover general capabilities such as web search or code
       execution; none of them reach into this team's own knowledge base and customer records, so
       no built-in tool provides this integration.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Package the capability as a Skill so any of the client applications can load it when
+      relevant.
+    correct: false
+    rationale: >-
+      A Skill is a bundle of prompt-based instructions loaded by a specific agent harness, not a
+      protocol other, unrelated client applications can connect to as a shared integration.
     trap_type: false-capability
 sources:
   - title: Resources — Model Context Protocol specification

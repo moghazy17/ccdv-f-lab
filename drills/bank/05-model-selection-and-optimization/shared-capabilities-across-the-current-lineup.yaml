@@ -1,0 +1,56 @@
+id: shared-capabilities-across-the-current-lineup
+domain: Model Selection and Optimization
+sub_skill: LLM Fundamentals
+difficulty: recall
+select: 1
+stem: >-
+  A product manager asks which of the current models can accept an image alongside text, so the team
+  can decide whether a screenshot-triage feature forces them onto a particular tier. What is accurate
+  about the current lineup?
+options:
+  - id: a
+    text: >-
+      Image input is available on every model but tool use is not, so the feature must avoid tools.
+    correct: false
+    rationale: >-
+      Tool use is also common across the current lineup. Inventing a restriction here would
+      needlessly constrain the design.
+    trap_type: false-capability
+  - id: b
+    text: >-
+      Image input requires the extended-output beta header, so the team must enable it regardless of
+      tier.
+    correct: false
+    rationale: >-
+      That header concerns output length on the batch path for certain models and has nothing to do
+      with accepting an image.
+    trap_type: false-capability
+  - id: c
+    text: Only the highest tier accepts image input, so a vision feature requires it.
+    correct: false
+    rationale: >-
+      Image input is common to every current model rather than reserved for a tier, so this both
+      misstates the lineup and pushes a simple triage task onto the most expensive model. Capability
+      questions are answered by the comparison's own rows, not by price.
+    trap_type: bigger-model
+  - id: d
+    text: >-
+      Every current model accepts image input, so vision does not narrow the choice by itself.
+    correct: true
+    rationale: >-
+      Text and image input, text output, multilingual capability, vision, and tool use are common
+      across the current lineup, so the feature dictates no tier. The decision returns to the axes
+      that genuinely differ: context window, latency, effort support, and price.
+  - id: e
+    text: >-
+      Image input is supported only on models whose thinking is adaptive, so the fastest model is
+      excluded.
+    correct: false
+    rationale: >-
+      Thinking mode and input modality are unrelated. This ties two independent columns of the
+      comparison together and rules out a model that in fact qualifies.
+    trap_type: false-capability
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-17"

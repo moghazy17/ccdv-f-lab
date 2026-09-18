@@ -1,0 +1,60 @@
+id: hook-stderr-is-invisible-on-a-successful-exit
+domain: Security and Safety
+sub_skill: Claude Hooks
+difficulty: analysis
+select: 1
+stem: >-
+  A security hook is meant to warn rather than block: it inspects each tool call, writes "this path
+  is sensitive, prefer the read-only helper" to standard error, and exits 0 so work continues.
+  Reviewing transcripts weeks later, the team finds the warning never influenced a single session,
+  and Claude never referred to it. Why?
+options:
+  - id: a
+    text: >-
+      The hook ran on the wrong event, so it fired after each tool call rather than before, and the
+      advice arrived too late to act on.
+    correct: false
+    rationale: >-
+      Timing would be a real problem for an advisory hook, but it would not explain a message that
+      appears in no transcript at all. The premise is that the warning was never visible, not that it
+      was late.
+    trap_type: right-idea-wrong-mechanism
+  - id: b
+    text: >-
+      Standard error from a hook that exits 0 reaches the debug log only — never the transcript, and
+      never Claude — so a warning delivered that way cannot influence anything.
+    correct: true
+    rationale: >-
+      The channel determines the audience. On a successful exit, stderr is diagnostic output for a
+      human reading the debug log, so the hook has been writing to a place the model does not see.
+      A warning that must reach Claude has to arrive through a channel that feeds context.
+  - id: c
+    text: >-
+      Exiting 0 discards the hook's output entirely, so the text was never written anywhere and the
+      debug log is empty too.
+    correct: false
+    rationale: >-
+      The output is not discarded; it is routed to the debug log. The distinction matters, because it
+      tells the team their hook works and only its audience is wrong.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Warnings are shown only once per session, so the message appeared early and was then suppressed
+      for the rest of the transcript.
+    correct: false
+    rationale: >-
+      No such deduplication governs this. Believing it would lead the team to redesign around a
+      throttle that does not exist, while the message still went to the debug log.
+    trap_type: false-capability
+  - id: e
+    text: >-
+      Exit 2 should be used for a warning, since that is the only code whose message is surfaced.
+    correct: false
+    rationale: >-
+      Exit 2 does surface its message, and it also blocks the call — which is exactly what this hook
+      was designed not to do. Adopting it would convert an advisory into an enforcement.
+    trap_type: overkill
+sources:
+  - title: Hooks reference — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/hooks
+    verified_on: "2026-09-17"

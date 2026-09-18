@@ -1,0 +1,63 @@
+id: held-connection-versus-polled-batch-for-long-work
+domain: Applications and Integration
+sub_skill: Software Engineering Foundations
+difficulty: application
+select: 1
+stem: >-
+  A reporting job asks for a very long generation in a single non-streaming request. It usually
+  succeeds from the office network and fails from the data center, where it returns no response at
+  all after a long wait. The team has already ruled out an application bug: the same payload
+  succeeds elsewhere. Which explanation and remedy fit what the documentation describes?
+options:
+  - id: a
+    text: >-
+      Raising the SDK's retry count, so a dropped connection is retried until one attempt survives.
+    correct: false
+    rationale: >-
+      Retrying is a real recovery mechanism, but it is the wrong one here: each attempt re-runs the
+      same long generation over the same fragile connection, so the per-attempt odds never change.
+      Streaming and batching remove the exposure instead of re-rolling it.
+    trap_type: right-idea-wrong-mechanism
+  - id: b
+    text: >-
+      Moving the job to a machine on the office network, since that environment is demonstrably
+      compatible with long requests.
+    correct: false
+    rationale: >-
+      This preserves a fragile design by relocating it to the network that happens to tolerate it
+      today. Network reliability is exactly the variable the streaming and batch paths exist to stop
+      depending on.
+    trap_type: wrong-layer
+  - id: c
+    text: >-
+      Lowering `max_tokens` until the request completes quickly, since the failure only appears on
+      long generations.
+    correct: false
+    rationale: >-
+      This trims the deliverable to fit the transport and abandons the report the job exists to
+      produce. The constraint is in the connection, not in the length of the answer the business
+      asked for.
+    trap_type: wrong-layer
+  - id: d
+    text: >-
+      The data center is rate limited, so the request is being rejected before it reaches the model
+      and the client is mishandling the 429.
+    correct: false
+    rationale: >-
+      A rate-limited request returns a 429 the client can see. The symptom here is the absence of any
+      response, which points at the connection rather than at a rejection.
+    trap_type: right-idea-wrong-mechanism
+  - id: e
+    text: >-
+      A long-held idle connection can be dropped before a response arrives, so the work belongs on
+      the streaming or batch path.
+    correct: true
+    rationale: >-
+      Some networks drop idle connections after a variable period, which fails the request with no
+      response at all, and networks differ in reliability — exactly why the same payload behaves
+      differently in two places. Streaming keeps data flowing; batching replaces the held connection
+      with polling, removing the dependence on one uninterrupted connection altogether.
+sources:
+  - title: Claude API errors — Anthropic
+    url: https://platform.claude.com/docs/en/api/errors
+    verified_on: "2026-09-17"

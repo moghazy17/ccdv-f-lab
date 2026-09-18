@@ -1,0 +1,61 @@
+id: deriving-fail-fast-requirement-from-a-budget-rule
+domain: Applications and Integration
+sub_skill: Understanding Requirements
+difficulty: analysis
+select: 1
+stem: >-
+  Finance states the rule as "if we reach the monthly cap, the pipeline must stop and alert us the
+  same hour — it must not sit there burning worker time retrying." The pipeline currently treats every
+  429 the same way: back off and retry until a long deadline expires. Which functional requirement
+  does the business rule translate into?
+options:
+  - id: a
+    text: >-
+      The handler must catch the 400 that a spend limit returns, since reaching a cap is a request
+      validation failure.
+    correct: false
+    rationale: >-
+      A self-imposed spend limit does return a 400, but the tier's monthly cap returns a 429. A
+      handler written only for the 400 would miss the case finance is describing.
+    trap_type: right-idea-wrong-mechanism
+  - id: b
+    text: >-
+      The SDK's automatic retries already honor the response, so the requirement is satisfied by
+      raising the configured retry count.
+    correct: false
+    rationale: >-
+      Automatic retries fail against a spend cap exactly as hand-written ones do, and raising the
+      count lengthens the very stall the rule forbids.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      The handler must stop retrying every 429, since a rate limit means the account has no capacity
+      left.
+    correct: false
+    rationale: >-
+      An ordinary rate-limit 429 is transient and tells the caller when to try again through
+      `retry-after`; abandoning those would throw away recoverable work. The rule targets the capped
+      case, not all throttling.
+    trap_type: overkill
+  - id: d
+    text: >-
+      The handler must tell a spend-cap 429 from an ordinary one, and alert rather than retry on
+      it.
+    correct: true
+    rationale: >-
+      Both are typed as rate-limit errors, but the spend-cap response omits `retry-after` and carries
+      a spend-limit error code, and no amount of retrying clears it until access resumes. Those two
+      signals are exactly what lets the pipeline meet "stop and alert" instead of "retry until the
+      deadline".
+  - id: e
+    text: >-
+      The pipeline must lower its own spend limit below the tier cap, so the cap is never reached.
+    correct: false
+    rationale: >-
+      This changes which error arrives without giving the pipeline any way to recognize it or alert
+      on it. The requirement is about behavior at the limit, not about where the limit sits.
+    trap_type: wrong-layer
+sources:
+  - title: Rate limits — Anthropic
+    url: https://platform.claude.com/docs/en/api/rate-limits
+    verified_on: "2026-09-17"

@@ -12,15 +12,41 @@ stem: >-
 options:
   - id: a
     text: >-
-      Replace the older turns with one summary, while explicitly keeping the most recent turns and
-      the one earlier turn the agent still depends on as original, unsummarized turns.
+      Reduce the number of prompt-caching breakpoints in the request so more of the budget is
+      available for conversation content.
+    correct: false
+    rationale: >-
+      Caching breakpoints affect which prefix is reused for cost and latency; they do not remove or
+      shrink any turn from the context window itself.
+    trap_type: irrelevant-knob
+  - id: b
+    text: Move the agent to a model with a larger context window and keep every turn as it is.
+    correct: false
+    rationale: >-
+      A larger window delays hitting the limit but does not address that the transcript keeps
+      growing with turns that no longer need to stay in full; the same growth pattern eventually
+      exhausts a larger window too.
+    trap_type: bigger-model
+  - id: c
+    text: >-
+      Replace the older turns with one summary, keeping the most recent turns and the one earlier
+      turn the agent still depends on.
     correct: true
     rationale: >-
-      Compaction summarizes and replaces the turns it covers; because growth here comes from many
-      ordinary turns rather than a few oversized tool results, and specific turns must stay intact
-      for correctness, compacting everything else while explicitly protecting those turns fits the
-      situation.
-  - id: b
+      Compaction summarizes and replaces the turns it covers, and the turns kept out of it stay as
+      original, unsummarized turns. Because growth here comes from many ordinary turns rather than a
+      few oversized tool results, and specific turns must stay intact for correctness, compacting
+      everything else while explicitly protecting those turns fits the situation.
+  - id: d
+    text: >-
+      Ask the model, in the system prompt, to keep its own turns shorter as the conversation
+      continues.
+    correct: false
+    rationale: >-
+      This is a request the model can fail to follow, and it does nothing about the turns that
+      have already accumulated in the transcript right now.
+    trap_type: unenforceable-politeness
+  - id: e
     text: >-
       Truncate the content of the largest individual tool results in place, leaving every turn's
       position in the transcript unchanged.
@@ -30,33 +56,7 @@ options:
       unusually large, so shortening tool-result content would not meaningfully reduce a transcript
       whose growth comes from many ordinary turns.
     trap_type: right-idea-wrong-mechanism
-  - id: c
-    text: Move the agent to a model with a larger context window and keep every turn as it is.
-    correct: false
-    rationale: >-
-      A larger window delays hitting the limit but does not address that the transcript keeps
-      growing with turns that no longer need to stay in full; the same growth pattern eventually
-      exhausts a larger window too.
-    trap_type: bigger-model
-  - id: d
-    text: >-
-      Reduce the number of prompt-caching breakpoints in the request so more of the budget is
-      available for conversation content.
-    correct: false
-    rationale: >-
-      Caching breakpoints affect which prefix is reused for cost and latency; they do not remove or
-      shrink any turn from the context window itself.
-    trap_type: irrelevant-knob
-  - id: e
-    text: >-
-      Ask the model, in the system prompt, to keep its own turns shorter as the conversation
-      continues.
-    correct: false
-    rationale: >-
-      This is a request the model can fail to follow, and it does nothing about the turns that
-      have already accumulated in the transcript right now.
-    trap_type: unenforceable-politeness
 sources:
   - title: Context editing — Anthropic (Claude Platform docs)
     url: https://platform.claude.com/docs/en/build-with-claude/context-editing
-    verified_on: "2026-09-08"
+    verified_on: "2026-09-17"

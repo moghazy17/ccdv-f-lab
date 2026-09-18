@@ -1,0 +1,66 @@
+id: bare-mode-for-reproducible-ci-runs
+domain: Applications and Integration
+sub_skill: Software Engineering Foundations
+difficulty: application
+select: 1
+stem: >-
+  A team adds a non-interactive Claude Code step to its pipeline to review each pull request. The
+  step passes on the maintainer's laptop and behaves differently on the shared runner and on a
+  contributor's machine: sometimes extra checks run, sometimes the review mentions project
+  conventions that were never in the prompt. The team wants the same result on every machine, and
+  wants the step not to pick up whatever configuration happens to exist where it runs. Which change
+  achieves that?
+options:
+  - id: a
+    text: >-
+      Pass the review instructions with a system-prompt flag, so the step's behavior comes from the
+      command line rather than from whatever instruction file each machine holds.
+    correct: false
+    rationale: >-
+      Supplying instructions explicitly belongs in a reproducible step and is worth doing, but on its
+      own it only adds to what auto-discovery has already loaded. The host's hooks, plugins, and
+      instruction files still apply unless the run skips discovering them.
+    trap_type: right-idea-wrong-mechanism
+  - id: b
+    text: >-
+      Commit the project instruction file and the settings file so every machine has identical
+      configuration, leaving auto-discovery on.
+    correct: false
+    rationale: >-
+      This equalizes what the repository contributes but not what the host does. A hook in a
+      contributor's own home directory, or a locally installed plugin, still loads and still varies
+      by machine.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: >-
+      Have the step run only on the maintainer's machine through a self-hosted runner, since that
+      environment is known to work.
+    correct: false
+    rationale: >-
+      This freezes one machine's ambient configuration as the de facto specification and makes the
+      pipeline depend on it. The behavior is still undefined anywhere else.
+    trap_type: wrong-layer
+  - id: d
+    text: >-
+      Run the step in bare mode, which skips auto-discovery entirely, and give it an API key in the
+      environment.
+    correct: true
+    rationale: >-
+      Bare mode is the documented choice for CI and scripts that need the same result everywhere: it
+      loads no hooks, skills, custom commands, subagents, plugins, MCP servers, auto memory, or
+      project instruction file, which is exactly the ambient configuration that differs between
+      machines. It also reads no stored login, so the environment must supply a key, and anything the
+      step genuinely needs is passed explicitly by flag.
+  - id: e
+    text: >-
+      Pin the exit status by allowing all tools, so the step behaves identically regardless of which
+      permission prompts a machine would raise.
+    correct: false
+    rationale: >-
+      Tool permissions govern what may run, not what configuration is loaded. Broadening them widens
+      what an unreviewed hook or server could do while leaving the variation in place.
+    trap_type: wrong-layer
+sources:
+  - title: Run Claude Code programmatically — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/headless
+    verified_on: "2026-09-17"

@@ -1,0 +1,62 @@
+id: error-message-text-is-not-a-contract
+domain: Applications and Integration
+sub_skill: Software Engineering Foundations
+difficulty: analysis
+select: 1
+stem: >-
+  A service branches on API failures by matching substrings of `error.message`, for example treating
+  any message containing "rate limit" as a signal to slow down. A reviewer objects that the code will
+  break silently. Which reasoning supports the objection most directly?
+options:
+  - id: a
+    text: >-
+      The SDK already retries transient failures, so the service should catch nothing and let every
+      error propagate.
+    correct: false
+    rationale: >-
+      The SDKs do retry transient failures twice by default with exponential backoff, but a failure
+      that survives those retries still reaches the caller and still needs classifying. This
+      replaces a fragile branch with none at all.
+    trap_type: right-idea-wrong-mechanism
+  - id: b
+    text: >-
+      Substring matching is too slow to run on every failure path, so the branch should switch on the
+      HTTP status code instead.
+    correct: false
+    rationale: >-
+      Performance is not the issue on an error path, and the conclusion is half right for the wrong
+      reason. The status code is more stable than the message, but the typed exception carries the
+      same information with the error's own classification attached.
+    trap_type: irrelevant-knob
+  - id: c
+    text: >-
+      Errors are returned as free-form text rather than JSON, so parsing them at all is unreliable
+      and the service should log and give up.
+    correct: false
+    rationale: >-
+      Errors are always JSON with a top-level `error` object carrying `type` and `message`, plus a
+      `request_id`. Giving up discards a classification the response already provides.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      The `error.type` values are fixed forever, so matching on message text is unnecessary work
+      rather than a correctness problem.
+    correct: false
+    rationale: >-
+      The versioning policy says the set of `type` values may grow over time, so a caller must handle
+      an unfamiliar type rather than assume a closed set. Calling the current approach merely
+      redundant understates a real failure mode.
+    trap_type: false-capability
+  - id: e
+    text: >-
+      Message text is prose that can be reworded at any time, while the error's `type` and the SDKs'
+      typed exception classes are the stable contract to branch on.
+    correct: true
+    rationale: >-
+      Errors always return a structured `error.type` alongside the human-readable `message`, and the
+      SDKs raise typed exceptions for those errors. Branching on the type or the exception class
+      survives a rewording of the message, which nothing promises to keep stable.
+sources:
+  - title: Claude API errors — Anthropic
+    url: https://platform.claude.com/docs/en/api/errors
+    verified_on: "2026-09-17"

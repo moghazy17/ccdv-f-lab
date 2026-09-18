@@ -11,6 +11,16 @@ stem: >-
 options:
   - id: a
     text: >-
+      Use one of Anthropic's built-in tools, since built-in tools already cover common lookups like
+      this.
+    correct: false
+    rationale: >-
+      Anthropic's built-in, Anthropic-schema tools cover things such as web search, code execution,
+      and computer or file operations; none of them reach into this application's own internal
+      customer-service data, so no built-in tool provides this specific lookup.
+    trap_type: false-capability
+  - id: b
+    text: >-
       Define it as a custom tool with a strict input schema for the customer ID and a narrow,
       described return shape, executed by application code.
     correct: true
@@ -19,16 +29,6 @@ options:
       directly; that tight, deterministic input-output contract for one small internal lookup is
       exactly what a custom tool is for, without the orchestration or protocol overhead of the
       alternatives.
-  - id: b
-    text: >-
-      Package it as a Skill: a markdown file of instructions telling Claude how to look up a
-      customer, that Claude loads and follows when relevant.
-    correct: false
-    rationale: >-
-      A Skill bundles prompt-based instructions for Claude to orchestrate with its own tools; it is
-      suited to reference material and multi-step procedures, not to executing one fixed
-      deterministic lookup that a direct function call already handles precisely.
-    trap_type: right-idea-wrong-mechanism
   - id: c
     text: >-
       Stand up a separate MCP server just for this one lookup, so it is available over the Model
@@ -41,14 +41,14 @@ options:
     trap_type: overkill
   - id: d
     text: >-
-      Use one of Anthropic's built-in tools, since built-in tools already cover common lookups like
-      this.
+      Package it as a Skill: a markdown file of instructions telling Claude how to look up a
+      customer, that Claude loads and follows when relevant.
     correct: false
     rationale: >-
-      Anthropic's built-in, Anthropic-schema tools cover things such as web search, code execution,
-      and computer or file operations; none of them reach into this application's own internal
-      customer-service data, so no built-in tool provides this specific lookup.
-    trap_type: false-capability
+      A Skill bundles prompt-based instructions for Claude to orchestrate with its own tools; it is
+      suited to reference material and multi-step procedures, not to executing one fixed
+      deterministic lookup that a direct function call already handles precisely.
+    trap_type: right-idea-wrong-mechanism
 sources:
   - title: Tool use with Claude — Anthropic (Claude Platform docs)
     url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview

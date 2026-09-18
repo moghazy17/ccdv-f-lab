@@ -7,6 +7,7 @@ import {
   buildReport,
   createAttempt,
   formatRemaining,
+  domainsWithoutSurplus,
   hasNoSurplus,
   isExpired,
   remainingMs,
@@ -83,6 +84,26 @@ describe("assembling a mock from published quotas", () => {
   it("says when repeated attempts must draw the same items", () => {
     expect(hasNoSurplus({ Alpha: 3, Beta: 2 }, { Alpha: 3, Beta: 2 })).toBe(true);
     expect(hasNoSurplus({ Alpha: 4, Beta: 2 }, { Alpha: 3, Beta: 2 })).toBe(false);
+  });
+
+  it("names the domains that repeat while others hold a surplus", () => {
+    expect(domainsWithoutSurplus({ Alpha: 9, Beta: 2 }, { Alpha: 3, Beta: 2 })).toEqual(["Beta"]);
+  });
+
+  it("reports every domain when none holds a surplus", () => {
+    expect(domainsWithoutSurplus({ Alpha: 3, Beta: 2 }, { Alpha: 3, Beta: 2 })).toEqual([
+      "Alpha",
+      "Beta"
+    ]);
+  });
+
+  it("reports no domain once all of them hold a surplus", () => {
+    expect(domainsWithoutSurplus({ Alpha: 9, Beta: 7 }, { Alpha: 3, Beta: 2 })).toEqual([]);
+    expect(hasNoSurplus({ Alpha: 9, Beta: 7 }, { Alpha: 3, Beta: 2 })).toBe(false);
+  });
+
+  it("counts a domain the bank has no items for as repeating", () => {
+    expect(domainsWithoutSurplus({}, { Alpha: 3 })).toEqual(["Alpha"]);
   });
 });
 

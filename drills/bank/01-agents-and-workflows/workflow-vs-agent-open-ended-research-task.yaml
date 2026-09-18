@@ -20,15 +20,6 @@ options:
       and cannot be hardcoded into a fixed path.
   - id: b
     text: >-
-      Model it as a workflow with a fixed, predetermined sequence of tool calls chosen in advance.
-    correct: false
-    rationale: >-
-      Workflows orchestrate LLMs and tools through predefined code paths, which suits tasks with a
-      known, fixed sequence of steps; wanting a reliable, inspectable structure is a reasonable
-      instinct, but a hardcoded path is the wrong abstraction when the step count is unpredictable.
-    trap_type: right-idea-wrong-mechanism
-  - id: c
-    text: >-
       Use a more capable model to run the fixed workflow, so it can compensate for the unknown
       step count within the predetermined sequence.
     correct: false
@@ -37,6 +28,15 @@ options:
       not define; model capability does not substitute for an architecture that allows the number
       of steps to vary.
     trap_type: bigger-model
+  - id: c
+    text: >-
+      Model it as a workflow with a fixed, predetermined sequence of tool calls chosen in advance.
+    correct: false
+    rationale: >-
+      Workflows orchestrate LLMs and tools through predefined code paths, which suits tasks with a
+      known, fixed sequence of steps; wanting a reliable, inspectable structure is a reasonable
+      instinct, but a hardcoded path is the wrong abstraction when the step count is unpredictable.
+    trap_type: right-idea-wrong-mechanism
   - id: d
     text: >-
       Keep the hardcoded workflow, but add a system-prompt instruction asking the model to keep

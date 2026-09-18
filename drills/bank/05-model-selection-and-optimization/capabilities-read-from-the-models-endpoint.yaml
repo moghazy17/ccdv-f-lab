@@ -1,0 +1,57 @@
+id: capabilities-read-from-the-models-endpoint
+domain: Model Selection and Optimization
+sub_skill: LLM Fundamentals
+difficulty: application
+select: 1
+stem: >-
+  A routing layer picks among several models per request and must reject an oversized payload before
+  sending it. Today the limits live in a hand-maintained table that has twice gone stale after a new
+  model was added. What is the appropriate way to keep those limits current?
+options:
+  - id: a
+    text: >-
+      Query the models endpoint, which reports each available model's maximum input tokens, maximum
+      output tokens, and a capabilities object.
+    correct: true
+    rationale: >-
+      The capability data is queryable rather than something a caller must transcribe, and it covers
+      exactly the fields the router needs. Reading it removes the class of bug the team has hit twice.
+  - id: b
+    text: >-
+      Count tokens locally with a tokenizer library and compare against a fixed ceiling, avoiding the
+      need for per-model data.
+    correct: false
+    rationale: >-
+      Counting tokens is useful, but a single fixed ceiling is the stale table in another form: the
+      ceilings differ across models, which is the variation the router has to respect.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: >-
+      Derive the limits from the model identifier's naming pattern, since tier names indicate
+      capability.
+    correct: false
+    rationale: >-
+      Nothing guarantees that limits follow from a name, and the lineup already contains models at
+      the same tier with different windows. Parsing identifiers is a brittle substitute for asking.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Send the request and handle the error, since the API reports an oversized payload accurately.
+    correct: false
+    rationale: >-
+      Failing late works but wastes a round trip on every oversized request and gives the router no
+      way to choose a model that would fit. A router exists to decide before sending.
+    trap_type: wrong-layer
+  - id: e
+    text: >-
+      Pin the router to one model so only one set of limits matters, and revisit when that model
+      retires.
+    correct: false
+    rationale: >-
+      This removes routing to avoid maintaining a table, discarding the ability to match a request to
+      an appropriate model. The stale-table problem is solvable without giving up the feature.
+    trap_type: overkill
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-17"

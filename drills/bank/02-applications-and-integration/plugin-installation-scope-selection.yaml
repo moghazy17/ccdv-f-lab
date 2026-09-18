@@ -1,0 +1,64 @@
+id: plugin-installation-scope-selection
+domain: Applications and Integration
+sub_skill: Claude Application Design
+difficulty: application
+select: 2
+stem: >-
+  A team lead is installing plugins for a repository and must satisfy two requirements: the
+  formatter plugin has to reach every collaborator who clones the repository, and the lead's own
+  experimental review plugin must stay on the lead's machine and apply only inside this repository,
+  without appearing in the shared configuration. Select the two statements that describe the scopes
+  these requirements call for. Select 2.
+options:
+  - id: a
+    text: >-
+      Adding the plugin's marketplace to the repository's settings installs the formatter for
+      collaborators, so no scope choice is needed.
+    correct: false
+    rationale: >-
+      Adding a marketplace registers a catalog; it does not install anything. An externally sourced
+      plugin still has to be installed by each collaborator, at a scope they choose.
+    trap_type: false-capability
+  - id: b
+    text: >-
+      Installing the review plugin at local scope keeps it to the lead, in this repository only, and
+      out of the configuration collaborators share.
+    correct: true
+    rationale: >-
+      The scopes differ on two axes, who and where: user is one person across every project, project
+      is every collaborator on one repository, and local is the only one that is both one person and
+      one repository. That is why a private experiment belongs there rather than at user scope.
+  - id: c
+    text: >-
+      Installing the formatter at managed scope is the supported way to share a plugin with a
+      repository's collaborators.
+    correct: false
+    rationale: >-
+      Managed scope is installed by administrators through managed settings and cannot be modified
+      by the user. It distributes by organization rather than by repository, and it is
+      disproportionate for one repository's formatter.
+    trap_type: overkill
+  - id: d
+    text: >-
+      Installing the formatter at project scope is the scope defined for all collaborators on the
+      repository, and records it in the repository's `.claude/settings.json`.
+    correct: true
+    rationale: >-
+      Project is the scope whose definition is "all collaborators on this repository", and the entry
+      it writes into the shared settings file is what travels with a clone. Whether a given
+      collaborator's session then loads it depends on the plugin's source, which is a separate
+      question from which scope the lead should choose.
+  - id: e
+    text: >-
+      Installing the review plugin at user scope keeps it private to the lead while confining it to
+      this repository.
+    correct: false
+    rationale: >-
+      User scope is private to the lead, but it applies across all of their projects rather than
+      being confined to this one. It satisfies half the requirement and quietly breaks the other
+      half.
+    trap_type: wrong-layer
+sources:
+  - title: Discover and install plugins — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/discover-plugins
+    verified_on: "2026-09-17"

@@ -1,0 +1,63 @@
+id: background-work-outlives-the-result-in-a-scheduled-run
+domain: Applications and Integration
+sub_skill: Systems Life Cycle
+difficulty: analysis
+select: 1
+stem: >-
+  A scheduled non-interactive run sometimes finishes in two minutes and sometimes occupies its worker
+  for ten before exiting. The long runs are ones where the task started background work. The team
+  operating the pipeline wants to understand the exit behavior before setting a worker timeout. Which
+  description is accurate?
+options:
+  - id: a
+    text: >-
+      All background work is terminated as soon as the final result is printed, so a ten-minute run
+      must have a slow model call rather than background work.
+    correct: false
+    rationale: >-
+      This is true of a background shell task and false of a background subagent, whose result is
+      part of the output. Generalizing from the first case is what makes the long runs look
+      inexplicable.
+    trap_type: false-capability
+  - id: b
+    text: >-
+      A background shell task is terminated shortly after the final result, while a background
+      subagent or workflow holds the process open until it completes, bounded by an idle wait ceiling
+      that is configurable.
+    correct: true
+    rationale: >-
+      The two kinds of background work are treated differently on purpose: a shell task's output is
+      not part of the result, so it is stopped after a short grace period, whereas a subagent's
+      result is part of the final output, so the process waits. The wait has a default ceiling so a
+      stuck subagent cannot hold a worker indefinitely, and that ceiling can be changed.
+  - id: c
+    text: >-
+      Sending a termination signal to a long run ends the turn cleanly and records its result, so the
+      pipeline can safely kill anything over five minutes.
+    correct: false
+    rationale: >-
+      That signal leaves the in-progress turn unfinished and records no result for it. Treating a
+      kill as a clean stop would silently lose work the run had done.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      The process waits indefinitely for any background work, so the team must impose a worker
+      timeout because nothing else bounds it.
+    correct: false
+    rationale: >-
+      A default idle ceiling already ends the wait and drops the partial result. An external timeout
+      is still reasonable defense, but the premise that nothing bounds the wait is wrong.
+    trap_type: false-capability
+  - id: e
+    text: >-
+      Bare mode would prevent the long runs, since background work comes from auto-discovered
+      configuration.
+    correct: false
+    rationale: >-
+      Bare mode changes what configuration loads, not whether the task starts background work during
+      the run. The duration would be unchanged.
+    trap_type: wrong-layer
+sources:
+  - title: Run Claude Code programmatically — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/headless
+    verified_on: "2026-09-17"

@@ -21,6 +21,13 @@ options:
       between; splitting them into several user messages breaks that expected shape and teaches
       the model that parallel calls do not get answered together.
   - id: b
+    text: Increase the number of prompt-caching breakpoints used for the tool definitions.
+    correct: false
+    rationale: >-
+      Caching breakpoints affect which prefix is reused for cost and latency; they have no bearing
+      on how tool_result blocks from one assistant turn must be grouped in the following message.
+    trap_type: irrelevant-knob
+  - id: c
     text: >-
       Keep the results in separate user messages, but add a system-prompt note asking Claude to
       treat consecutive tool-result messages as belonging to the same turn.
@@ -30,14 +37,6 @@ options:
       meant to be returned, rather than fixing the shape; it is not a guaranteed substitute for
       correlating results by tool_use_id in one message.
     trap_type: unenforceable-politeness
-  - id: c
-    text: Change the three tools to run one at a time instead of in parallel.
-    correct: false
-    rationale: >-
-      Serializing the tool calls avoids the batching problem by giving up parallel tool use
-      entirely, which is a larger change than fixing how the existing parallel results are
-      returned.
-    trap_type: overkill
   - id: d
     text: Switch the dispatcher to a larger model that can better interpret split tool results.
     correct: false
@@ -47,12 +46,13 @@ options:
       problem.
     trap_type: bigger-model
   - id: e
-    text: Increase the number of prompt-caching breakpoints used for the tool definitions.
+    text: Change the three tools to run one at a time instead of in parallel.
     correct: false
     rationale: >-
-      Caching breakpoints affect which prefix is reused for cost and latency; they have no bearing
-      on how tool_result blocks from one assistant turn must be grouped in the following message.
-    trap_type: irrelevant-knob
+      Serializing the tool calls avoids the batching problem by giving up parallel tool use
+      entirely, which is a larger change than fixing how the existing parallel results are
+      returned.
+    trap_type: overkill
 sources:
   - title: Handle tool calls — Anthropic (Claude Platform docs)
     url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls

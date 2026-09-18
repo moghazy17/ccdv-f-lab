@@ -1,0 +1,58 @@
+id: extended-output-belongs-to-the-batch-path
+domain: Model Selection and Optimization
+sub_skill: Technical Fundamentals
+difficulty: application
+select: 1
+stem: >-
+  A reporting job needs a single generated document longer than the synchronous maximum output the
+  chosen model allows but comfortably within the higher batch output ceiling, and that model is one
+  of those listed as supporting it. Nobody waits on the result; it is produced overnight and read
+  the next morning. Which approach fits the documented capabilities?
+options:
+  - id: a
+    text: >-
+      Produce it on the batch path, where several models support a substantially higher output
+      ceiling behind a beta header.
+    correct: true
+    rationale: >-
+      The synchronous ceiling and the batch ceiling are different limits, and the higher batch
+      ceiling is available for several models with a beta header. A job with no waiting reader is
+      precisely the case that path serves, and it halves the price as well.
+  - id: b
+    text: >-
+      Enable streaming, which removes the output ceiling by delivering the response incrementally.
+    correct: false
+    rationale: >-
+      Streaming changes delivery, not the maximum number of output tokens a model will produce. It is
+      the right answer to a connection-timeout problem, not to a ceiling.
+    trap_type: right-idea-wrong-mechanism
+  - id: c
+    text: >-
+      Switch to the model with the largest context window, since input capacity and output capacity
+      scale together.
+    correct: false
+    rationale: >-
+      The two limits are separate columns of the comparison, and models sharing a 1M window do not
+      thereby share a higher output ceiling. This reads one capability from another.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Raise `max_tokens` above the model's synchronous maximum, since the parameter is a request for
+      capacity rather than a hard ceiling.
+    correct: false
+    rationale: >-
+      The maximum output is a model limit, not a suggestion, and a request above it is rejected
+      rather than accommodated.
+    trap_type: false-capability
+  - id: e
+    text: >-
+      Generate the document in sections across several synchronous requests and concatenate them.
+    correct: false
+    rationale: >-
+      Sectioning is a legitimate fallback, but it asks the team to manage continuity across requests
+      when a single-call path exists for exactly this shape of work.
+    trap_type: right-idea-wrong-mechanism
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-17"

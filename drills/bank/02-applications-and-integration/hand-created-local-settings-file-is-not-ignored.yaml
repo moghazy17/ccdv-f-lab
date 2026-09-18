@@ -1,0 +1,62 @@
+id: hand-created-local-settings-file-is-not-ignored
+domain: Applications and Integration
+sub_skill: Configuration Management
+difficulty: application
+select: 1
+stem: >-
+  An engineer creates a project local settings file by hand to hold personal overrides, having read
+  that such files stay out of commits. It appears in `git status` as untracked and is committed with
+  the next change, and a teammate's session starts behaving differently. What accounts for the file
+  not being ignored, and what should the engineer do?
+options:
+  - id: a
+    text: >-
+      The file only becomes ignored once it contains a valid key, so the engineer should populate it
+      and re-check.
+    correct: false
+    rationale: >-
+      Ignore rules operate on paths, not on file contents. This invents a condition that would be
+      impossible to reason about in practice.
+    trap_type: false-capability
+  - id: b
+    text: >-
+      Local settings files are always tracked so teammates can review personal overrides; the
+      engineer should move the keys to the shared file instead.
+    correct: false
+    rationale: >-
+      The local tier exists precisely so personal overrides stay personal. Moving the keys to the
+      shared file imposes one engineer's preferences on the team, which is the outcome that just
+      caused the problem.
+    trap_type: wrong-layer
+  - id: c
+    text: >-
+      The repository's `.gitignore` overrides the global excludes file, so the engineer should delete
+      the project's ignore rules.
+    correct: false
+    rationale: >-
+      Nothing was written to either ignore list for this file, so there is no conflict to resolve.
+      Deleting a repository's ignore rules to fix one untracked file is disproportionate and
+      destructive.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      The automatic exclusion is added only when Claude Code itself first writes that file.
+    correct: true
+    rationale: >-
+      Claude Code adds the local settings path to the global git excludes the first time it writes
+      the file, which is why the guarantee sounds unconditional in summary. A file created by hand
+      skips that step, so it is not covered and the engineer has to add it to the ignore rules
+      themselves.
+  - id: e
+    text: >-
+      Committing the file is harmless because a local settings file is read only by the person who
+      created it.
+    correct: false
+    rationale: >-
+      The file is read by whoever has it in their checkout, which is what changed the teammate's
+      session. Its scope is one project, not one person, once it is shared.
+    trap_type: false-capability
+sources:
+  - title: Settings files and precedence — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/settings
+    verified_on: "2026-09-17"

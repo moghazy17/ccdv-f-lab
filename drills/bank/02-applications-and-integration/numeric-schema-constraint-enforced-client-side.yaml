@@ -1,0 +1,68 @@
+id: numeric-schema-constraint-enforced-client-side
+domain: Applications and Integration
+sub_skill: Claude Application Design
+difficulty: analysis
+select: 1
+stem: >-
+  A triage service asks Claude for a structured payload holding a `priority` integer. The schema the
+  team wrote declares `"minimum": 1, "maximum": 5` on that field, and a downstream dispatcher indexes
+  a five-element routing table with the value. Using the Python SDK, the team observes that requests
+  succeed and that payloads occasionally arrive with a `priority` of `7`, which crashes the
+  dispatcher. An engineer argues the schema is being ignored and proposes switching to free-text
+  output with a regular expression. What is the accurate diagnosis?
+options:
+  - id: a
+    text: >-
+      Numerical constraints are outside the supported subset, so the bound is a client-side check
+      rather than a generation guarantee.
+    correct: true
+    rationale: >-
+      The supported subset covers types, `enum`, `const`, `required`, and a fixed set of string
+      formats, but not numerical constraints such as `minimum` and `maximum`. The SDK removes them
+      from the schema it sends and then validates the returned payload against the caller's original
+      schema, so nothing constrains generation and the dispatcher must treat a failed validation as
+      a routing decision rather than assuming a bounded value.
+  - id: b
+    text: >-
+      Structured outputs enforce shape but not range, so the fix is to raise the model's effort
+      level until it respects the stated bounds.
+    correct: false
+    rationale: >-
+      The first clause is right and the remedy is not. More reasoning effort cannot supply a
+      guarantee the schema subset does not express, and an occasional out-of-range value would still
+      reach the dispatcher. The bound has to be enforced where it is checkable.
+    trap_type: bigger-model
+  - id: c
+    text: >-
+      Abandoning structured output for free text and a regular expression, since the schema is not
+      being honored.
+    correct: false
+    rationale: >-
+      This discards the conformance the schema does provide — the field's presence, its type, and
+      the object's closed shape — and replaces a validated payload with a parser that has to
+      rediscover all of it. The unbounded value is one gap, not a reason to give up the contract.
+    trap_type: wrong-layer
+  - id: d
+    text: >-
+      The request should have failed with a 400 error, so the SDK is suppressing an API error that a
+      raw HTTP call would have surfaced.
+    correct: false
+    rationale: >-
+      An unsupported feature does return a 400 error when it reaches the API, but the SDKs transform
+      the schema first precisely so the request remains valid. Nothing is being suppressed: the
+      request the SDK sends genuinely no longer carries the constraint.
+    trap_type: false-capability
+  - id: e
+    text: >-
+      Setting `additionalProperties: true` on the object so the dispatcher can read a corrected
+      value the model adds alongside `priority`.
+    correct: false
+    rationale: >-
+      Every object in a structured-output schema must set `additionalProperties` to `false`; any
+      other value is unsupported. The proposal would make the schema invalid while doing nothing
+      about the range.
+    trap_type: false-capability
+sources:
+  - title: Structured outputs — Anthropic
+    url: https://platform.claude.com/docs/en/build-with-claude/structured-outputs
+    verified_on: "2026-09-17"

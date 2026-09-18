@@ -1,0 +1,66 @@
+id: team-marketplace-added-but-plugin-not-installed
+domain: Applications and Integration
+sub_skill: Claude Application Design
+difficulty: analysis
+select: 1
+stem: >-
+  A team lead adds the organization's marketplace to a repository's checked-in project settings and
+  lists the team's review plugin as enabled there, expecting every collaborator to receive it on
+  their next session. Collaborators who trust the repository folder report that the marketplace is
+  present but the plugin's skills are missing, and that the session reports the plugin as not
+  installed while printing an install command. What explains this, and what should the lead do?
+options:
+  - id: a
+    text: >-
+      The plugin must be installed at user scope to be shared, so the lead should have each
+      collaborator install it for themselves across all projects rather than per repository.
+    correct: false
+    rationale: >-
+      User scope installs a plugin for one person across their own projects; it is not what shares a
+      plugin with a team, and it answers a different question than the one the lead asked. The
+      install step is needed either way, and its scope is the collaborator's choice.
+    trap_type: wrong-layer
+  - id: b
+    text: >-
+      Project settings register the marketplace, but a plugin from an external source does not load
+      until each collaborator installs it; the lead should tell the team to run the install command
+      the session prints.
+    correct: true
+    rationale: >-
+      Adding a marketplace and installing a plugin are two separate steps, and project settings
+      cover only the first for an externally sourced plugin. The session says so explicitly by
+      reporting the plugin as not installed and printing the command, which is the documented
+      behavior rather than a failure.
+  - id: c
+    text: >-
+      Plugin components load only after a restart, so the collaborators are seeing a stale session
+      and the configuration is correct as written.
+    correct: false
+    rationale: >-
+      A reload does apply plugin changes within a session, but no amount of restarting installs a
+      plugin that was never installed. This mistakes a missing step for a timing problem.
+    trap_type: right-idea-wrong-mechanism
+  - id: d
+    text: >-
+      The collaborators have not trusted the repository folder, which is what gates marketplace
+      registration; once they do, both the marketplace and its plugins load.
+    correct: false
+    rationale: >-
+      Trusting the folder is indeed what lets the marketplace be added without a further prompt, and
+      the collaborators have already done it — the marketplace is present. Trust was never the
+      missing step, and it would not have installed the plugin either.
+    trap_type: right-idea-wrong-mechanism
+  - id: e
+    text: >-
+      Listing the plugin in project settings conflicts with the marketplace entry, so the lead
+      should remove the marketplace and re-add it to clear the conflict.
+    correct: false
+    rationale: >-
+      There is no such conflict, and this remedy is actively harmful: removing a marketplace
+      uninstalls every plugin installed from it, so any collaborator who had installed it correctly
+      would lose it.
+    trap_type: false-capability
+sources:
+  - title: Discover and install plugins — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/discover-plugins
+    verified_on: "2026-09-17"

@@ -11,16 +11,14 @@ stem: >-
 options:
   - id: a
     text: >-
-      No. Every published model ID, including the dateless ones, is documented as a pinned
-      snapshot; validating against an explicit, fixed model constant rather than a floating alias
-      is what keeps behavior reproducible across deployments and lets a model upgrade be a
-      reviewed, intentional change.
+      No. Every published model ID is a pinned snapshot, so validating against an explicit fixed
+      constant is what keeps behavior reproducible across deployments.
     correct: true
     rationale: >-
-      Because every model ID is a pinned snapshot rather than a moving target, an explicit
-      allow-list of pinned constants is what actually gives the integration control over when its
-      behavior changes; a floating alias would remove exactly that control the pinning was
-      designed to provide.
+      Because every model ID — including the dateless ones — is a pinned snapshot rather than a
+      moving target, an explicit allow-list of pinned constants is what gives the integration
+      control over when its behavior changes, and makes a model upgrade a reviewed, intentional
+      change. A floating alias would remove exactly that control.
   - id: b
     text: >-
       Yes, because a floating alias guarantees lower latency than any pinned snapshot.
@@ -31,16 +29,6 @@ options:
     trap_type: false-capability
   - id: c
     text: >-
-      Yes, but only after switching every task in the integration to the largest available model
-      tier first.
-    correct: false
-    rationale: >-
-      Which model tier is used for a task is a separate decision from whether the identifier that
-      selects it is pinned or floating; escalating to a larger tier does not address the
-      reproducibility problem an unpinned alias would introduce.
-    trap_type: bigger-model
-  - id: d
-    text: >-
       The change is harmless as long as the team adds a comment in the code noting which model was
       live when the alias was introduced.
     correct: false
@@ -49,7 +37,17 @@ options:
       different snapshot on a later date; it does not restore the reproducibility a pinned
       constant enforced at startup.
     trap_type: cost-theater
+  - id: d
+    text: >-
+      Yes, but only after switching every task in the integration to the largest available model
+      tier first.
+    correct: false
+    rationale: >-
+      Which model tier is used for a task is a separate decision from whether the identifier that
+      selects it is pinned or floating; escalating to a larger tier does not address the
+      reproducibility problem an unpinned alias would introduce.
+    trap_type: bigger-model
 sources:
   - title: Models overview — Anthropic
     url: https://platform.claude.com/docs/en/about-claude/models/overview
-    verified_on: "2026-09-09"
+    verified_on: "2026-09-17"

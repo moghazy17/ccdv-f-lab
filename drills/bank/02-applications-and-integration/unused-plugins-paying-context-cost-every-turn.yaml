@@ -1,0 +1,63 @@
+id: unused-plugins-paying-context-cost-every-turn
+domain: Applications and Integration
+sub_skill: Claude Application Design
+difficulty: analysis
+select: 1
+stem: >-
+  Over a year a team has installed fourteen plugins, of which they now use four. Sessions start
+  slowly and every turn carries more context than the team expects, leaving less room for the
+  repository's own files before the conversation needs managing. An engineer proposes compensating
+  by clearing the conversation more aggressively. Which diagnosis fits the situation better, and
+  what does the tooling offer for it?
+options:
+  - id: a
+    text: >-
+      Clearing the conversation more often, as proposed, since context pressure is by definition a
+      conversation-length problem.
+    correct: false
+    rationale: >-
+      Clearing removes conversation, and the standing per-turn cost returns immediately on the next
+      request because it comes from what is loaded rather than from what has been said. This treats
+      a fixed overhead as an accumulation problem.
+    trap_type: wrong-layer
+  - id: b
+    text: >-
+      Uninstalling the plugins' marketplaces, which removes their catalogs and leaves the installed
+      plugins in place at no context cost.
+    correct: false
+    rationale: >-
+      Removing a marketplace uninstalls the plugins that came from it, so this is not the harmless
+      cleanup it sounds like, and it addresses catalogs rather than what is loaded into context.
+    trap_type: false-capability
+  - id: c
+    text: >-
+      Installed plugins are loaded lazily and cost nothing until invoked, so the context pressure
+      must come from the repository's own files; the team should narrow what it opens.
+    correct: false
+    rationale: >-
+      This is the assumption that lets fourteen plugins accumulate. An enabled plugin contributes to
+      context every turn, which is why the manager estimates that cost before installation.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Moving to a model with a larger context window, so the standing cost occupies a smaller share
+      of the budget.
+    correct: false
+    rationale: >-
+      More room absorbs the symptom without removing ten unused plugins from every turn, and the
+      slow session start remains. Capacity is being bought to avoid an inventory decision.
+    trap_type: bigger-model
+  - id: e
+    text: >-
+      An enabled plugin costs context every turn whether or not it is used, and the plugin manager
+      reports that cost and flags unused plugins.
+    correct: true
+    rationale: >-
+      The cost is standing rather than per invocation, so it is paid on every request regardless of
+      use — which is why ten unused plugins crowd the window. The manager supplies both halves of the
+      remedy: an estimate of what each plugin adds, and a not-used-recently grouping with a last-used
+      line that identifies which to disable or uninstall.
+sources:
+  - title: Discover and install plugins — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/discover-plugins
+    verified_on: "2026-09-17"

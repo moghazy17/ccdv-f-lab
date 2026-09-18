@@ -1,0 +1,63 @@
+id: request-id-is-the-support-handle
+domain: Applications and Integration
+sub_skill: Software Engineering Foundations
+difficulty: application
+select: 1
+stem: >-
+  An integration logs the prompt, the model, the timestamp, and the exception class for every failed
+  request. A 500 recurs a few times a day and the team wants to raise it with support, but each
+  report comes back asking for information the team cannot supply. Which change to the failure log
+  closes that gap?
+options:
+  - id: a
+    text: >-
+      Log the full response body on success as well as failure, so a matching request can be found
+      by comparing payloads.
+    correct: false
+    rationale: >-
+      This multiplies log volume and asks support to search on content rather than on the identifier
+      the response already provides. It also stores prompt and completion text that a failure log
+      does not need to keep.
+    trap_type: overkill
+  - id: b
+    text: >-
+      Record the `request-id` header, which every response carries and which support uses to locate
+      the specific request.
+    correct: true
+    rationale: >-
+      Every response includes a unique `request-id`, the same value that appears as `request_id` in
+      an error body, and the documentation asks for it when contacting support about a request. The
+      SDKs expose it on the response object, so capturing it is a logging change rather than a
+      redesign.
+  - id: c
+    text: >-
+      Increase the SDK's retry count so intermittent 500s resolve themselves and no report is needed.
+    correct: false
+    rationale: >-
+      Retrying a 500 with backoff is right and the SDKs already do it twice by default, but a fault
+      recurring daily is worth reporting rather than masking. This avoids the diagnosis instead of
+      enabling it.
+    trap_type: cost-theater
+  - id: d
+    text: >-
+      Record the workspace identifier the response reports, so support can see which workspace the
+      request counted against.
+    correct: false
+    rationale: >-
+      That header is genuinely useful for attributing usage to a workspace, and it is the kind of
+      detail a careful team does log. It still identifies a grouping rather than one occurrence, so
+      support cannot use it to find the failing request.
+    trap_type: right-idea-wrong-mechanism
+  - id: e
+    text: >-
+      Record the `anthropic-version` header, since support needs to know which API version produced
+      the error.
+    correct: false
+    rationale: >-
+      The version is useful context but identifies a contract, not an occurrence. Two thousand
+      requests share it, so it cannot locate the failing one.
+    trap_type: irrelevant-knob
+sources:
+  - title: Claude API errors — Anthropic
+    url: https://platform.claude.com/docs/en/api/errors
+    verified_on: "2026-09-17"

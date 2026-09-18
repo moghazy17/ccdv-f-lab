@@ -1,0 +1,61 @@
+id: model-identifier-form-differs-by-platform
+domain: Model Selection and Optimization
+sub_skill: Technical Fundamentals
+difficulty: application
+select: 1
+stem: >-
+  A configuration module stores one model identifier string and reuses it wherever the service runs.
+  Deployments against a cloud marketplace reject it, while the first-party deployment accepts it.
+  What does the team need to encode in configuration?
+options:
+  - id: a
+    text: >-
+      A single alias works everywhere, so the module should store the alias rather than the pinned
+      identifier.
+    correct: false
+    rationale: >-
+      An alias is a convenience within one platform's naming, not a cross-platform identifier, and
+      for the current generation the dateless identifier is itself a pinned snapshot. This trades a
+      portability problem for a pinning problem.
+    trap_type: false-capability
+  - id: b
+    text: >-
+      Identifiers are interchangeable and the failure must be authentication, since each platform
+      authenticates differently.
+    correct: false
+    rationale: >-
+      Credentials do differ per platform, which makes this plausible, but an authentication failure
+      reports itself as one. The error the team sees follows the identifier.
+    trap_type: wrong-layer
+  - id: c
+    text: >-
+      The identifier form is platform-specific, so the platform and its identifier belong together
+      in configuration.
+    correct: true
+    rationale: >-
+      The same model is named differently across platforms: a provider-prefixed identifier on one
+      marketplace, a deployment name on a managed deployment, and the first-party identifier
+      elsewhere. Storing one string for all of them guarantees that some deployment is always wrong,
+      which is why the pairing rather than the string is the unit of configuration.
+  - id: d
+    text: >-
+      String normalization at the client boundary is enough: strip or add the provider prefix
+      depending on the endpoint.
+    correct: false
+    rationale: >-
+      This handles one platform's convention by pattern-matching and breaks on the platform whose
+      identifier is a deployment name the customer chose. Naming is configuration, not a transform.
+    trap_type: right-idea-wrong-mechanism
+  - id: e
+    text: >-
+      The rejection indicates the model is unavailable on that platform, so the team should choose a
+      different model there.
+    correct: false
+    rationale: >-
+      Availability per platform is a real consideration, but a rejected identifier string is not
+      evidence of it. Switching models would mask a naming defect with a capability change.
+    trap_type: right-idea-wrong-mechanism
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-17"

@@ -12,27 +12,15 @@ stem: >-
 options:
   - id: a
     text: >-
-      Free-form pattern matching is a monitoring signal, not a reliable blocking mechanism, since
-      the same intent can be phrased in effectively unlimited ways; what actually keeps every
-      ticket safe to process is the structural content encoding and the least-privilege tool
-      policy applied to it regardless of whether a pattern matched.
-    correct: true
-    rationale: >-
-      A keyword or regex match cannot cover every phrasing an attacker could use, so it is suited
-      to recording findings for review, not to enforcement; the boundary that holds even when
-      nothing matches is the structural encoding of untrusted content plus scoping the ticket to
-      least-privilege tools, both of which apply unconditionally.
-  - id: b
-    text: >-
-      The pattern match should immediately refuse the ticket, since a detected keyword sequence
-      reliably proves malicious intent with no false positives to worry about.
+      Route only pattern-flagged tickets through a larger, more careful model, and process the
+      rest of the tickets normally.
     correct: false
     rationale: >-
-      Ordinary tickets can legitimately contain phrases that overlap with injection-style wording,
-      and attackers can rephrase to avoid any fixed pattern; treating a keyword match as reliable
-      proof of intent overstates what pattern matching can actually guarantee.
-    trap_type: false-capability
-  - id: c
+      This still leaves every ticket that the pattern match missed processed without the
+      structural safeguards the scenario needs; a bigger model for the flagged subset does not
+      address unflagged injection attempts.
+    trap_type: bigger-model
+  - id: b
     text: >-
       Keep expanding the keyword pattern list until every possible phrasing of "ignore previous
       instructions" is covered, and rely on that expanded list as the sole safeguard.
@@ -42,16 +30,26 @@ options:
       and using it as the sole safeguard abandons the structural defenses that hold regardless of
       wording, for a disproportionate amount of pattern-list maintenance.
     trap_type: overkill
-  - id: d
+  - id: c
     text: >-
-      Route only pattern-flagged tickets through a larger, more careful model, and process the
-      rest of the tickets normally.
+      The pattern match should immediately refuse the ticket, since a detected keyword sequence
+      reliably proves malicious intent with no false positives to worry about.
     correct: false
     rationale: >-
-      This still leaves every ticket that the pattern match missed processed without the
-      structural safeguards the scenario needs; a bigger model for the flagged subset does not
-      address unflagged injection attempts.
-    trap_type: bigger-model
+      Ordinary tickets can legitimately contain phrases that overlap with injection-style wording,
+      and attackers can rephrase to avoid any fixed pattern; treating a keyword match as reliable
+      proof of intent overstates what pattern matching can actually guarantee.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      Pattern matching is a monitoring signal, not a blocking mechanism; the structural content
+      encoding and least-privilege tool policy keep every ticket safe, matched or not.
+    correct: true
+    rationale: >-
+      A keyword or regex match cannot cover every phrasing an attacker could use, so it is suited
+      to recording findings for review, not to enforcement; the boundary that holds even when
+      nothing matches is the structural encoding of untrusted content plus scoping the ticket to
+      least-privilege tools, both of which apply unconditionally.
 sources:
   - title: Mitigate jailbreaks and prompt injections — Anthropic (Claude Platform docs)
     url: https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/mitigate-jailbreaks

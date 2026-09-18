@@ -11,15 +11,31 @@ stem: >-
   strict, schema-validated inputs. Which change most directly reduces this selection ambiguity?
 options:
   - id: a
-    text: >-
-      Rewrite each tool's description to state exactly when to use it, when not to use it, and
-      what it does and does not return, so the two tools no longer read as roughly interchangeable.
-    correct: true
+    text: Move both tools to a larger model that is better at picking the right tool.
+    correct: false
     rationale: >-
-      Claude decides whether and which tool to call based on the user's request and the tool's
-      description; sharpening each description's stated scope and exclusions gives Claude the
-      basis to tell the two tools apart instead of guessing between similarly worded options.
+      A more capable model can still be misled by two descriptions that both plausibly cover the
+      same request; the fix is to make the descriptions themselves distinguishable, not to change
+      which model is reading them.
+    trap_type: bigger-model
   - id: b
+    text: >-
+      Increase the max_tokens limit on the triage request so Claude has more room to explain its
+      tool choice.
+    correct: false
+    rationale: >-
+      max_tokens bounds how much output a response can contain; it does not change what a tool's
+      description states about when that tool should be used.
+    trap_type: irrelevant-knob
+  - id: c
+    text: Merge the two tools' input schemas into one shared schema so either can accept any input.
+    correct: false
+    rationale: >-
+      Combining schemas does not resolve which capability should run for a given ticket; it removes
+      the structural distinction between a read-only knowledge-base search and a specific customer
+      lookup rather than clarifying it.
+    trap_type: wrong-layer
+  - id: d
     text: >-
       Add a system-prompt reminder telling Claude to think carefully about which tool is correct
       before calling one.
@@ -29,31 +45,15 @@ options:
       distinguish the two tools; the ambiguity comes from what each tool's description does and
       does not say it is for, not from insufficient encouragement to choose well.
     trap_type: unenforceable-politeness
-  - id: c
-    text: Move both tools to a larger model that is better at picking the right tool.
-    correct: false
-    rationale: >-
-      A more capable model can still be misled by two descriptions that both plausibly cover the
-      same request; the fix is to make the descriptions themselves distinguishable, not to change
-      which model is reading them.
-    trap_type: bigger-model
-  - id: d
-    text: Merge the two tools' input schemas into one shared schema so either can accept any input.
-    correct: false
-    rationale: >-
-      Combining schemas does not resolve which capability should run for a given ticket; it removes
-      the structural distinction between a read-only knowledge-base search and a specific customer
-      lookup rather than clarifying it.
-    trap_type: wrong-layer
   - id: e
     text: >-
-      Increase the max_tokens limit on the triage request so Claude has more room to explain its
-      tool choice.
-    correct: false
+      Rewrite each tool's description to state when to use it, when not to, and what it returns.
+    correct: true
     rationale: >-
-      max_tokens bounds how much output a response can contain; it does not change what a tool's
-      description states about when that tool should be used.
-    trap_type: irrelevant-knob
+      Claude decides whether and which tool to call from the user's request and the tool's
+      description. Sharpening each description's stated scope, exclusions, and return shape is what
+      stops the two reading as roughly interchangeable, and gives Claude the basis to tell them
+      apart instead of guessing.
 sources:
   - title: Tool use with Claude — Anthropic (Claude Platform docs)
     url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview

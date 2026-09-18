@@ -1,0 +1,58 @@
+id: deriving-unattended-operation-from-an-overnight-window
+domain: Applications and Integration
+sub_skill: Understanding Requirements
+difficulty: application
+select: 1
+stem: >-
+  Operations states the requirement as "this runs at 02:00 with nobody on shift; if it ever needs a
+  person to answer something, it must decline that step and finish the rest rather than wait." The
+  task edits files and runs commands. Which configuration expresses that requirement?
+options:
+  - id: a
+    text: >-
+      Set a long timeout on the job, so an unanswered prompt eventually expires and the run moves on.
+    correct: false
+    rationale: >-
+      Waiting until something times out is the behavior the requirement rules out, and it converts a
+      denial into a delay that consumes the maintenance window.
+    trap_type: right-idea-wrong-mechanism
+  - id: b
+    text: >-
+      Allow every tool, so no action can raise a prompt in the first place.
+    correct: false
+    rationale: >-
+      This meets "never waits" by removing every guardrail, which is a much larger decision than the
+      requirement asks for and gives an unattended job unrestricted reach.
+    trap_type: overkill
+  - id: c
+    text: >-
+      Turn off permission prompts for the run, so anything that would prompt is denied and the run
+      continues.
+    correct: true
+    rationale: >-
+      That flag exists for exactly this case: nothing waits on a host to answer, Claude is told
+      nobody can approve the request and not to retry it, and the run proceeds. Permission rules and
+      the session's mode still decide each call first, so the job keeps whatever it is genuinely
+      allowed to do.
+  - id: d
+    text: >-
+      Instruct the model in the prompt never to ask for permission, since it decides when to request
+      approval.
+    correct: false
+    rationale: >-
+      Permission requests are resolved by the harness's rules and mode, not by asking the model
+      nicely. An instruction cannot guarantee that no call ever needs approval.
+    trap_type: unenforceable-politeness
+  - id: e
+    text: >-
+      Run the job interactively on a shared machine so a person can answer prompts if they happen to
+      be available.
+    correct: false
+    rationale: >-
+      The premise is that nobody is on shift. This makes the outcome depend on chance rather than on
+      configuration.
+    trap_type: unenforceable-politeness
+sources:
+  - title: Run Claude Code programmatically — Anthropic (Claude Code docs)
+    url: https://code.claude.com/docs/en/headless
+    verified_on: "2026-09-17"

@@ -11,17 +11,24 @@ stem: >-
 options:
   - id: a
     text: >-
-      The added framework and multi-agent abstraction introduce debugging and maintenance
-      overhead disproportionate to a task expressible as three direct, sequential API calls; start
-      with the simplest solution and add complexity only when a single call or workflow cannot
-      meet the requirement.
-    correct: true
+      Approve the PR as written, since more code paths and more agents give the system more
+      resilience against failures.
+    correct: false
     rationale: >-
-      Anthropic's own guidance is that frameworks simplify some low-level tasks but add a layer of
-      abstraction that can obscure what is happening, and recommends starting with the simplest
-      solution and escalating complexity only when needed; a fixed three-step sequential task is
-      exactly the case that does not need it.
+      Additional agents, retry orchestration, and a message bus do not make this fixed three-step
+      sequential task more resilient in any way it actually needs; they add surface area to
+      maintain and debug without a corresponding benefit.
+    trap_type: overkill
   - id: b
+    text: >-
+      Ask the author to add a comment explaining why the multi-agent design was chosen, and
+      approve once the comment is added.
+    correct: false
+    rationale: >-
+      A comment documents the decision but does not address the actual maintenance and debugging
+      cost the added abstraction introduces for a task that three direct calls already solve.
+    trap_type: cost-theater
+  - id: c
     text: >-
       Request that every agent in the framework be switched to the largest available model so the
       extra orchestration layer produces more reliable results.
@@ -31,25 +38,16 @@ options:
       orchestration layer itself is unnecessary complexity for a fixed three-step task, not that
       any one step is under-powered.
     trap_type: bigger-model
-  - id: c
-    text: >-
-      Approve the PR as written, since more code paths and more agents give the system more
-      resilience against failures.
-    correct: false
-    rationale: >-
-      Additional agents, retry orchestration, and a message bus do not make this fixed three-step
-      sequential task more resilient in any way it actually needs; they add surface area to
-      maintain and debug without a corresponding benefit.
-    trap_type: overkill
   - id: d
     text: >-
-      Ask the author to add a comment explaining why the multi-agent design was chosen, and
-      approve once the comment is added.
-    correct: false
+      The framework and multi-agent abstraction cost more to debug and maintain than a task
+      expressible as three direct, sequential API calls is worth.
+    correct: true
     rationale: >-
-      A comment documents the decision but does not address the actual maintenance and debugging
-      cost the added abstraction introduces for a task that three direct calls already solve.
-    trap_type: cost-theater
+      Anthropic's own guidance is that frameworks simplify some low-level tasks but add a layer of
+      abstraction that can obscure what is happening, and recommends starting with the simplest
+      solution and escalating complexity only when needed; a fixed three-step sequential task is
+      exactly the case that does not need it.
 sources:
   - title: Building effective agents — Anthropic
     url: https://www.anthropic.com/engineering/building-effective-agents

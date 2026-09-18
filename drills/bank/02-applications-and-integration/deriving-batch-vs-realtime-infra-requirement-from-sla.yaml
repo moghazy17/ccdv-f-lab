@@ -11,16 +11,14 @@ stem: >-
 options:
   - id: a
     text: >-
-      The backlog workload has multiple independent requests and can tolerate delay, which maps
-      to the batch processing path; the live chat workload is a single request that needs an
-      immediate response, which maps to the realtime path — two different infrastructure
-      requirements from one business statement, not one architecture for both.
-    correct: true
+      Treat the requirement as already satisfied by any implementation, since the stakeholder did
+      not specify particular API endpoints or infrastructure.
+    correct: false
     rationale: >-
-      The business requirement names two different latency tolerances (overnight versus before the
-      customer finishes reading) for two different workload shapes (bulk versus single request);
-      deriving one infrastructure requirement per workload, rather than one shared design,
-      correctly reflects what the business statement actually specifies.
+      Not specifying implementation details does not mean no infrastructure requirement can be
+      derived; the stated tolerances for delay and immediacy are exactly the input a
+      requirements-derivation step is supposed to translate into a processing-path decision.
+    trap_type: false-capability
   - id: b
     text: >-
       Derive a single infrastructure requirement — realtime processing for both — because the
@@ -43,18 +41,18 @@ options:
     trap_type: bigger-model
   - id: d
     text: >-
-      Treat the requirement as already satisfied by any implementation, since the stakeholder did
-      not specify particular API endpoints or infrastructure.
-    correct: false
+      The backlog tolerates delay across many independent requests, so it maps to the batch path;
+      the live chat needs an immediate response, so it maps to the realtime path.
+    correct: true
     rationale: >-
-      Not specifying implementation details does not mean no infrastructure requirement can be
-      derived; the stated tolerances for delay and immediacy are exactly the input a
-      requirements-derivation step is supposed to translate into a processing-path decision.
-    trap_type: false-capability
+      The business requirement names two different latency tolerances (overnight versus before the
+      customer finishes reading) for two different workload shapes (bulk versus single request);
+      deriving one infrastructure requirement per workload, rather than one shared design,
+      correctly reflects what the business statement actually specifies.
 sources:
   - title: Batch processing — Anthropic (Claude Platform docs)
     url: https://platform.claude.com/docs/en/build-with-claude/batch-processing
-    verified_on: "2026-09-09"
+    verified_on: "2026-09-17"
   - title: Models overview — Anthropic
     url: https://platform.claude.com/docs/en/about-claude/models/overview
-    verified_on: "2026-09-09"
+    verified_on: "2026-09-17"

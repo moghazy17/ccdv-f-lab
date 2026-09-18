@@ -1,0 +1,61 @@
+id: thinking-cannot-be-switched-off-on-some-models
+domain: Model Selection and Optimization
+sub_skill: LLM Fundamentals
+difficulty: application
+select: 1
+stem: >-
+  A latency-sensitive route sends short classification requests. To shave time, the team disables
+  thinking in the request. On one model this is accepted; on another the request returns a 400 saying
+  that thinking cannot be disabled for this model. What should the team understand, and what is the
+  practical path?
+options:
+  - id: a
+    text: >-
+      Thinking can be suppressed by asking for it not to be displayed, which removes its latency and
+      cost.
+    correct: false
+    rationale: >-
+      Hiding thinking content changes what is returned, not whether the model thinks, and the work is
+      still performed and billed. This confuses presentation with computation.
+    trap_type: right-idea-wrong-mechanism
+  - id: b
+    text: >-
+      Setting `max_tokens` very low forces the model to skip thinking, which achieves the same result.
+    correct: false
+    rationale: >-
+      A tight ceiling truncates the response rather than skipping the reasoning, and it risks
+      stopping before an answer exists. It buys latency by breaking the output.
+    trap_type: irrelevant-knob
+  - id: c
+    text: >-
+      Retrying without the thinking field will fail the same way, since a model that rejects the
+      disabled value rejects any request that omits it.
+    correct: false
+    rationale: >-
+      Omitting the parameter is exactly what runs the request with the model's adaptive default. The
+      rejection is of an explicit unsupported value, not of the field's absence.
+    trap_type: false-capability
+  - id: d
+    text: >-
+      On some models thinking is always on and cannot be turned off; the lever there is the effort
+      level, or choosing a model whose thinking mode suits the route.
+    correct: true
+    rationale: >-
+      Thinking is always on for part of the lineup, and a request that tries to disable it is
+      rejected rather than quietly honored. Effort is how much thinking is steered on those models,
+      and selecting a different model is the other legitimate response to a latency requirement.
+  - id: e
+    text: >-
+      The parameter was misspelled, since any model accepts a request that turns thinking off.
+    correct: false
+    rationale: >-
+      The error names the unsupported value specifically. Assuming uniformity across the lineup is
+      what produced the failed request in the first place.
+    trap_type: false-capability
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-17"
+  - title: Claude API errors — Anthropic
+    url: https://platform.claude.com/docs/en/api/errors
+    verified_on: "2026-09-17"

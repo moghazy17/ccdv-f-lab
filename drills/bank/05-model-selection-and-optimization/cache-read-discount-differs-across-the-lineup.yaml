@@ -1,0 +1,55 @@
+id: cache-read-discount-differs-across-the-lineup
+domain: Model Selection and Optimization
+sub_skill: Cost and Token Management
+difficulty: recall
+select: 1
+stem: >-
+  A team models the cost of a heavily cached workload and needs the arithmetic for cache reads and
+  for batched requests. Which statement matches the published rates?
+options:
+  - id: a
+    text: >-
+      Cache reads cost a tenth of the output price, since the cached content is replayed into the
+      response.
+    correct: false
+    rationale: >-
+      Cached content is input, and the discount is expressed against the base input price. Anchoring
+      it to output would overstate the cost by a factor of five.
+    trap_type: right-idea-wrong-mechanism
+  - id: b
+    text: >-
+      Batched requests cost half the synchronous price, and a cache read costs a tenth of base input
+      on most models, less still on some.
+    correct: true
+    rationale: >-
+      Those are the published figures: batch at 50% of the standard price, and cache reads at 10% of
+      the base input price, with a lower rate on some models. A cost model built on them has to carry
+      the per-model exception rather than assume one rate everywhere.
+  - id: c
+    text: A cache read is free, since the tokens were already paid for when the entry was written.
+    correct: false
+    rationale: >-
+      A read is heavily discounted but still billed, and a write costs more than base input. Treating
+      reads as free hides the break-even point that decides whether caching pays at all.
+    trap_type: false-capability
+  - id: d
+    text: Batched requests and cache reads both cost half the base price, since both are discounts.
+    correct: false
+    rationale: >-
+      The two discounts are not the same size: batching is priced at half the standard rate, while a
+      cache read is roughly a tenth of base input. Treating caching as another halving understates it
+      by about fivefold and can lead a team to skip the larger saving.
+    trap_type: false-capability
+  - id: e
+    text: >-
+      The batch discount and the cache discount cannot be combined, so a cached batch request is
+      billed at the standard rate.
+    correct: false
+    rationale: >-
+      This invents a mutual exclusion. The published rates are stated independently, and nothing
+      makes one discount cancel the other.
+    trap_type: false-capability
+sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-17"

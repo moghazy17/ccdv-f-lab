@@ -10,12 +10,12 @@ stem: >-
   stay versioned alongside the code it deploys. Where should the command file be placed?
 options:
   - id: a
-    text: In the repository at `.claude/commands/deploy.md` (or `.claude/skills/deploy/SKILL.md`).
-    correct: true
+    text: As a `CLAUDE.local.md` entry at the project root.
+    correct: false
     rationale: >-
-      A command placed at the project level lives in the repository and is shared with teammates
-      through source control, so anyone who clones the repo gets it automatically and it stays
-      versioned with the code.
+      `CLAUDE.local.md` is meant for personal, gitignored, project-specific notes for the one
+      engineer using it; it is not shared with teammates and is not a command definition at all.
+    trap_type: wrong-layer
   - id: b
     text: In the engineer's home directory at `~/.claude/commands/deploy.md`.
     correct: false
@@ -34,6 +34,13 @@ options:
       that should only run on demand.
     trap_type: right-idea-wrong-mechanism
   - id: d
+    text: In the repository at `.claude/commands/deploy.md` (or `.claude/skills/deploy/SKILL.md`).
+    correct: true
+    rationale: >-
+      A command placed at the project level lives in the repository and is shared with teammates
+      through source control, so anyone who clones the repo gets it automatically and it stays
+      versioned with the code.
+  - id: e
     text: In an organization-managed policy directory deployed to every machine by IT.
     correct: false
     rationale: >-
@@ -41,13 +48,6 @@ options:
       controls, independent of which repository is checked out; it is disproportionate for a
       command that only needs to travel with one project's source control.
     trap_type: overkill
-  - id: e
-    text: As a `CLAUDE.local.md` entry at the project root.
-    correct: false
-    rationale: >-
-      `CLAUDE.local.md` is meant for personal, gitignored, project-specific notes for the one
-      engineer using it; it is not shared with teammates and is not a command definition at all.
-    trap_type: wrong-layer
 sources:
   - title: Custom slash commands — Anthropic (Claude Code docs)
     url: https://code.claude.com/docs/en/slash-commands

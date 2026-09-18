@@ -3,20 +3,29 @@
 from __future__ import annotations
 
 import copy
+from difflib import SequenceMatcher
 from pathlib import Path
 
 import yaml
 from jsonschema import Draft202012Validator
 
 from drills.engine.blueprint import load_blueprint
+from drills.engine.coverage import DIFFICULTIES, build_coverage
 from drills.engine.validation import (
+    NEAR_DUPLICATE_RATIO,
+    BankItem,
     bank_validation_errors,
+    find_bank_items,
     item_validation_errors,
     load_item,
     load_schema,
+    near_duplicate_advisories,
 )
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+# Below this many single-select items a domain's position share says more about the sample
+# than about the authoring, so the per-domain guard reports on the larger domains only.
+DOMAIN_TELL_SAMPLE = 20
 FIXTURE_PATH = REPOSITORY_ROOT / "tests" / "fixtures" / "fake-practice-item.yaml"
 EXAMPLE_PATH = (
     REPOSITORY_ROOT
@@ -115,3 +124,190 @@ def test_bank_ids_are_unique(tmp_path: Path) -> None:
     errors = bank_validation_errors(tmp_path, blueprint=load_blueprint())
     assert len(errors) == 1
     assert "duplicates" in errors[0]
+
+
+def _bank_item(item_id: str, stem: str, rationale: str) -> BankItem:
+    item = fake_item()
+    item["id"] = item_id
+    item["stem"] = stem
+    for option in item["options"]:
+        if option["correct"] is True:
+            option["rationale"] = rationale
+    return BankItem(path=Path(f"{item_id}.yaml"), item=item)
+
+
+def test_near_duplicate_stems_within_a_domain_are_reported() -> None:
+    """An author is shown the neighbours of what they just wrote."""
+    stem = "A team must choose between a bounded workflow and an agent for a repeatable task."
+    advisories = near_duplicate_advisories(
+        [
+            _bank_item("first-item", stem, "Distinct reasoning about the first case."),
+            _bank_item("second-item", stem + " Which approach fits?", "Other reasoning entirely."),
+        ]
+    )
+
+    assert [advisory.basis for advisory in advisories] == ["stems"]
+    assert advisories[0].first_id == "first-item"
+    assert advisories[0].second_id == "second-item"
+
+
+def test_near_duplicate_correct_rationales_are_reported() -> None:
+    rationale = "A workflow is right because the path is fixed and the steps are known in advance."
+    advisories = near_duplicate_advisories(
+        [
+            _bank_item("first-item", "One clearly different situation to reason about.", rationale),
+            _bank_item("second-item", "A wholly unrelated setup, other bounds.", rationale),
+        ]
+    )
+
+    assert [advisory.basis for advisory in advisories] == ["correct-option rationales"]
+
+
+def test_a_near_duplicate_is_reported_at_a_realistic_stem_length() -> None:
+    """Short fixtures hide the defect: difflib changes behavior once a sequence reaches 200.
+
+    The pair below is a paraphrase, not a one-word edit, because a one-word edit leaves a long
+    contiguous match that survives the junk heuristic and scores the same either way. A paraphrase
+    spreads the difference across the stem, which is the shape the heuristic actually destroys:
+    with difflib's default ``autojunk`` this pair scores 0.66 and goes unreported, and only
+    ``autojunk=False`` scores it at 0.84. Restoring the default here fails this test.
+    """
+    stem = (
+        "A production integration sends a large policy document followed by a short question, and "
+        "the team is deciding how to keep the per-request cost down without changing the answer "
+        "quality that reviewers already signed off on last quarter."
+    )
+    paraphrase = (
+        "A production integration sends a lengthy policy document followed by a brief query, and "
+        "the group is weighing how to hold the per-request spend down without altering the answer "
+        "quality that reviewers already approved of during last quarter."
+    )
+    assert len(stem) > 200 and len(paraphrase) > 200
+    advisories = near_duplicate_advisories(
+        [
+            _bank_item("first-item", stem, "One line of reasoning."),
+            _bank_item("second-item", paraphrase, "Another line entirely."),
+        ]
+    )
+
+    assert [advisory.basis for advisory in advisories] == ["stems"]
+    assert advisories[0].ratio > NEAR_DUPLICATE_RATIO
+    assert SequenceMatcher(None, stem, paraphrase).ratio() < NEAR_DUPLICATE_RATIO
+
+
+def test_distinct_items_produce_no_advisory() -> None:
+    advisories = near_duplicate_advisories(
+        [
+            _bank_item("first-item", "A caching decision under a latency budget.", "Cache first."),
+            _bank_item("second-item", "Choosing a transport for an MCP server.", "Use stdio."),
+        ]
+    )
+
+    assert advisories == []
+
+
+def test_items_in_different_domains_are_never_paired() -> None:
+    """Shared vocabulary across domains is expected; pairing it would teach authors to ignore."""
+    stem = "A team must choose between a bounded workflow and an agent for a repeatable task."
+    first = _bank_item("first-item", stem, "Reasoning.")
+    second = _bank_item("second-item", stem, "Reasoning.")
+    second.item["domain"] = "Security and Safety"
+    second.item["sub_skill"] = "AI Application Security"
+
+    assert near_duplicate_advisories([first, second]) == []
+
+
+def test_the_advisory_never_becomes_a_validation_error(tmp_path: Path) -> None:
+    """FR-012 is a reading, not a measurement, so a near-duplicate pair must still validate."""
+    stem = "A team must choose between a bounded workflow and an agent for a repeatable task."
+    for name, suffix in (("first", ""), ("second", " Which approach fits?")):
+        item = fake_item()
+        item["id"] = f"{name}-item"
+        item["stem"] = stem + suffix
+        (tmp_path / f"{name}.yaml").write_text(yaml.safe_dump(item, sort_keys=False), "utf-8")
+
+    assert bank_validation_errors(tmp_path, blueprint=load_blueprint()) == []
+    assert near_duplicate_advisories(find_bank_items(tmp_path))
+
+
+def test_every_difficulty_the_schema_defines_is_reportable() -> None:
+    """Naming a missing difficulty is how the level nobody has written becomes visible."""
+    coverage = build_coverage(find_bank_items(), load_blueprint())
+    schema_difficulties = set(load_schema()["properties"]["difficulty"]["enum"])
+
+    assert set(DIFFICULTIES) == schema_difficulties
+    for domain in coverage.domains:
+        held = set(DIFFICULTIES) - set(domain.missing_difficulties)
+        assert held, f"{domain.name} holds no item at any difficulty"
+
+
+def _keyed_positions() -> dict[str, dict[int, int]]:
+    """Count, per domain, how many single-select items key each option position."""
+    counts: dict[str, dict[int, int]] = {}
+    for bank_item in find_bank_items():
+        item = bank_item.item
+        if item.get("select") != 1:
+            continue
+        domain = counts.setdefault(item["domain"], {})
+        for index, option in enumerate(item["options"]):
+            if option.get("correct") is True:
+                domain[index] = domain.get(index, 0) + 1
+    return counts
+
+
+def test_the_correct_answer_is_not_always_in_the_same_position() -> None:
+    """A batch keyed to one position is answerable without reading a single stem."""
+    bank: dict[int, int] = {}
+    for domain in _keyed_positions().values():
+        for index, count in domain.items():
+            bank[index] = bank.get(index, 0) + count
+
+    single_select = sum(bank.values())
+    assert single_select > 0
+    largest_share = max(bank.values()) / single_select
+    assert largest_share <= 0.5, (
+        f"{largest_share:.0%} of single-select items key the same position; "
+        "shuffle the options so position carries no signal"
+    )
+
+
+def test_no_single_domain_keys_one_position() -> None:
+    """A quiz is drawn from one domain, so a bank-wide average can hide a per-domain tell."""
+    for name, positions in sorted(_keyed_positions().items()):
+        held = sum(positions.values())
+        if held < DOMAIN_TELL_SAMPLE:
+            continue
+        largest_share = max(positions.values()) / held
+        assert largest_share <= 0.45, (
+            f"{name} keys the same position in {largest_share:.0%} of its {held} single-select "
+            "items; a quiz drawn from this domain alone is answerable by position"
+        )
+
+
+def test_the_correct_option_is_not_reliably_the_longest() -> None:
+    """A candidate who always picks the longest option should not out-score one who guesses.
+
+    Single-select items are counted on their own. A multiple-response item has no single longest
+    option to pick, so including one dilutes the measurement of the items where the tell works.
+    With four or five options, chance puts the longest option on the key about a fifth of the
+    time; the threshold below leaves authoring room above that without leaving a usable tell.
+    """
+    longest_is_correct = 0
+    total = 0
+    for bank_item in find_bank_items():
+        item = bank_item.item
+        if item.get("select") != 1:
+            continue
+        options = item["options"]
+        correct = max(len(str(o["text"]).split()) for o in options if o.get("correct") is True)
+        other = max(len(str(o["text"]).split()) for o in options if o.get("correct") is not True)
+        total += 1
+        if correct > other:
+            longest_is_correct += 1
+
+    assert total > 0
+    share = longest_is_correct / total
+    assert share <= 0.45, (
+        f"the longest option is the correct one in {share:.0%} of single-select items; "
+        "move explanation out of the keyed option and into its rationale"
+    )

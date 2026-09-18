@@ -10,6 +10,15 @@ stem: >-
 options:
   - id: a
     text: >-
+      Switch to a larger model on the assumption that it would not have issued three tool calls in
+      parallel in the first place.
+    correct: false
+    rationale: >-
+      Parallel tool calls in one turn are a normal, supported pattern; a different model does not
+      change the requirement that every tool use in a turn receives a correlated result.
+    trap_type: bigger-model
+  - id: b
+    text: >-
       Execute all three tool calls, then send one following user message whose content array
       holds all three `tool_result` blocks, each correlated to its `tool_use_id`.
     correct: true
@@ -17,7 +26,7 @@ options:
       Every tool use from one assistant turn must be answered together; putting all three results
       in the single following user message, each tied to its own `tool_use_id`, is the documented
       shape for parallel tool calls and keeps the model calling tools in parallel on later turns.
-  - id: b
+  - id: c
     text: >-
       Execute the three tool calls, then send three separate user messages, one result per
       message, so each result gets its own turn.
@@ -27,7 +36,7 @@ options:
       tool results for one assistant turn belong together in the single following user turn; it
       also teaches the model to stop issuing calls in parallel, the opposite of the goal.
     trap_type: right-idea-wrong-mechanism
-  - id: c
+  - id: d
     text: >-
       Execute only the first tool call, return that single `tool_result`, and let the model
       re-request the other two tools on a later turn if it still needs them.
@@ -37,15 +46,6 @@ options:
       the same information the model already asked for once, without addressing why all three
       results should have been returned together.
     trap_type: cost-theater
-  - id: d
-    text: >-
-      Switch to a larger model on the assumption that it would not have issued three tool calls in
-      parallel in the first place.
-    correct: false
-    rationale: >-
-      Parallel tool calls in one turn are a normal, supported pattern; a different model does not
-      change the requirement that every tool use in a turn receives a correlated result.
-    trap_type: bigger-model
 sources:
   - title: Handle tool calls — Anthropic (Claude Platform docs)
     url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls

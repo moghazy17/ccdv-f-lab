@@ -26,6 +26,13 @@ options:
       sits relative to the instructions and question, which is the structural factor at issue.
     trap_type: unenforceable-politeness
   - id: c
+    text: Increase max_tokens so Claude has more room to reason about the contract before answering.
+    correct: false
+    rationale: >-
+      max_tokens bounds how much output a response can contain; it has no effect on how a long
+      document is positioned relative to the instructions and question earlier in the same prompt.
+    trap_type: irrelevant-knob
+  - id: d
     text: Summarize the contract with a separate call and pass only the summary to the final prompt.
     correct: false
     rationale: >-
@@ -33,7 +40,7 @@ options:
       detail the question depends on; the underlying problem is the arrangement of the existing
       content, not its length, so removing content is a disproportionate fix.
     trap_type: overkill
-  - id: d
+  - id: e
     text: >-
       Keep the same ordering, but switch to a model with a larger context window so the contract
       fits more comfortably.
@@ -42,13 +49,6 @@ options:
       The contract already fits in context; a larger window does not change where within the
       prompt the long document sits relative to the instructions and question.
     trap_type: bigger-model
-  - id: e
-    text: Increase max_tokens so Claude has more room to reason about the contract before answering.
-    correct: false
-    rationale: >-
-      max_tokens bounds how much output a response can contain; it has no effect on how a long
-      document is positioned relative to the instructions and question earlier in the same prompt.
-    trap_type: irrelevant-knob
 sources:
   - title: Prompting best practices — Anthropic (Claude Platform docs)
     url: https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices
