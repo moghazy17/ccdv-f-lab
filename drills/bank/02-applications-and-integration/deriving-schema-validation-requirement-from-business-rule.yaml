@@ -43,10 +43,8 @@ options:
     trap_type: false-capability
   - id: d
     text: >-
-      Require that the model's response both passes validation against the expected
-      classification schema, so no required field is missing or malformed, and does not set an
-      explicit needs_human flag to true, before it is functionally permitted to auto-close a
-      ticket; failing either condition routes to a human instead.
+      Permit auto-close only when the response passes the classification schema and does not set
+      needs_human to true; failing either condition routes the ticket to a human.
     correct: true
     rationale: >-
       "Complete" translates to schema-valid, and "unambiguous" translates to the model's own

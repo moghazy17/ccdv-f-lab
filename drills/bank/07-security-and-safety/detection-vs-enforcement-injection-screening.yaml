@@ -42,10 +42,8 @@ options:
     trap_type: false-capability
   - id: d
     text: >-
-      Free-form pattern matching is a monitoring signal, not a reliable blocking mechanism, since
-      the same intent can be phrased in effectively unlimited ways; what actually keeps every
-      ticket safe to process is the structural content encoding and the least-privilege tool
-      policy applied to it regardless of whether a pattern matched.
+      Pattern matching is a monitoring signal, not a blocking mechanism; the structural content
+      encoding and least-privilege tool policy keep every ticket safe, matched or not.
     correct: true
     rationale: >-
       A keyword or regex match cannot cover every phrasing an attacker could use, so it is suited

@@ -11,10 +11,8 @@ stem: >-
 options:
   - id: a
     text: >-
-      No. Anthropic documents that feature availability varies by platform for partner-operated
-      cloud platforms such as Amazon Bedrock and Google Cloud, so the integration should check
-      that specific platform's documentation for what is available and when, rather than
-      assuming full parity with the direct API.
+      No. Feature availability varies by platform on partner-operated clouds like Bedrock and Google
+      Cloud; check their documentation rather than assume parity.
     correct: true
     rationale: >-
       The documented comparison between the direct Claude API and cloud platform APIs states that

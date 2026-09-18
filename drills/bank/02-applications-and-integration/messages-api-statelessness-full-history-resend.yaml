@@ -39,14 +39,14 @@ options:
     trap_type: irrelevant-knob
   - id: d
     text: >-
-      The Messages API is documented as stateless: each request must include the full
-      conversation history in the messages array. The fix is to resend every prior turn (or an
-      equivalent summarized history) on each call, not only the newest message.
+      The Messages API is stateless: resend every prior turn, or a summarized equivalent, on each
+      call.
     correct: true
     rationale: >-
-      Because the API does not retain conversation state between calls, sending only the newest
-      message on each request genuinely removes the earlier turns from what Claude sees; resending
-      the full history restores the context the model needs.
+      Because the API does not retain conversation state between calls, each request must carry the
+      full conversation history in its messages array. Sending only the newest message genuinely
+      removes the earlier turns from what Claude sees; resending them restores the context the model
+      needs.
 sources:
   - title: Messages API reference — Anthropic
     url: https://platform.claude.com/docs/en/api/messages

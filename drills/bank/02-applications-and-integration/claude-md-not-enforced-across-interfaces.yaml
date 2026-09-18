@@ -12,13 +12,12 @@ options:
   - id: a
     text: >-
       A PreToolUse hook that inspects the command and blocks execution before it runs delivers the
-      guarantee, because hooks execute in the harness's own process independent of what the model
-      decides.
+      guarantee.
     correct: true
     rationale: >-
-      Hooks run as callbacks in the harness, outside the model's control, and can block a
-      dangerous operation before it executes; that is what gives a hard guarantee regardless of
-      model behavior, as opposed to content that only shapes what the model decides to do.
+      Hooks run as callbacks in the harness's own process, outside the model's control, and can
+      block a dangerous operation before it executes. That is what gives a hard guarantee regardless
+      of model behavior, as opposed to content that only shapes what the model decides to do.
   - id: b
     text: >-
       Switching to a larger, more capable model delivers the guarantee, since a more capable model

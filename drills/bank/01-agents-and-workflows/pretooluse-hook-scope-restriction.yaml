@@ -40,8 +40,8 @@ options:
     trap_type: right-idea-wrong-mechanism
   - id: e
     text: >-
-      Register a PreToolUse hook that inspects the target path on every write or edit tool call
-      and denies any call whose path falls outside `src/`.
+      Register a PreToolUse hook that denies any write or edit call whose target path falls outside
+      `src/`.
     correct: true
     rationale: >-
       A PreToolUse hook runs in the harness's own process before the tool executes and can block

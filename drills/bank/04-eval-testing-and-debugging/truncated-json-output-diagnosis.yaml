@@ -39,15 +39,14 @@ options:
     trap_type: irrelevant-knob
   - id: d
     text: >-
-      Check the response's `stop_reason`. A value of `max_tokens` means the model's output itself
-      was cut off because the request's token limit was hit, which points at the request
+      Check the response's `stop_reason`: a value of `max_tokens` points at the request
       configuration rather than a transport failure.
     correct: true
     rationale: >-
-      A 200 status with a truncated body is not a transport-layer failure at all; `stop_reason:
-      "max_tokens"` is the documented signal that the response is incomplete because generation
-      stopped at the token limit, which correctly isolates the problem to the request's `max_tokens`
-      setting rather than to the network or server layer.
+      A 200 status with a truncated body is not a transport-layer failure at all. `stop_reason:
+      "max_tokens"` is the documented signal that the model's own output was cut off because
+      generation stopped at the token limit, which isolates the problem to the request's
+      `max_tokens` setting rather than to the network or server layer.
   - id: e
     text: >-
       Apply the same exponential-backoff retry logic used for 429 and 500 responses to these calls

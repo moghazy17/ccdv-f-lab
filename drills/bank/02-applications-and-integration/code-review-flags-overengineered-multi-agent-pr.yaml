@@ -40,10 +40,8 @@ options:
     trap_type: bigger-model
   - id: d
     text: >-
-      The added framework and multi-agent abstraction introduce debugging and maintenance
-      overhead disproportionate to a task expressible as three direct, sequential API calls; start
-      with the simplest solution and add complexity only when a single call or workflow cannot
-      meet the requirement.
+      The framework and multi-agent abstraction cost more to debug and maintain than a task
+      expressible as three direct, sequential API calls is worth.
     correct: true
     rationale: >-
       Anthropic's own guidance is that frameworks simplify some low-level tasks but add a layer of

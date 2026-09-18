@@ -32,9 +32,8 @@ options:
     trap_type: bigger-model
   - id: c
     text: >-
-      Keep the ticket text out of the system instruction entirely. Render it as delimited data in
-      the user turn, and have the system instruction state that content inside the delimiters is
-      data to analyze, never instructions to follow.
+      Keep the ticket out of the system instruction: render it as delimited data in a user turn,
+      named as data rather than instructions.
     correct: true
     rationale: >-
       Concatenating untrusted text into the trusted system string erases the boundary between

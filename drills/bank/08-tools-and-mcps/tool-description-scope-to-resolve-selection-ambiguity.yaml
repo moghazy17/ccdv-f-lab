@@ -47,13 +47,13 @@ options:
     trap_type: unenforceable-politeness
   - id: e
     text: >-
-      Rewrite each tool's description to state exactly when to use it, when not to use it, and
-      what it does and does not return, so the two tools no longer read as roughly interchangeable.
+      Rewrite each tool's description to state when to use it, when not to, and what it returns.
     correct: true
     rationale: >-
-      Claude decides whether and which tool to call based on the user's request and the tool's
-      description; sharpening each description's stated scope and exclusions gives Claude the
-      basis to tell the two tools apart instead of guessing between similarly worded options.
+      Claude decides whether and which tool to call from the user's request and the tool's
+      description. Sharpening each description's stated scope, exclusions, and return shape is what
+      stops the two reading as roughly interchangeable, and gives Claude the basis to tell them
+      apart instead of guessing.
 sources:
   - title: Tool use with Claude — Anthropic (Claude Platform docs)
     url: https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview

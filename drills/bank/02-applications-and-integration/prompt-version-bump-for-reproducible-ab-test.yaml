@@ -23,17 +23,14 @@ options:
     trap_type: cost-theater
   - id: b
     text: >-
-      Editing "1.0.0" in place silently changes the instruction behind every caller that already
-      resolves that exact version, making it impossible to tell which wording produced any given
-      past or future result. The change should be published as a new explicit version (for
-      example "1.0.1"), leaving "1.0.0" resolvable and unchanged so results can be compared across
-      the two versions.
+      Publish the change as a new explicit version such as "1.0.1", leaving "1.0.0" resolvable and
+      unchanged so results from the two wordings stay comparable.
     correct: true
     rationale: >-
       An explicit, comparable version string is only meaningful if resolving the same
-      name-and-version pair keeps returning the same instruction; editing the text under an
-      existing version number breaks that guarantee and erases the ability to compare behavior
-      before and after the wording change.
+      name-and-version pair keeps returning the same instruction. Editing the text under an existing
+      version number changes it silently behind every caller already resolving that version, and
+      erases the ability to tell which wording produced any given past or future result.
   - id: c
     text: >-
       Route the reworded instruction to a larger model instead of bumping the version, since a

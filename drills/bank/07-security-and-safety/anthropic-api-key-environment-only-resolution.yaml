@@ -11,9 +11,8 @@ stem: >-
 options:
   - id: a
     text: >-
-      Resolve the API key only from a process-environment variable at runtime, raising an error if
-      it is unset, and never store it in a repository file; keyless tests should use a mock
-      transport instead of a shared committed key.
+      Resolve the key from the process environment at runtime, erroring when unset, and never store
+      it in a repository file.
     correct: true
     rationale: >-
       Anthropic's own key-handling guidance is to use environment variables rather than hardcoding

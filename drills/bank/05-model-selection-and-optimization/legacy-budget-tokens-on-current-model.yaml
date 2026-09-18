@@ -20,14 +20,14 @@ options:
     trap_type: right-idea-wrong-mechanism
   - id: b
     text: >-
-      `budget_tokens` is rejected on current models rather than being ignored; Claude Opus 5 uses
-      adaptive thinking instead, where the model decides per request whether and how deeply to
-      think, steered by `output_config.effort` rather than a token budget.
+      `budget_tokens` is rejected on current models rather than ignored; Claude Opus 5 uses adaptive
+      thinking, steered by `output_config.effort`.
     correct: true
     rationale: >-
       The manual thinking mode with `budget_tokens` is deprecated on the 4.6 generation and is not
-      accepted on later models at all, so the request fails outright; adaptive thinking, tuned by
-      the separate `effort` parameter, is what current models use instead.
+      accepted on later models at all, so the request fails outright. Adaptive thinking lets the
+      model decide per request whether and how deeply to think, tuned by the separate `effort`
+      parameter rather than by a token budget.
   - id: c
     text: >-
       The failure is unrelated to `budget_tokens`; it is caused by the request exceeding a

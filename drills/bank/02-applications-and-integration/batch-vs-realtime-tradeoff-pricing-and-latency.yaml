@@ -32,17 +32,14 @@ options:
     trap_type: wrong-layer
   - id: c
     text: >-
-      Route the overnight backfill through the Message Batches API, which processes many
-      independent requests asynchronously at a 50% cost reduction and suits a workload where
-      immediate responses are not required; route the live chat classification through the
-      realtime Messages API, since it needs an immediate response for the single request in
-      flight.
+      Route the overnight backfill through the Message Batches API and the live chat classification
+      through the realtime Messages API.
     correct: true
     rationale: >-
       The batch path exists for exactly this workload shape — many independent requests, no one
-      waiting on any single result, and a documented cost reduction for tolerating asynchronous
-      processing — while a single live interaction needing an instant answer is that same
-      tradeoff's realtime case.
+      waiting on any single result, and a documented 50% cost reduction for tolerating asynchronous
+      processing — while a single live interaction needing an instant answer is that same tradeoff's
+      realtime case.
   - id: d
     text: >-
       Route both workloads through the realtime Messages API, issuing 20,000 sequential

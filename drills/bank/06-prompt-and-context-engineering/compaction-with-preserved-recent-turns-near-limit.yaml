@@ -29,14 +29,14 @@ options:
     trap_type: bigger-model
   - id: c
     text: >-
-      Replace the older turns with one summary, while explicitly keeping the most recent turns and
-      the one earlier turn the agent still depends on as original, unsummarized turns.
+      Replace the older turns with one summary, keeping the most recent turns and the one earlier
+      turn the agent still depends on.
     correct: true
     rationale: >-
-      Compaction summarizes and replaces the turns it covers; because growth here comes from many
-      ordinary turns rather than a few oversized tool results, and specific turns must stay intact
-      for correctness, compacting everything else while explicitly protecting those turns fits the
-      situation.
+      Compaction summarizes and replaces the turns it covers, and the turns kept out of it stay as
+      original, unsummarized turns. Because growth here comes from many ordinary turns rather than a
+      few oversized tool results, and specific turns must stay intact for correctness, compacting
+      everything else while explicitly protecting those turns fits the situation.
   - id: d
     text: >-
       Ask the model, in the system prompt, to keep its own turns shorter as the conversation

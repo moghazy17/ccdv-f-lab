@@ -53,6 +53,9 @@ options:
       what produced the failed request in the first place.
     trap_type: false-capability
 sources:
+  - title: Models overview — Anthropic
+    url: https://platform.claude.com/docs/en/about-claude/models/overview
+    verified_on: "2026-09-17"
   - title: Claude API errors — Anthropic
     url: https://platform.claude.com/docs/en/api/errors
     verified_on: "2026-09-17"

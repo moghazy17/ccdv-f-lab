@@ -41,10 +41,8 @@ options:
     trap_type: bigger-model
   - id: d
     text: >-
-      The backlog workload has multiple independent requests and can tolerate delay, which maps
-      to the batch processing path; the live chat workload is a single request that needs an
-      immediate response, which maps to the realtime path — two different infrastructure
-      requirements from one business statement, not one architecture for both.
+      The backlog tolerates delay across many independent requests, so it maps to the batch path;
+      the live chat needs an immediate response, so it maps to the realtime path.
     correct: true
     rationale: >-
       The business requirement names two different latency tolerances (overnight versus before the

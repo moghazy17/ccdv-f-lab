@@ -30,9 +30,8 @@ options:
     trap_type: irrelevant-knob
   - id: c
     text: >-
-      Sonnet and Opus take adaptive thinking, a mode with no separate token budget to configure,
-      while Haiku's thinking is only configured with an explicit budget_tokens value; the helper
-      must branch on which model it is calling rather than always sending budget_tokens.
+      The helper must branch on the model: Sonnet and Opus take adaptive thinking, with no budget to
+      configure, while Haiku requires an explicit budget_tokens.
     correct: true
     rationale: >-
       Adaptive thinking and the fixed-budget thinking form are different request shapes tied to

@@ -20,14 +20,14 @@ options:
     trap_type: wrong-layer
   - id: b
     text: >-
-      Treat the published retirement date as a planned maintenance milestone: schedule evaluation
-      and migration to a supported pinned model ID well before that date, rather than waiting
-      until requests against the retired ID start failing.
+      Treat the published retirement date as a planned maintenance milestone, scheduling evaluation
+      and migration to a supported pinned model ID well before it.
     correct: true
     rationale: >-
       Retirement commitments are published in advance precisely so operating teams can plan a
-      migration during the maintain phase; treating the date as a future milestone to plan around,
-      rather than an emergency to react to later, is what that published lead time is for.
+      migration during the maintain phase. Treating the date as a future milestone to plan around,
+      rather than waiting until requests against the retired ID start failing, is what that
+      published lead time is for.
   - id: c
     text: >-
       Switch immediately to the largest available current model without evaluation, since a

@@ -21,8 +21,8 @@ options:
     trap_type: irrelevant-knob
   - id: b
     text: >-
-      A server skipped by configuration validation does not fail the run, so the exit status cannot
-      report it.
+      Gate on the `system/init` event's server error array, because a server skipped by
+      configuration validation does not fail the run and the exit status cannot report it.
     correct: true
     rationale: >-
       Claude Code validates each configured entry at startup, skips the ones that fail, and

@@ -11,9 +11,8 @@ stem: >-
 options:
   - id: a
     text: >-
-      Switch the request to streaming. A non-streaming request with a large `max_tokens` value is
-      expected to exceed the client's default timeout, so streaming is the documented remedy
-      rather than an optional latency improvement.
+      Switch the request to streaming: it is the documented remedy for a large `max_tokens`, not an
+      optional latency improvement.
     correct: true
     rationale: >-
       The SDK documentation warns against setting a large `max_tokens` value without streaming and

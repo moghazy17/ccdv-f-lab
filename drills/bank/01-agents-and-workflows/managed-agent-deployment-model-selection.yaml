@@ -21,15 +21,15 @@ options:
     trap_type: overkill
   - id: b
     text: >-
-      Use Managed Agents with self-hosted sandboxes, so tool execution — the filesystem, process
-      spawning, and network egress — runs on infrastructure the company controls, while
-      Anthropic's control plane still runs the model and the orchestration loop.
+      Use Managed Agents with self-hosted sandboxes, so tool execution runs on infrastructure the
+      company controls while Anthropic's control plane still runs the model.
     correct: true
     rationale: >-
-      Self-hosted sandboxes move tool execution into the customer's infrastructure while
-      orchestration and the model stay on Anthropic's control plane; this is documented as the
-      fit when the agent needs to reach internal, non-public services or operate under the
-      company's own compliance and audit controls.
+      Self-hosted sandboxes move tool execution — the filesystem, process spawning, and network
+      egress — into the customer's infrastructure while orchestration and the model stay on
+      Anthropic's control plane. This is documented as the fit when the agent needs to reach
+      internal, non-public services or operate under the company's own compliance and audit
+      controls.
   - id: c
     text: >-
       Keep the default hosted sandbox and add a system-prompt instruction telling the agent never

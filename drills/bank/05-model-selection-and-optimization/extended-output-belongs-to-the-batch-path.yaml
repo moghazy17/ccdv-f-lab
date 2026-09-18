@@ -5,9 +5,9 @@ difficulty: application
 select: 1
 stem: >-
   A reporting job needs a single generated document longer than the synchronous maximum output the
-  chosen model allows, and that model is one of those listed as supporting the higher batch output
-  ceiling. Nobody waits on the result; it is produced overnight and read the next morning. Which
-  approach fits the documented capabilities?
+  chosen model allows but comfortably within the higher batch output ceiling, and that model is one
+  of those listed as supporting it. Nobody waits on the result; it is produced overnight and read
+  the next morning. Which approach fits the documented capabilities?
 options:
   - id: a
     text: >-

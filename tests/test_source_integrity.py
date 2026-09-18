@@ -194,3 +194,18 @@ def test_the_check_reads_no_remote_host(tmp_path: Path, record: Path, monkeypatc
     )
 
     assert citation_problems(bank, record) == []
+
+
+def test_a_calendar_impossible_check_date_is_reported(tmp_path: Path, record: Path):
+    """`2026-99-99` matches the schema's shape and sorts after every real date in the record."""
+    bank = tmp_path / "bank"
+    _write_item(
+        bank,
+        "impossible-date",
+        [{"title": "Models", "url": "https://example.test/models", "verified_on": "2026-99-99"}],
+    )
+
+    problems = citation_problems(bank, record)
+
+    assert len(problems) == 1
+    assert "is not a real date" in problems[0].message

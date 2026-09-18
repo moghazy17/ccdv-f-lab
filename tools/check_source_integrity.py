@@ -14,6 +14,7 @@ import argparse
 import re
 import sys
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -80,6 +81,19 @@ def read_source_record(sources_path: Path = DEFAULT_SOURCES_PATH) -> dict[str, s
     return record
 
 
+def _as_date(text: str) -> date | None:
+    """Return the calendar date ``text`` names, or ``None`` when it names no real day.
+
+    The schema and this file's row expression both check the shape ``YYYY-MM-DD`` and nothing more,
+    so ``2026-99-99`` satisfies both. Compared as a string it sorts after every real date in the
+    record, which is exactly the direction that passes the gate.
+    """
+    try:
+        return date.fromisoformat(text)
+    except ValueError:
+        return None
+
+
 def citation_problems(
     bank_path: Path = DEFAULT_BANK_PATH,
     sources_path: Path = DEFAULT_SOURCES_PATH,
@@ -103,7 +117,22 @@ def citation_problems(
                 problems.append(
                     CitationProblem(bank_item.path, f"cited URL has no row in SOURCES.md: {url}")
                 )
-            elif verified_on < recorded_on:
+                continue
+            checked, recorded = _as_date(verified_on), _as_date(recorded_on)
+            if checked is None:
+                problems.append(
+                    CitationProblem(
+                        bank_item.path, f"verified_on {verified_on} is not a real date for {url}"
+                    )
+                )
+            elif recorded is None:
+                problems.append(
+                    CitationProblem(
+                        bank_item.path,
+                        f"the SOURCES.md row for {url} records {recorded_on}, not a real date",
+                    )
+                )
+            elif checked < recorded:
                 problems.append(
                     CitationProblem(
                         bank_item.path,

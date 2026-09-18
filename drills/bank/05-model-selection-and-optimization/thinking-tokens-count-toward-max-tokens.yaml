@@ -29,14 +29,14 @@ options:
     trap_type: bigger-model
   - id: c
     text: >-
-      Read `usage.output_tokens_details.thinking_tokens` and compare it against `max_tokens`, to
-      see how much of the token ceiling the reasoning consumed. That determines whether to raise
-      `max_tokens` (if the reasoning was needed) or lower effort (if the model was overthinking).
+      Compare `usage.output_tokens_details.thinking_tokens` against `max_tokens` to see how much of
+      the ceiling reasoning consumed, then raise the ceiling or lower effort.
     correct: true
     rationale: >-
       Thinking tokens are billed as output tokens and count toward `max_tokens`, so a ceiling sized
-      for the answer alone will truncate once the model reasons; the `usage` field that reports how
-      much of the billed output was reasoning is exactly what decides between the two remedies.
+      for the answer alone will truncate once the model reasons. The `usage` field reporting how
+      much of the billed output was reasoning is what decides between the two remedies: raise
+      `max_tokens` when the reasoning was needed, lower effort when the model was overthinking.
   - id: d
     text: >-
       Set `display: "omitted"` on the thinking configuration so the reasoning is hidden, since

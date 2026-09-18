@@ -20,9 +20,8 @@ options:
     trap_type: irrelevant-knob
   - id: b
     text: >-
-      Remove the sampling parameters from the request. Current models do not accept `temperature`,
-      `top_p`, or `top_k`; run-to-run variation still exists but is no longer something tuned with
-      a sampling dial, so consistency has to be enforced downstream through validation instead.
+      Remove the sampling parameters. Current models do not accept `temperature`, `top_p`, or
+      `top_k`, so consistency has to be enforced downstream through validation.
     correct: true
     rationale: >-
       `temperature`, `top_p`, and `top_k` are removed on current models and return a 400 rather
