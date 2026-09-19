@@ -369,9 +369,18 @@ kbd {
   padding: clamp(2.75rem, 7vw, 6rem) 0 clamp(4rem, 8vw, 7rem);
 }
 
-.page-content > * {
-  max-width: 70ch;
-}
+/*
+ * Measure belongs to the text, not to the page. Constraining every direct child of `main` to 70ch
+ * held the prose at a readable width by holding the whole layout at a readable width, which left
+ * half of a desktop viewport empty and squeezed the card grids below into one column — several of
+ * them already ask for `auto-fit`, and could never take it. `p`, `li`, `blockquote`, and the
+ * headings carry their own measure, so prose stays readable however wide its container becomes,
+ * while a grid, a table, or a panel is free to use the room.
+ *
+ * The measure is deliberately not put on `ul`, `ol`, or `dl`: this site builds several card grids
+ * out of them, and a rule keyed to the tag cannot tell a list of prose from a list used as layout.
+ * Their `li` children are capped instead, which holds the text either way.
+ */
 
 h1,
 h2,
@@ -413,7 +422,8 @@ h6 {
 }
 
 p,
-li {
+li,
+blockquote {
   max-width: 70ch;
 }
 
@@ -557,8 +567,19 @@ p {
 .blueprint-domains,
 .domain-navigation {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
   gap: var(--space-4);
   margin: var(--space-4) 0 0;
+}
+
+/*
+ * These cards are `li`, and `li` carries the prose measure. A card is a container, not a line of
+ * text, so it takes the column the grid gives it; the prose inside it is capped on its own terms.
+ * The `min(100%, …)` above keeps the track from overflowing a viewport narrower than the minimum.
+ */
+.blueprint-domain,
+.domain-navigation__item {
+  max-width: none;
 }
 
 .blueprint-domain h2,
