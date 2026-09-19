@@ -17,10 +17,16 @@
     --ink: #000000 !important;
     --paper: #ffffff !important;
     --panel: #ffffff !important;
+    --panel-soft: #ffffff !important;
     --muted: #333333 !important;
     --rule: #777777 !important;
+    --control: #000000 !important;
     --signal: #000000 !important;
     --signal-ink: #000000 !important;
+    --focus: #000000 !important;
+    --code-surface: #ffffff !important;
+    --shadow-color: transparent !important;
+    --backdrop: transparent !important;
     font-size: 11pt !important;
     line-height: 1.4 !important;
   }
@@ -49,6 +55,14 @@
 
   .page-content > * {
     max-width: 100% !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    box-shadow: none !important;
+    transition: none !important;
   }
 
   .table-scroll {

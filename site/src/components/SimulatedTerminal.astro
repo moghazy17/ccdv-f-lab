@@ -271,7 +271,9 @@ const typeableCommands = commands.filter((command) => command.kind !== "componen
   .terminal {
     padding: clamp(1rem, 3vw, 1.5rem);
     border: 0.0625rem solid var(--rule);
+    border-radius: var(--radius-md);
     background: var(--panel);
+    box-shadow: var(--shadow-card);
   }
 
   .terminal__heading > :first-child {
@@ -295,11 +297,11 @@ const typeableCommands = commands.filter((command) => command.kind !== "componen
   .terminal__entry input {
     min-width: 0;
     padding: 0.55rem;
-    border: 0.0625rem solid var(--ink);
-    border-radius: 0.25rem;
+    border: 0.0625rem solid var(--control);
+    border-radius: var(--radius-sm);
     color: var(--ink);
     background: var(--paper);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-family: var(--font-mono);
   }
 
   .terminal__actions {
@@ -339,7 +341,7 @@ const typeableCommands = commands.filter((command) => command.kind !== "componen
 
   .terminal__input {
     margin: 0 0 0.5rem;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-family: var(--font-mono);
     font-weight: 700;
   }
 

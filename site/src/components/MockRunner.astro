@@ -479,7 +479,7 @@ const base = import.meta.env.BASE_URL;
     gap: 1rem;
     align-items: baseline;
     justify-content: space-between;
-    border-block-end: 1px solid currentColor;
+    border-block-end: 0.0625rem solid var(--rule);
     padding-block-end: 0.5rem;
   }
 
@@ -502,17 +502,22 @@ const base = import.meta.env.BASE_URL;
   .mock-runner__chip {
     min-width: 2.25rem;
     min-height: 2.25rem;
-    border: 1px solid currentColor;
-    border-radius: 0.25rem;
-    background: transparent;
+    border: 0.0625rem solid var(--control);
+    border-radius: var(--radius-sm);
+    background: var(--panel);
     color: inherit;
     cursor: pointer;
+    transition:
+      color var(--duration-fast) var(--ease-in-out),
+      background-color var(--duration-fast) var(--ease-in-out),
+      border-color var(--duration-fast) var(--ease-in-out);
   }
 
   .mock-runner__chip[aria-current="true"] {
-    outline: 2px solid currentColor;
+    outline: 0.125rem solid var(--focus);
     outline-offset: 1px;
     font-weight: 700;
+    color: var(--signal-ink);
   }
 
   .mock-runner__chip--unanswered {
@@ -524,9 +529,10 @@ const base = import.meta.env.BASE_URL;
   }
 
   .mock-runner__options {
-    border: 1px solid currentColor;
-    border-radius: 0.25rem;
-    padding: 0.75rem;
+    padding: 1rem;
+    border: 0.0625rem solid var(--control);
+    border-radius: var(--radius-md);
+    background: var(--panel);
     max-width: 70ch;
   }
 

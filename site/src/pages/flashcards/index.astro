@@ -49,8 +49,10 @@ const uncovered = domains.filter((domain) => !coveredDomains.has(domain.name));
     margin-block: 1.5rem;
     padding: clamp(1rem, 3vw, 1.75rem);
     border: 0.0625rem solid var(--rule);
-    border-left: 0.4rem solid var(--signal);
+    border-left: 0.2rem solid var(--signal);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
     background: var(--panel);
+    box-shadow: var(--shadow-card);
   }
 
   .flashcards-coverage h2 { margin-block-start: 0; }

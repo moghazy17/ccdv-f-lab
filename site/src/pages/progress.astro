@@ -522,14 +522,16 @@ const href = (path: string) => `${base}${path}`;
     font-size: 1.125rem;
     line-height: 1.6;
     margin-bottom: 2rem;
-    color: var(--ink);
+    color: var(--muted);
   }
 
   .progress-section {
     margin-top: 2.5rem;
     padding: clamp(1rem, 3vw, 1.5rem);
     border: 0.0625rem solid var(--rule);
+    border-radius: var(--radius-md);
     background: var(--panel);
+    box-shadow: var(--shadow-card);
   }
 
   .progress-section h2 {
@@ -542,6 +544,7 @@ const href = (path: string) => `${base}${path}`;
     padding: 1rem;
     background: var(--paper);
     border: 0.0625rem solid var(--rule);
+    border-radius: var(--radius-sm);
   }
 
   .summary-details p {
@@ -564,11 +567,15 @@ const href = (path: string) => `${base}${path}`;
     padding: 0.65rem 1.25rem;
     font-size: 1rem;
     font-weight: 600;
-    border-radius: 0.25rem;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     text-decoration: none;
     border: 0.0625rem solid transparent;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
+    transition:
+      color var(--duration-state) var(--ease-in-out),
+      background-color var(--duration-state) var(--ease-in-out),
+      border-color var(--duration-state) var(--ease-in-out),
+      box-shadow var(--duration-state) var(--ease-in-out);
   }
 
   .btn:focus-visible {
@@ -577,19 +584,19 @@ const href = (path: string) => `${base}${path}`;
   }
 
   .btn--primary {
-    background: var(--signal);
-    color: #ffffff;
-    border-color: var(--signal);
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
   }
 
   .btn--primary:hover {
-    background: var(--signal-ink);
+    box-shadow: 0 0.35rem 0.8rem var(--shadow-color);
   }
 
   .btn--secondary {
     background: var(--panel);
     color: var(--ink);
-    border-color: var(--rule);
+    border-color: var(--control);
   }
 
   .btn--secondary:hover {
@@ -598,85 +605,44 @@ const href = (path: string) => `${base}${path}`;
   }
 
   .btn--danger {
-    background: #b42318;
-    color: #ffffff;
-    border-color: #b42318;
+    background: var(--panel);
+    color: var(--danger);
+    border-color: var(--danger);
   }
 
   .btn--danger:hover {
-    background: #912018;
+    background: var(--danger-surface);
   }
 
   .notice {
     margin-top: 1.25rem;
     padding: 0.85rem 1.15rem;
-    border-left: 0.35rem solid var(--signal);
+    border-left: 0.2rem solid var(--signal);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     background: var(--paper);
     font-size: 0.95rem;
   }
 
   .notice--warning {
-    border-left-color: #b54708;
-    background: #fff8eb;
-    color: #7a2e0e;
-  }
-
-  :root[data-theme="dark"] .notice--warning {
-    background: #2b1f0c;
-    color: #ffd899;
-    border-left-color: #f79009;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root[data-theme="system"] .notice--warning {
-      background: #2b1f0c;
-      color: #ffd899;
-      border-left-color: #f79009;
-    }
+    border-left-color: var(--warning);
+    background: var(--warning-surface);
+    color: var(--warning);
   }
 
   .notice--success {
-    border-left-color: #027a48;
-    background: #ecfdf3;
-    color: #027a48;
-  }
-
-  :root[data-theme="dark"] .notice--success {
-    background: #0d2b1d;
-    color: #a6f4c5;
-    border-left-color: #12b76a;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root[data-theme="system"] .notice--success {
-      background: #0d2b1d;
-      color: #a6f4c5;
-      border-left-color: #12b76a;
-    }
+    border-left-color: var(--success);
+    background: var(--success-surface);
+    color: var(--success);
   }
 
   .notice--error {
-    border-left-color: #b42318;
-    background: #fef3f2;
-    color: #b42318;
-  }
-
-  :root[data-theme="dark"] .notice--error {
-    background: #2c100e;
-    color: #fecdca;
-    border-left-color: #f04438;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root[data-theme="system"] .notice--error {
-      background: #2c100e;
-      color: #fecdca;
-      border-left-color: #f04438;
-    }
+    border-left-color: var(--danger);
+    background: var(--danger-surface);
+    color: var(--danger);
   }
 
   .error-text {
-    color: #b42318;
+    color: var(--danger);
     font-weight: 600;
     margin: 0;
   }
@@ -703,16 +669,16 @@ const href = (path: string) => `${base}${path}`;
     padding: 0;
     margin: auto;
     border: none;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-lg);
     background: transparent;
     max-width: min(90vw, 40rem);
     width: 100%;
     color: var(--ink);
-    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.35);
+    box-shadow: var(--shadow-dialog);
   }
 
   .confirm-dialog::backdrop {
-    background: rgba(16, 26, 38, 0.7);
+    background: var(--backdrop);
     backdrop-filter: blur(4px);
   }
 
@@ -721,7 +687,7 @@ const href = (path: string) => `${base}${path}`;
     flex-direction: column;
     background: var(--panel);
     border: 0.0625rem solid var(--rule);
-    border-radius: 0.5rem;
+    border-radius: var(--radius-lg);
     overflow: hidden;
   }
 
@@ -743,7 +709,8 @@ const href = (path: string) => `${base}${path}`;
     margin: 0 0 1.25rem;
     padding: 0.75rem 1rem;
     background: var(--paper);
-    border-left: 0.25rem solid #b42318;
+    border-left: 0.2rem solid var(--danger);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     font-size: 0.95rem;
   }
 
@@ -762,6 +729,7 @@ const href = (path: string) => `${base}${path}`;
     padding: 0.85rem;
     background: var(--paper);
     border: 0.0625rem solid var(--rule);
+    border-radius: var(--radius-sm);
     font-size: 0.9rem;
   }
 
@@ -775,11 +743,11 @@ const href = (path: string) => `${base}${path}`;
   }
 
   .comparison-column--current {
-    border-color: #b42318;
+    border-color: var(--danger);
   }
 
   .comparison-column--incoming {
-    border-color: #027a48;
+    border-color: var(--success);
   }
 
   .confirm-dialog__footer {

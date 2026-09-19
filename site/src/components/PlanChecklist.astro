@@ -33,7 +33,7 @@ const domainCount = plan.allocations.length;
         0 of {domainCount} domains (0%), 0.000 of {plan.totalHours.toFixed(3)} hours (0%)
       </p>
       <div class="completion-track" aria-hidden="true">
-        <div class="completion-fill" style="width: 0%"></div>
+        <div class="completion-fill" style="--completion: 0"></div>
       </div>
     </div>
   </div>
@@ -141,7 +141,7 @@ const domainCount = plan.allocations.length;
         summaryEl.textContent = `${completedCount} of ${domainCount} domains (${domainsPct}%), ${completedHours.toFixed(3)} of ${totalPlanHours.toFixed(3)} hours (${hoursPct}%)`;
       }
       if (progressFill) {
-        progressFill.style.width = `${hoursPct}%`;
+        progressFill.style.setProperty("--completion", String(hoursPct / 100));
       }
     }
 
@@ -210,7 +210,9 @@ const domainCount = plan.allocations.length;
     gap: 1rem;
     padding: clamp(1rem, 3vw, 1.5rem);
     border: 0.0625rem solid var(--rule);
+    border-radius: var(--radius-md);
     background: var(--panel);
+    box-shadow: var(--shadow-card);
   }
 
   .plan-hours-display {
@@ -232,20 +234,26 @@ const domainCount = plan.allocations.length;
     width: 100%;
     height: 0.75rem;
     overflow: hidden;
-    background: var(--rule);
-    border-radius: 0.2rem;
+    background: var(--panel-soft);
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 0.0625rem var(--rule);
   }
 
   .completion-fill {
+    width: 100%;
     height: 100%;
+    border-radius: inherit;
     background: var(--signal);
-    transition: width 0.2s ease-in-out;
+    transform: scaleX(var(--completion));
+    transform-origin: left center;
+    transition: transform var(--duration-state) var(--ease-in-out);
   }
 
   .storage-error {
     padding: 0.85rem 1.15rem;
-    border-left: 0.35rem solid var(--focus);
-    background: var(--paper);
+    border-left: 0.2rem solid var(--focus);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    background: var(--danger-surface);
     color: var(--ink);
     font-weight: 600;
   }
@@ -258,7 +266,8 @@ const domainCount = plan.allocations.length;
   .notice {
     margin: 0;
     padding: 0.75rem 1rem;
-    border-left: 0.25rem solid var(--signal);
+    border-left: 0.18rem solid var(--signal);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     background: var(--panel);
     font-size: 0.925rem;
   }

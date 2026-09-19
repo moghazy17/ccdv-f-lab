@@ -84,9 +84,10 @@ const authoredDomainCount = domains.filter((domain) => {
     margin: 1.75rem 0 2.5rem;
     padding: clamp(1rem, 3vw, 1.5rem);
     border: 0.0625rem solid var(--rule);
-    border-left: 0.4rem solid var(--signal);
+    border-left: 0.2rem solid var(--signal);
     background: var(--panel);
-    border-radius: 0.25rem;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    box-shadow: var(--shadow-card);
   }
 
   .cheatsheet-notice h2 {
@@ -111,7 +112,8 @@ const authoredDomainCount = domains.filter((domain) => {
     padding: clamp(1.25rem, 3vw, 1.75rem);
     border: 0.0625rem solid var(--rule);
     background: var(--panel);
-    border-radius: 0.25rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
   }
 
   .cheatsheet-item h2 {

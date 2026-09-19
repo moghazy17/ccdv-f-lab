@@ -267,9 +267,11 @@ const base = import.meta.env.BASE_URL;
   }
 
   .domain-quiz__items fieldset {
-    border: 0.0625rem solid currentColor;
-    border-radius: 0.25rem;
-    padding: 0.75rem;
+    padding: 1rem;
+    border: 0.0625rem solid var(--control);
+    border-radius: var(--radius-md);
+    background: var(--panel);
+    box-shadow: var(--shadow-card);
   }
 
   .domain-quiz__option {
@@ -287,7 +289,7 @@ const base = import.meta.env.BASE_URL;
   .domain-quiz__rationale {
     white-space: pre-wrap;
     font-family: inherit;
-    border-inline-start: 0.1875rem solid currentColor;
+    border-inline-start: 0.1875rem solid var(--signal);
     padding-inline-start: 0.75rem;
   }
 </style>

@@ -381,14 +381,14 @@
 </script>
 
 <style>
-  .config-builder { padding: clamp(1rem, 3vw, 1.5rem); border: 0.0625rem solid var(--rule); background: var(--panel); }
+  .config-builder { padding: clamp(1rem, 3vw, 1.5rem); border: 0.0625rem solid var(--rule); border-radius: var(--radius-md); background: var(--panel); box-shadow: var(--shadow-card); }
   .config-builder__heading > :first-child, .config-builder__file h3, .config-builder__proof h2, .config-builder__readback h3 { margin-top: 0; }
   .config-builder__privacy, .config-builder__hint { color: var(--muted); }
-  .config-builder fieldset, .config-builder__file, .config-builder__readback, .config-builder__proof, .config-builder__decision { margin-top: 1rem; padding: 1rem; border: 0.0625rem solid var(--rule); background: var(--paper); }
+  .config-builder fieldset, .config-builder__file, .config-builder__readback, .config-builder__proof, .config-builder__decision { margin-top: 1rem; padding: 1rem; border: 0.0625rem solid var(--rule); border-radius: var(--radius-sm); background: var(--paper); }
   .config-builder fieldset { display: grid; gap: 0.8rem; }
   .config-builder label { display: grid; gap: 0.3rem; font-weight: 600; }
-  .config-builder input, .config-builder textarea { min-width: 0; padding: 0.55rem; border: 0.0625rem solid var(--ink); border-radius: 0.25rem; color: var(--ink); background: var(--panel); font: inherit; }
-  .config-builder textarea, .config-builder pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .config-builder input, .config-builder textarea { min-width: 0; padding: 0.55rem; border: 0.0625rem solid var(--control); border-radius: var(--radius-sm); color: var(--ink); background: var(--panel); font: inherit; }
+  .config-builder textarea, .config-builder pre { font-family: var(--font-mono); }
   .config-builder__toggle { grid-template-columns: auto 1fr; align-items: center; }
   .config-builder__toggle input { min-width: auto; }
   .config-builder__input-prefix, .config-builder__input-suffix { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 400; }

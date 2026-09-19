@@ -1,5 +1,18 @@
 import { expect, test } from "@playwright/test";
 
+/**
+ * Relative luminance per WCAG 2.1, so this file can assert that a colour is dark or light without
+ * naming it. Pinning the dark theme's exact values made a palette change fail a test about print.
+ */
+function luminance(color: string): number {
+  const [red, green, blue] = color.match(/\d+(\.\d+)?/g)!.slice(0, 3).map(Number);
+  const channel = (value: number) => {
+    const ratio = value / 255;
+    return ratio <= 0.03928 ? ratio / 12.92 : ((ratio + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue);
+}
+
 test.describe("US5 - Print stylesheet and print shell behavior", () => {
   test("forces light presentation in print even when dark theme is active", async ({ page }) => {
     await page.goto("./cheatsheets/02-applications-and-integration/");
@@ -11,8 +24,8 @@ test.describe("US5 - Print stylesheet and print shell behavior", () => {
     // In screen media with dark theme, body background is dark and text is light
     const screenBg = await page.evaluate(() => window.getComputedStyle(document.body).backgroundColor);
     const screenColor = await page.evaluate(() => window.getComputedStyle(document.body).color);
-    expect(screenBg).toBe("rgb(16, 26, 38)");
-    expect(screenColor).toBe("rgb(237, 244, 250)");
+    expect(luminance(screenBg), `dark theme background was ${screenBg}`).toBeLessThan(0.1);
+    expect(luminance(screenColor), `dark theme text was ${screenColor}`).toBeGreaterThan(0.5);
 
     // Emulate print media
     await page.emulateMedia({ media: "print" });

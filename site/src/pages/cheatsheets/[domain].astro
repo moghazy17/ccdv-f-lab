@@ -106,15 +106,18 @@ const href = (path: string) => `${base}${path}`;
     padding: 0.5rem 1rem;
     background: var(--panel);
     color: var(--ink);
-    border: 0.0625rem solid var(--rule);
-    border-radius: 0.25rem;
+    border: 0.0625rem solid var(--control);
+    border-radius: var(--radius-sm);
     font-weight: 600;
     font-size: 0.9rem;
     cursor: pointer;
+    transition:
+      background-color var(--duration-state) var(--ease-in-out),
+      border-color var(--duration-state) var(--ease-in-out);
   }
 
   .print-button:hover {
-    background: var(--paper);
+    background: var(--panel-soft);
     border-color: var(--ink);
   }
 
@@ -122,9 +125,10 @@ const href = (path: string) => `${base}${path}`;
     margin: 1.5rem 0 2rem;
     padding: clamp(1rem, 3vw, 1.5rem);
     border: 0.0625rem solid var(--rule);
-    border-left: 0.4rem solid var(--focus);
+    border-left: 0.2rem solid var(--focus);
     background: var(--panel);
-    border-radius: 0.25rem;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    box-shadow: var(--shadow-card);
   }
 
   .cheatsheet-scaffold-notice h2 {
