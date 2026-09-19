@@ -44,6 +44,10 @@ site/playwright-report/
 site/test-results/
 site/.astro/
 
+# Screenshots and page snapshots from driving the site through the Playwright MCP server. It
+# writes to the repository root because that is the only path it is allowed to reach.
+.playwright-mcp/
+
 # Isolated fixture builds from the domain-content e2e test
 site/.us2-*
 
